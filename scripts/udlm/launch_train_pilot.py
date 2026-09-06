@@ -1,8 +1,9 @@
 """Launch a bounded UDLM pilot on dynamically selected idle GPUs.
 
-The caller chooses the number of GPUs (one or two) and explicitly supplies the
-matched-panel predecessor state: genesis for R, R's successful receipt for S,
-or S's successful receipt for E. Immediately before launch, the controller
+The caller chooses the number of GPUs (one through four) and explicitly
+supplies the matched-panel predecessor state: genesis for R, R's successful
+receipt for S, or S's successful receipt for E. Immediately before launch, the
+controller
 inventories every NVIDIA GPU, selects genuinely idle devices, re-probes those
 exact UUIDs, and exposes the UUIDs as the child's logical CUDA devices. It
 records active compute processes without rejecting a device solely for their
@@ -23,11 +24,10 @@ import secrets
 import shlex
 import stat
 import subprocess
-import tempfile
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -186,8 +186,8 @@ class GPUState:
 def validate_gpu_count(gpu_count: int) -> int:
     """Validate the user-selected device count without accepting physical IDs."""
 
-    if type(gpu_count) is not int or gpu_count not in (1, 2):
-        raise ValueError("gpu-count must be 1 or 2")
+    if type(gpu_count) is not int or gpu_count not in range(1, 5):
+        raise ValueError("gpu-count must be from 1 through 4")
     return gpu_count
 
 
@@ -879,6 +879,20 @@ _PILOT_LAUNCH_MANIFEST_KEYS = frozenset(
         "dry_run",
     }
 )
+_SELECTION_BOUND_SCALE_UP_KEY = "selection_bound_scale_up"
+_OUTPUT_DIRECTORY_BINDING_KEY = "output_directory_binding"
+_OUTPUT_DIRECTORY_BINDING_POLICY = (
+    "descriptor_walk_no_symlink_ancestors_revalidate_at_child_boundaries"
+)
+_SCALE_UP_ARM_ORDER = ("R", "S", "E")
+_SCALE_UP_SCREEN_AUTHORITY_KEYS = frozenset(
+    {
+        "scheduler_evidence",
+        "scheduler_selection",
+        "conditioning_evidence",
+        "conditioning_selection",
+    }
+)
 _PILOT_TRAINING_SUMMARY_KEYS = frozenset(
     {
         "schema_version",
@@ -1023,6 +1037,272 @@ def _sha256(value: object, *, label: str) -> str:
     if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value):
         raise ValueError(f"{label} must be 64 lowercase hexadecimal digits")
     return value
+
+
+def _normalized_relative_json_path(value: object, *, label: str) -> str:
+    if not isinstance(value, str) or not value or "\\" in value:
+        raise ValueError(f"{label} must be a normalized relative JSON path")
+    path = PurePosixPath(value)
+    if (
+        path.is_absolute()
+        or path.as_posix() != value
+        or path.suffix != ".json"
+        or any(part in {"", ".", ".."} for part in path.parts)
+    ):
+        raise ValueError(f"{label} must be a normalized relative JSON path")
+    return value
+
+
+def _validate_scale_up_json_reference(
+    value: object, *, label: str
+) -> dict[str, object]:
+    reference = _required_mapping(value, label=label)
+    _require_exact_keys(
+        reference,
+        {
+            "root",
+            "relative_path",
+            "sha256",
+            "size_bytes",
+            "schema_version",
+            "canonical_sha256",
+        },
+        label=label,
+    )
+    _exact_string(reference.get("root"), "repository", label=f"{label} root")
+    _normalized_relative_json_path(
+        reference.get("relative_path"), label=f"{label} relative path"
+    )
+    _sha256(reference.get("sha256"), label=f"{label} raw digest")
+    _sha256(reference.get("canonical_sha256"), label=f"{label} canonical digest")
+    _positive_integer(reference.get("size_bytes"), label=f"{label} size")
+    _positive_integer(reference.get("schema_version"), label=f"{label} schema")
+    return reference
+
+
+def _validate_scale_up_config_reference(
+    value: object, *, label: str
+) -> dict[str, object]:
+    reference = _required_mapping(value, label=label)
+    _require_exact_keys(
+        reference,
+        {"root", "relative_path", "sha256", "size_bytes", "canonical_sha256"},
+        label=label,
+    )
+    _exact_string(reference.get("root"), "repository", label=f"{label} root")
+    _normalized_relative_json_path(
+        reference.get("relative_path"), label=f"{label} relative path"
+    )
+    _sha256(reference.get("sha256"), label=f"{label} raw digest")
+    _sha256(reference.get("canonical_sha256"), label=f"{label} canonical digest")
+    _positive_integer(reference.get("size_bytes"), label=f"{label} size")
+    return reference
+
+
+def validate_selection_bound_scale_up(
+    value: object,
+    *,
+    expected_training_variant: str | None = None,
+    expected_position: int | None = None,
+    expected_world_size: int | None = None,
+    expected_resolved_config_sha256: str | None = None,
+) -> dict[str, object]:
+    """Validate the optional scale-up authority embedded in a pilot manifest."""
+
+    binding = _required_mapping(value, label="selection-bound scale-up binding")
+    _require_exact_keys(
+        binding,
+        {"schema_version", "registry", "screen_authority", "selected_design", "member"},
+        label="selection-bound scale-up binding",
+    )
+    _exact_integer(
+        binding.get("schema_version"), 1, label="selection-bound scale-up schema"
+    )
+    registry = _required_mapping(
+        binding.get("registry"), label="selection-bound scale-up registry reference"
+    )
+    _require_exact_keys(
+        registry,
+        {"relative_path", "sha256", "size_bytes", "canonical_sha256", "schema_version"},
+        label="selection-bound scale-up registry reference",
+    )
+    registry_path = _normalized_relative_json_path(
+        registry.get("relative_path"), label="scale-up registry relative path"
+    )
+    _sha256(registry.get("sha256"), label="scale-up registry raw digest")
+    _sha256(
+        registry.get("canonical_sha256"), label="scale-up registry canonical digest"
+    )
+    _positive_integer(registry.get("size_bytes"), label="scale-up registry size")
+    _exact_integer(registry.get("schema_version"), 1, label="scale-up registry schema")
+    if expected_world_size is not None:
+        validate_gpu_count(expected_world_size)
+        expected_registry_path = (
+            "experiments/udlm/protocols/"
+            f"selection_bound_scale_up_registry_gpu{expected_world_size}.json"
+        )
+        _exact_string(
+            registry_path,
+            expected_registry_path,
+            label="scale-up registry relative path",
+        )
+
+    authority = _required_mapping(
+        binding.get("screen_authority"), label="scale-up screen authority"
+    )
+    _require_exact_keys(
+        authority,
+        _SCALE_UP_SCREEN_AUTHORITY_KEYS,
+        label="scale-up screen authority",
+    )
+    for key in sorted(_SCALE_UP_SCREEN_AUTHORITY_KEYS):
+        _validate_scale_up_json_reference(
+            authority.get(key), label=f"scale-up screen authority {key}"
+        )
+
+    design = _required_mapping(
+        binding.get("selected_design"), label="scale-up selected design"
+    )
+    _require_exact_keys(
+        design,
+        {"scheduler_arm_id", "conditioning_arm_id"},
+        label="scale-up selected design",
+    )
+    if design.get("scheduler_arm_id") not in {"E-L0", "E-L1"}:
+        raise ValueError("scale-up scheduler arm is invalid")
+    if design.get("conditioning_arm_id") not in {"E-A0", "E-A1"}:
+        raise ValueError("scale-up conditioning arm is invalid")
+
+    member = _required_mapping(binding.get("member"), label="scale-up member")
+    _require_exact_keys(
+        member,
+        {
+            "arm_id",
+            "arm_order",
+            "position",
+            "training_variant",
+            "training_variant_order",
+            "registered_config",
+            "registered_config_source_revision",
+        },
+        label="scale-up member",
+    )
+    position = member.get("position")
+    if type(position) is not int or position not in range(3):
+        raise ValueError("scale-up member position must be 0, 1, or 2")
+    if member.get("arm_order") != list(_SCALE_UP_ARM_ORDER):
+        raise ValueError("scale-up arm order is invalid")
+    if member.get("training_variant_order") != list(MATCHED_PANEL_VARIANT_ORDER):
+        raise ValueError("scale-up training-variant order is invalid")
+    _exact_string(
+        member.get("arm_id"),
+        _SCALE_UP_ARM_ORDER[position],
+        label="scale-up member arm",
+    )
+    _exact_string(
+        member.get("training_variant"),
+        MATCHED_PANEL_VARIANT_ORDER[position],
+        label="scale-up member training variant",
+    )
+    if expected_position is not None:
+        _exact_integer(position, expected_position, label="scale-up member position")
+    if expected_training_variant is not None:
+        _exact_string(
+            member.get("training_variant"),
+            expected_training_variant,
+            label="scale-up member training variant",
+        )
+    config_reference = _validate_scale_up_config_reference(
+        member.get("registered_config"), label="scale-up registered config"
+    )
+    revision = member.get("registered_config_source_revision")
+    if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
+        raise ValueError(
+            "scale-up registered config source must be a full Git revision"
+        )
+    if expected_resolved_config_sha256 is not None:
+        _exact_string(
+            config_reference.get("canonical_sha256"),
+            expected_resolved_config_sha256,
+            label="scale-up registered/resolved config digest",
+        )
+    return json.loads(json.dumps(binding, allow_nan=False))
+
+
+def _selection_bound_scale_up_common(value: Mapping[str, object]) -> dict[str, object]:
+    member = _required_mapping(value.get("member"), label="scale-up member")
+    return {
+        "registry": value["registry"],
+        "screen_authority": value["screen_authority"],
+        "selected_design": value["selected_design"],
+        "arm_order": member["arm_order"],
+        "training_variant_order": member["training_variant_order"],
+        "registered_config_source_revision": member[
+            "registered_config_source_revision"
+        ],
+    }
+
+
+def _validate_selection_bound_scale_up_link(
+    current: object,
+    predecessor: object,
+    *,
+    current_training_variant: str,
+    current_world_size: int,
+) -> dict[str, object] | None:
+    """Require optional scale-up authority to be continuous across one edge."""
+
+    position = MATCHED_PANEL_VARIANT_ORDER.index(current_training_variant)
+    if position == 0:
+        if predecessor is not None:
+            raise ValueError(
+                "scale-up genesis member cannot have a predecessor authority"
+            )
+        if current is None:
+            return None
+        return validate_selection_bound_scale_up(
+            current,
+            expected_training_variant=current_training_variant,
+            expected_position=position,
+            expected_world_size=current_world_size,
+        )
+    if current is None and predecessor is None:
+        return None
+    if current is None or predecessor is None:
+        raise ValueError("scale-up predecessor chain changes authority presence")
+    validated_current = validate_selection_bound_scale_up(
+        current,
+        expected_training_variant=current_training_variant,
+        expected_position=position,
+        expected_world_size=current_world_size,
+    )
+    validated_predecessor = validate_selection_bound_scale_up(
+        predecessor,
+        expected_training_variant=MATCHED_PANEL_VARIANT_ORDER[position - 1],
+        expected_position=position - 1,
+        expected_world_size=current_world_size,
+    )
+    if _selection_bound_scale_up_common(
+        validated_current
+    ) != _selection_bound_scale_up_common(validated_predecessor):
+        raise ValueError("scale-up predecessor chain changes its common authority")
+    return validated_current
+
+
+def _validate_pilot_launch_manifest_keys(
+    manifest: dict[str, object], *, label: str
+) -> None:
+    expected = set(_PILOT_LAUNCH_MANIFEST_KEYS)
+    has_scale_up = _SELECTION_BOUND_SCALE_UP_KEY in manifest
+    has_output_binding = _OUTPUT_DIRECTORY_BINDING_KEY in manifest
+    if has_scale_up != has_output_binding:
+        raise ValueError(
+            f"{label} must pair selection-bound scale-up and output-directory binding"
+        )
+    if has_scale_up:
+        expected.add(_SELECTION_BOUND_SCALE_UP_KEY)
+        expected.add(_OUTPUT_DIRECTORY_BINDING_KEY)
+    _require_exact_keys(manifest, expected, label=label)
 
 
 def _utc_timestamp(value: object, *, label: str) -> datetime:
@@ -1364,11 +1644,16 @@ def _validate_gpu_state_record(value: object, *, label: str) -> dict[str, object
     if not isinstance(uuid, str) or not uuid.startswith("GPU-"):
         raise ValueError(f"{label} UUID is invalid")
     for key in ("name", "compute_mode"):
-        if not isinstance(record.get(key), str) or not record[key]:
+        if (
+            not isinstance(record.get(key), str)
+            or not record[key]
+            or record[key] != record[key].strip()
+        ):
             raise ValueError(f"{label} {key} is invalid")
     processes = record.get("compute_processes")
     if not isinstance(processes, list):
         raise ValueError(f"{label} compute processes must be an array")
+    observed_pids: set[int] = set()
     for process in processes:
         process = _required_mapping(process, label=f"{label} compute process")
         _require_exact_keys(
@@ -1376,14 +1661,18 @@ def _validate_gpu_state_record(value: object, *, label: str) -> dict[str, object
             {"pid", "process_name", "used_memory_mib"},
             label=f"{label} compute process",
         )
-        _positive_integer(process.get("pid"), label=f"{label} process PID")
+        pid = _positive_integer(process.get("pid"), label=f"{label} process PID")
+        if pid in observed_pids:
+            raise ValueError(f"{label} has duplicate compute-process PID {pid}")
+        observed_pids.add(pid)
         if (
             not isinstance(process.get("process_name"), str)
             or not process["process_name"]
+            or process["process_name"] != process["process_name"].strip()
         ):
             raise ValueError(f"{label} process name is invalid")
         used = process.get("used_memory_mib")
-        if used is not None and (type(used) is not int or used < 0):
+        if type(used) is not int or used < 0:
             raise ValueError(f"{label} process memory is invalid")
     return record
 
@@ -1393,18 +1682,16 @@ def _repository_artifact_path(
 ) -> Path:
     """Normalize one existing artifact without accepting an outside symlink."""
 
-    repository_root = REPOSITORY_ROOT.resolve(strict=True)
+    repository_root = Path(os.path.abspath(os.fspath(REPOSITORY_ROOT)))
     absolute = Path(os.path.abspath(os.fspath(value)))
-    parent = absolute.parent.resolve(strict=True)
-    normalized = parent / absolute.name
     if (
-        normalized == repository_root
-        or repository_root not in normalized.parents
-        or normalized.suffix != suffix
-        or (basename is not None and normalized.name != basename)
+        absolute == repository_root
+        or not absolute.is_relative_to(repository_root)
+        or absolute.suffix != suffix
+        or (basename is not None and absolute.name != basename)
     ):
         raise ValueError(f"{label} must be the reviewed in-repository {suffix} file")
-    return normalized
+    return absolute
 
 
 def validate_pilot_output_parents(
@@ -1464,14 +1751,29 @@ def stable_repository_artifact_snapshot(
     if type(capture_bytes) is not bool:
         raise ValueError("capture_bytes must be boolean")
     normalized = _repository_artifact_path(path, suffix=suffix, label=label)
-    before_path = normalized.stat(follow_symlinks=False)
-    if not stat.S_ISREG(before_path.st_mode) or before_path.st_nlink != 1:
-        raise ValueError(f"{label} must be a single-link regular file")
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
-    descriptor = os.open(normalized, flags)
+    try:
+        directory_fd, normalized, name = _open_direct_repository_parent(
+            normalized,
+            label=label,
+            create_missing=False,
+        )
+    except ValueError as error:
+        if "parent is missing" in str(error):
+            raise FileNotFoundError(normalized) from error
+        raise
+    descriptor: int | None = None
     digest = hashlib.sha256()
     payload = bytearray() if capture_bytes else None
     try:
+        before_path = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if not stat.S_ISREG(before_path.st_mode) or before_path.st_nlink != 1:
+            raise ValueError(f"{label} must be a single-link regular file")
+        flags = (
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
+        descriptor = os.open(name, flags, dir_fd=directory_fd)
         before_descriptor = os.fstat(descriptor)
         if (
             not stat.S_ISREG(before_descriptor.st_mode)
@@ -1488,9 +1790,11 @@ def stable_repository_artifact_snapshot(
             if payload is not None:
                 payload.extend(chunk)
         after_descriptor = os.fstat(descriptor)
+        after_path = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
     finally:
-        os.close(descriptor)
-    after_path = normalized.stat(follow_symlinks=False)
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(directory_fd)
     identity = _stable_stat_identity(before_path)
     if any(
         _stable_stat_identity(observed) != identity
@@ -1499,6 +1803,21 @@ def stable_repository_artifact_snapshot(
         raise ValueError(f"{label} changed while its exact bytes were read")
     if after_path.st_size == 0:
         raise ValueError(f"{label} must not be empty")
+    # Rewalk from the repository after reading. The first descriptor walk
+    # prevents an outside read; this second walk rejects a persistent remap.
+    current_directory_fd, _current, current_name = _open_direct_repository_parent(
+        normalized,
+        label=label,
+        create_missing=False,
+    )
+    try:
+        current_path = os.stat(
+            current_name, dir_fd=current_directory_fd, follow_symlinks=False
+        )
+    finally:
+        os.close(current_directory_fd)
+    if _stable_stat_identity(current_path) != identity:
+        raise ValueError(f"{label} path changed while its exact bytes were read")
     return (
         {
             "path": str(normalized),
@@ -1936,6 +2255,7 @@ def build_predecessor_receipt_binding(
     predecessor_receipt_path: Path | None,
     matched_panel_spec: dict[str, object],
     matched_panel_spec_sha256: str,
+    selection_bound_scale_up: object = None,
 ) -> dict[str, object]:
     """Validate and normalize the exact predecessor required for this R/S/E arm."""
 
@@ -1944,6 +2264,16 @@ def build_predecessor_receipt_binding(
     common, common_sha256 = _matched_panel_contract(
         matched_panel_spec, matched_panel_spec_sha256
     )
+    current_scale_up = (
+        None
+        if selection_bound_scale_up is None
+        else validate_selection_bound_scale_up(
+            selection_bound_scale_up,
+            expected_training_variant=training_variant,
+            expected_position=position,
+            expected_world_size=common["requested_gpu_count"],
+        )
+    )
     if type(explicit_genesis) is not bool:
         raise ValueError("explicit genesis declaration must be boolean")
     if position == 0:
@@ -1951,6 +2281,12 @@ def build_predecessor_receipt_binding(
             raise ValueError(
                 "R/udlm requires --genesis and forbids a predecessor receipt"
             )
+        _validate_selection_bound_scale_up_link(
+            current_scale_up,
+            None,
+            current_training_variant=training_variant,
+            current_world_size=common["requested_gpu_count"],
+        )
         binding = _explicit_genesis_binding(
             training_variant=training_variant,
             matched_panel_spec_sha256=matched_panel_spec_sha256,
@@ -2233,10 +2569,24 @@ def build_predecessor_receipt_binding(
         strict_json_loads(manifest_payload, label="predecessor launch manifest"),
         label="predecessor launch manifest",
     )
-    _require_exact_keys(
-        predecessor_manifest,
-        _PILOT_LAUNCH_MANIFEST_KEYS,
-        label="predecessor launch manifest",
+    _validate_pilot_launch_manifest_keys(
+        predecessor_manifest, label="predecessor launch manifest"
+    )
+    if _SELECTION_BOUND_SCALE_UP_KEY in predecessor_manifest:
+        validate_selection_bound_scale_up(
+            predecessor_manifest[_SELECTION_BOUND_SCALE_UP_KEY],
+            expected_training_variant=MATCHED_PANEL_VARIANT_ORDER[position - 1],
+            expected_position=position - 1,
+            expected_world_size=common["requested_gpu_count"],
+            expected_resolved_config_sha256=predecessor_manifest.get(
+                "resolved_training_config_sha256"
+            ),
+        )
+    _validate_selection_bound_scale_up_link(
+        current_scale_up,
+        predecessor_manifest.get(_SELECTION_BOUND_SCALE_UP_KEY),
+        current_training_variant=training_variant,
+        current_world_size=common["requested_gpu_count"],
     )
     expected_variant = MATCHED_PANEL_VARIANT_ORDER[position - 1]
     expected_definition = TRAINING_VARIANTS[expected_variant]
@@ -3423,10 +3773,20 @@ def build_predecessor_receipt_binding(
         )
         if live_finiteness != semantic_checkpoint[key]:
             raise ValueError("predecessor live/checkpoint finiteness differs")
+    reseed_after_initialization = resolved_training.get(
+        "reseed_after_model_initialization", False
+    )
+    if type(reseed_after_initialization) is not bool:
+        raise ValueError("predecessor reseed policy must be boolean")
+    if conditioning_variant == "film_adaln" and not reseed_after_initialization:
+        raise ValueError("FiLM predecessor requires post-initialization reseeding")
     startup = _required_mapping(summary.get("startup"), label="predecessor startup")
+    expected_startup_keys = {"mode", "verified_mdlm_warm_start_report"}
+    if reseed_after_initialization:
+        expected_startup_keys.add("training_rng_policy")
     _require_exact_keys(
         startup,
-        {"mode", "verified_mdlm_warm_start_report"},
+        expected_startup_keys,
         label="predecessor startup",
     )
     expected_startup = (
@@ -3437,6 +3797,17 @@ def build_predecessor_receipt_binding(
     _exact_string(
         startup.get("mode"), expected_startup, label="predecessor startup mode"
     )
+    if reseed_after_initialization:
+        if expected_startup != "warm_start":
+            raise ValueError("predecessor reseeding requires a warm start")
+        expected_rng_policy = {
+            "policy": "reseed_all_training_rng_streams_after_model_and_warm_start",
+            "seed": common["seed"],
+            "purpose": "isolate_training_randomness_from_architecture_constructor_draws",
+            "applied_before_dataloader_and_trainer_construction": True,
+        }
+        if startup.get("training_rng_policy") != expected_rng_policy:
+            raise ValueError("predecessor training RNG policy is invalid")
     if expected_startup == "scratch":
         if startup.get("verified_mdlm_warm_start_report") is not None:
             raise ValueError("scratch predecessor contains a warm-start report")
@@ -3744,6 +4115,7 @@ def revalidate_predecessor_receipt_binding(
     matched_panel_spec: dict[str, object],
     matched_panel_spec_sha256: str,
     current_manifest_created_at_utc: str | None = None,
+    selection_bound_scale_up: object = None,
 ) -> None:
     """Rebuild the unchanged full chain immediately around GPU probing."""
 
@@ -3760,7 +4132,14 @@ def revalidate_predecessor_receipt_binding(
     position = MATCHED_PANEL_VARIANT_ORDER.index(
         validate_training_variant(training_variant)
     )
-    if position > 0:
+    if position == 0:
+        _validate_selection_bound_scale_up_link(
+            selection_bound_scale_up,
+            None,
+            current_training_variant=training_variant,
+            current_world_size=_common["requested_gpu_count"],
+        )
+    else:
         receipt = _required_mapping(
             validated.get("receipt_artifact"),
             label="predecessor receipt artifact",
@@ -3771,6 +4150,7 @@ def revalidate_predecessor_receipt_binding(
             predecessor_receipt_path=Path(str(receipt.get("path"))),
             matched_panel_spec=matched_panel_spec,
             matched_panel_spec_sha256=matched_panel_spec_sha256,
+            selection_bound_scale_up=selection_bound_scale_up,
         )
         if (
             canonical_json_sha256(rebuilt) != canonical_json_sha256(validated)
@@ -3883,40 +4263,248 @@ def revalidate_predecessor_chain_artifact_identities(
         successor_manifest_created_at_utc = str(manifest.get("created_at"))
 
 
-def _atomic_publish_bytes_exclusive(path: Path, payload: bytes, *, label: str) -> str:
-    """Publish complete bytes once using a same-directory hard-link commit."""
+def _open_direct_repository_parent(
+    path: Path, *, label: str, create_missing: bool
+) -> tuple[int, Path, str]:
+    """Open a repository parent by descriptor without following symlinks."""
 
-    if not isinstance(payload, bytes) or not payload:
-        raise ValueError(f"{label} payload must be nonempty bytes")
-    path = Path(os.path.abspath(os.fspath(path)))
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if os.path.lexists(path):
-        raise FileExistsError(f"refusing to replace {label}: {path}")
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
+    if type(create_missing) is not bool:
+        raise ValueError("create_missing must be boolean")
+    repository = Path(os.path.abspath(os.fspath(REPOSITORY_ROOT)))
+    normalized = Path(os.path.abspath(os.fspath(path)))
+    if (
+        normalized == repository
+        or not normalized.is_relative_to(repository)
+        or normalized != path
+    ):
+        raise ValueError(f"{label} path must be directly below the repository")
+    relative = normalized.relative_to(repository)
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
     )
-    temporary = Path(temporary_name)
     try:
+        directory_fd = os.open(repository, flags)
+    except OSError as error:
+        raise ValueError("repository root must be a direct real directory") from error
+    try:
+        for component in relative.parent.parts:
+            try:
+                child_fd = os.open(component, flags, dir_fd=directory_fd)
+            except FileNotFoundError:
+                if not create_missing:
+                    raise ValueError(f"{label} parent is missing") from None
+                try:
+                    os.mkdir(component, mode=0o755, dir_fd=directory_fd)
+                except FileExistsError:
+                    pass
+                try:
+                    child_fd = os.open(component, flags, dir_fd=directory_fd)
+                except OSError as error:
+                    raise ValueError(
+                        f"{label} parent must be a direct real directory"
+                    ) from error
+            except OSError as error:
+                raise ValueError(
+                    f"{label} parent must be a direct real directory"
+                ) from error
+            os.close(directory_fd)
+            directory_fd = child_fd
+        return directory_fd, normalized, relative.name
+    except BaseException:
+        os.close(directory_fd)
+        raise
+
+
+def _direct_output_identity(
+    path: Path, *, label: str, require_directory: bool
+) -> dict[str, object]:
+    """Snapshot one output node through its no-follow repository parent."""
+
+    if type(require_directory) is not bool:
+        raise ValueError("require_directory must be boolean")
+    directory_fd, normalized, name = _open_direct_repository_parent(
+        path,
+        label=label,
+        create_missing=False,
+    )
+    try:
+        state = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+    finally:
+        os.close(directory_fd)
+    expected_kind = stat.S_ISDIR if require_directory else stat.S_ISREG
+    if not expected_kind(state.st_mode) or stat.S_ISLNK(state.st_mode):
+        kind = "directory" if require_directory else "regular file"
+        raise ValueError(f"{label} must be a direct {kind}")
+    return {
+        "path": str(normalized),
+        "device": int(state.st_dev),
+        "inode": int(state.st_ino),
+        "mode": int(state.st_mode),
+    }
+
+
+def build_output_directory_binding(
+    *, run_dir: Path, log_path: Path
+) -> dict[str, object]:
+    """Bind the exact scale-up output nodes created before manifest publication."""
+
+    return {
+        "schema_version": 1,
+        "run_directory": _direct_output_identity(
+            run_dir, label="scale-up run directory", require_directory=True
+        ),
+        "log_file": _direct_output_identity(
+            log_path, label="scale-up log file", require_directory=False
+        ),
+        "hydra_directory": _direct_output_identity(
+            run_dir / "hydra",
+            label="scale-up Hydra directory",
+            require_directory=True,
+        ),
+        "checkpoint_directory": _direct_output_identity(
+            run_dir / "checkpoints",
+            label="scale-up checkpoint directory",
+            require_directory=True,
+        ),
+        "policy": _OUTPUT_DIRECTORY_BINDING_POLICY,
+    }
+
+
+def validate_output_directory_binding(
+    value: object, *, run_dir: Path, log_path: Path
+) -> dict[str, object]:
+    """Validate and re-probe a scale-up output-directory identity binding."""
+
+    binding = _required_mapping(value, label="output-directory binding")
+    _require_exact_keys(
+        binding,
+        {
+            "schema_version",
+            "run_directory",
+            "log_file",
+            "hydra_directory",
+            "checkpoint_directory",
+            "policy",
+        },
+        label="output-directory binding",
+    )
+    _exact_integer(binding.get("schema_version"), 1, label="output binding schema")
+    _exact_string(
+        binding.get("policy"),
+        _OUTPUT_DIRECTORY_BINDING_POLICY,
+        label="output binding policy",
+    )
+    expected_paths = {
+        "run_directory": (run_dir, True),
+        "log_file": (log_path, False),
+        "hydra_directory": (run_dir / "hydra", True),
+        "checkpoint_directory": (run_dir / "checkpoints", True),
+    }
+    for key, (path, require_directory) in expected_paths.items():
+        record = _required_mapping(binding.get(key), label=f"output binding {key}")
+        _require_exact_keys(
+            record,
+            {"path", "device", "inode", "mode"},
+            label=f"output binding {key}",
+        )
+        _exact_string(
+            record.get("path"),
+            str(path),
+            label=f"output binding {key} path",
+        )
+        for field in ("device", "inode", "mode"):
+            _positive_integer(
+                record.get(field), label=f"output binding {key} {field}"
+            )
+        live = _direct_output_identity(
+            path,
+            label=f"output binding {key}",
+            require_directory=require_directory,
+        )
+        for field in ("device", "inode", "mode"):
+            _exact_integer(
+                record.get(field),
+                live[field],
+                label=f"output binding {key} live {field}",
+            )
+    return json.loads(json.dumps(binding, allow_nan=False))
+
+
+def _atomic_publish_bytes_exclusive(path: Path, payload: bytes, *, label: str) -> str:
+    """Publish complete bytes once without following repository symlink parents."""
+
+    if not isinstance(payload, bytes):
+        raise ValueError(f"{label} payload must be bytes")
+    directory_fd, normalized, name = _open_direct_repository_parent(
+        path, label=label, create_missing=True
+    )
+    temporary_name: str | None = None
+    try:
+        try:
+            os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            pass
+        else:
+            raise FileExistsError(f"refusing to replace {label}: {normalized}")
+        descriptor: int | None = None
+        for _attempt in range(100):
+            candidate = f".{name}.{secrets.token_hex(16)}.tmp"
+            try:
+                descriptor = os.open(
+                    candidate,
+                    os.O_WRONLY
+                    | os.O_CREAT
+                    | os.O_EXCL
+                    | getattr(os, "O_CLOEXEC", 0)
+                    | getattr(os, "O_NOFOLLOW", 0),
+                    0o644,
+                    dir_fd=directory_fd,
+                )
+            except FileExistsError:
+                continue
+            temporary_name = candidate
+            break
+        if descriptor is None or temporary_name is None:  # pragma: no cover
+            raise RuntimeError(f"could not reserve temporary {label} publication")
         with os.fdopen(descriptor, "wb") as handle:
             os.fchmod(handle.fileno(), 0o644)
             handle.write(payload)
             handle.flush()
             os.fsync(handle.fileno())
         try:
-            os.link(temporary, path)
+            os.link(
+                temporary_name,
+                name,
+                src_dir_fd=directory_fd,
+                dst_dir_fd=directory_fd,
+                follow_symlinks=False,
+            )
         except FileExistsError as error:
-            raise FileExistsError(f"refusing to replace {label}: {path}") from error
-        temporary.unlink()
-        directory_descriptor = os.open(path.parent, os.O_RDONLY)
-        try:
-            os.fsync(directory_descriptor)
-        finally:
-            os.close(directory_descriptor)
+            raise FileExistsError(f"refusing to replace {label}: {normalized}") from error
+        os.unlink(temporary_name, dir_fd=directory_fd)
+        temporary_name = None
+        os.fsync(directory_fd)
+        published = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        live = os.stat(normalized, follow_symlinks=False)
+        expected_parent = Path(
+            os.path.abspath(os.fspath(REPOSITORY_ROOT))
+        ).resolve(strict=True).joinpath(*normalized.relative_to(REPOSITORY_ROOT).parent.parts)
+        if (
+            not stat.S_ISREG(published.st_mode)
+            or (published.st_dev, published.st_ino) != (live.st_dev, live.st_ino)
+            or normalized.parent.resolve(strict=True) != expected_parent
+        ):
+            raise RuntimeError(f"{label} path changed during publication")
     finally:
-        if temporary.exists():
-            temporary.unlink()
+        if temporary_name is not None:
+            try:
+                os.unlink(temporary_name, dir_fd=directory_fd)
+            except FileNotFoundError:
+                pass
+        os.close(directory_fd)
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -3981,14 +4569,21 @@ def release_exact_training_job_lock(path: Path, *, expected_sha256: str) -> None
 
     if not re.fullmatch(r"[0-9a-f]{64}", expected_sha256):
         raise ValueError("expected lock digest must be 64 lowercase hexadecimal digits")
-    path = Path(os.path.abspath(os.fspath(path)))
-    before_path = path.stat(follow_symlinks=False)
-    if not stat.S_ISREG(before_path.st_mode):
-        raise RuntimeError("training-job lock is not a regular file")
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
-    descriptor = os.open(path, flags)
-    digest = hashlib.sha256()
+    directory_fd, _normalized, name = _open_direct_repository_parent(
+        path, label="training-job lock", create_missing=False
+    )
+    descriptor: int | None = None
     try:
+        flags = (
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
+        digest = hashlib.sha256()
+        before_path = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if not stat.S_ISREG(before_path.st_mode):
+            raise RuntimeError("training-job lock is not a regular file")
+        descriptor = os.open(name, flags, dir_fd=directory_fd)
         before_descriptor = os.fstat(descriptor)
         if _stable_stat_identity(before_descriptor) != _stable_stat_identity(
             before_path
@@ -4000,50 +4595,29 @@ def release_exact_training_job_lock(path: Path, *, expected_sha256: str) -> None
                 break
             digest.update(chunk)
         after_descriptor = os.fstat(descriptor)
+        after_path = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        stable_identity = _stable_stat_identity(before_path)
+        if (
+            _stable_stat_identity(after_descriptor) != stable_identity
+            or _stable_stat_identity(after_path) != stable_identity
+        ):
+            raise RuntimeError("training-job lock changed during exact release")
+        if digest.hexdigest() != expected_sha256:
+            raise RuntimeError(
+                "refusing to release a training-job lock owned by another run"
+            )
+        os.unlink(name, dir_fd=directory_fd)
+        os.fsync(directory_fd)
     finally:
-        os.close(descriptor)
-    after_path = path.stat(follow_symlinks=False)
-    stable_identity = _stable_stat_identity(before_path)
-    if (
-        _stable_stat_identity(after_descriptor) != stable_identity
-        or _stable_stat_identity(after_path) != stable_identity
-    ):
-        raise RuntimeError("training-job lock changed during exact release")
-    if digest.hexdigest() != expected_sha256:
-        raise RuntimeError(
-            "refusing to release a training-job lock owned by another run"
-        )
-    os.unlink(path)
-    directory_descriptor = os.open(path.parent, os.O_RDONLY)
-    try:
-        os.fsync(directory_descriptor)
-    finally:
-        os.close(directory_descriptor)
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(directory_fd)
 
 
 def reserve_log_path(path: Path) -> None:
     """Reserve a new regular log file without following or replacing a path."""
 
-    path = Path(os.path.abspath(os.fspath(path)))
-    path.parent.mkdir(parents=True, exist_ok=True)
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0)
-    flags |= getattr(os, "O_NOFOLLOW", 0)
-    try:
-        descriptor = os.open(path, flags, 0o644)
-    except FileExistsError as error:
-        raise FileExistsError(f"refusing to replace pilot log: {path}") from error
-    try:
-        state = os.fstat(descriptor)
-        if not stat.S_ISREG(state.st_mode) or state.st_nlink != 1:
-            raise RuntimeError("reserved pilot log is not a single-link regular file")
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-    directory_descriptor = os.open(path.parent, os.O_RDONLY)
-    try:
-        os.fsync(directory_descriptor)
-    finally:
-        os.close(directory_descriptor)
+    _atomic_publish_bytes_exclusive(path, b"", label="pilot log")
 
 
 def validate_pilot_exit_receipt_path(path: Path) -> Path:
@@ -4177,7 +4751,7 @@ def build_child_environment_command(
         type(expected_max_steps) is not int
         or expected_max_steps <= 0
         or type(expected_world_size) is not int
-        or expected_world_size not in (1, 2)
+        or expected_world_size not in range(1, 5)
     ):
         raise ValueError("pilot expected steps/world size are invalid")
     controlled_python = {
@@ -4333,7 +4907,7 @@ def build_tmux_shell_command(
         type(expected_max_steps) is not int
         or expected_max_steps <= 0
         or type(expected_world_size) is not int
-        or expected_world_size not in (1, 2)
+        or expected_world_size not in range(1, 5)
     ):
         raise ValueError("pilot expected steps/world size are invalid")
     try:
@@ -4425,11 +4999,31 @@ def build_tmux_shell_command(
         shell_status_arguments.get(part, shlex.quote(part))
         for part in receipt_command_parts
     )
+    log_identity = _direct_output_identity(
+        log_path,
+        label="reserved pilot log",
+        require_directory=False,
+    )
+    safe_tee_command = shlex.join(
+        [
+            str(_python_executable()),
+            "-u",
+            str(REPOSITORY_ROOT / "scripts" / "udlm" / "write_pilot_exit_status.py"),
+            "--safe-tee-log",
+            str(log_path),
+            "--expected-log-device",
+            str(log_identity["device"]),
+            "--expected-log-inode",
+            str(log_identity["inode"]),
+            "--expected-log-mode",
+            str(log_identity["mode"]),
+        ]
+    )
     return (
         "set +e; set -o pipefail; "
         + shlex.join(environment_command)
-        + " 2>&1 | tee -a "
-        + shlex.quote(str(log_path))
+        + " 2>&1 | "
+        + safe_tee_command
         + '; pipeline_status=("${PIPESTATUS[@]}"); '
         + 'training_status="${pipeline_status[0]}"; '
         + 'tee_status="${pipeline_status[1]}"; '
@@ -4700,7 +5294,7 @@ def _parse_args(argv: list[str] | None = None):
         required=True,
         help=(
             "Number of GPUs to select dynamically from the full NVIDIA inventory; "
-            "must be 1 or 2."
+            "must be from 1 through 4."
         ),
     )
     parser.add_argument("--max-steps", type=int, default=10)

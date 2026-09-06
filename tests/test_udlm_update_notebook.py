@@ -39,7 +39,9 @@ def test_update_replaces_generated_cells_and_preserves_stages_20_6_through_20_8(
         for cell_id in updater.PRESERVED_STAGE20_TAGS_BY_ID
     }
     generated = updater.stage_cells()
+    late_generated = updater._selection_bound_scale_up_cells()  # noqa: SLF001
     before[generated[0]["id"]]["source"] = "corrupt generated source\n"
+    before[late_generated[0]["id"]]["source"] = "corrupt late source\n"
 
     source = tmp_path / "source.ipynb"
     destination = tmp_path / "updated.ipynb"
@@ -49,6 +51,7 @@ def test_update_replaces_generated_cells_and_preserves_stages_20_6_through_20_8(
     updated = json.loads(destination.read_text())
     updated_by_id = _cells_by_id(updated)
     assert updated_by_id[generated[0]["id"]] == generated[0]
+    assert updated_by_id[late_generated[0]["id"]] == late_generated[0]
     assert {
         cell_id: updated_by_id[cell_id]
         for cell_id in updater.PRESERVED_STAGE20_TAGS_BY_ID
@@ -62,6 +65,7 @@ def test_update_replaces_generated_cells_and_preserves_stages_20_6_through_20_8(
     assert stage20_ids == [
         *(cell["id"] for cell in generated),
         *updater.PRESERVED_STAGE20_TAGS_BY_ID,
+        *(cell["id"] for cell in late_generated),
     ]
 
 
@@ -99,6 +103,7 @@ def test_update_is_byte_idempotent(tmp_path: Path) -> None:
     updater.update_notebook(SOURCE_NOTEBOOK, first)
     updater.update_notebook(first, second)
 
+    assert first.read_bytes() == SOURCE_NOTEBOOK.read_bytes()
     assert second.read_bytes() == first.read_bytes()
 
 
@@ -109,6 +114,7 @@ def test_generated_stage0_uses_utilization_based_shared_gpu_policy(
     updater.update_notebook(SOURCE_NOTEBOOK, destination)
     cells = _cells_by_id(json.loads(destination.read_text()))
     code = "".join(cells["stage0-setup"]["source"])
+    count_code = "".join(cells["stage0-gpu-count"]["source"])
     markdown = " ".join("".join(cells["stage0-setup-note"]["source"]).split())
 
     for fragment in (
@@ -125,7 +131,43 @@ def test_generated_stage0_uses_utilization_based_shared_gpu_policy(
     assert "a nonempty inventory is allowed" in markdown
     assert "card at exactly 10% is rejected" in markdown
     assert "never interrupts or kills" in markdown
+    assert "1 <= NUM_GPUS <= 4" in count_code
+    assert "hard ceiling: 4" in count_code
     compile(code, "stage0-setup", "exec")
+
+
+def test_later_notebook_gpu_rechecks_reuse_stage0_policy_and_allow_processes(
+    tmp_path: Path,
+) -> None:
+    destination = tmp_path / "updated.ipynb"
+    updater.update_notebook(SOURCE_NOTEBOOK, destination)
+    cells = _cells_by_id(json.loads(destination.read_text()))
+
+    stage5_note = " ".join(
+        "".join(cells["stage5-forward-note"]["source"]).split()
+    )
+    stage5_code = "".join(cells["f4963b0c"]["source"])
+    stage6_note = " ".join(
+        "".join(cells["stage6-bert-update-note"]["source"]).split()
+    )
+    stage6_code = "".join(cells["stage6-bert-update"]["source"])
+
+    assert "foreign_compute_processes" not in stage5_code
+    assert "probe_physical_gpu(STAGE5_PHYSICAL_GPU_ID)" in stage5_code
+    assert 'stage5_gpu_reprobe.get("uuid") != SELECTED_GPU_UUIDS[0]' in stage5_code
+    assert 'stage5_gpu_reprobe["compute_processes"]' in stage5_code
+    assert "allowing and recording active process rows" in stage5_note
+
+    assert "foreign_compute_processes" not in stage6_code
+    assert "probe_physical_gpu(stage6_physical_candidate)" in stage6_code
+    assert "SELECTED_GPU_UUIDS[stage6_logical_candidate]" in stage6_code
+    assert 'stage6_reprobe["utilization_percent"]' in stage6_code
+    assert 'stage6_reprobe["compute_processes"]' in stage6_code
+    assert "utilization strictly below 10 percent" in stage6_note
+    assert "active process rows are recorded but do not disqualify" in stage6_note
+
+    compile(stage5_code, "stage5-forward", "exec")
+    compile(stage6_code, "stage6-bert-update", "exec")
 
 
 @pytest.mark.parametrize(
@@ -227,6 +269,25 @@ def test_generated_schedule_teaching_distinguishes_official_recipe(tmp_path: Pat
     assert "not an exact replay of the official recipe" in markdown
 
 
+def test_generated_math_teaches_plugin_output_as_loo_predictor(tmp_path: Path):
+    destination = tmp_path / "updated.ipynb"
+    updater.update_notebook(SOURCE_NOTEBOOK, destination)
+    cells = _cells_by_id(json.loads(destination.read_text()))
+    markdown = " ".join(
+        "".join(cells["stage-20-udlm-math"]["source"]).split()
+    )
+
+    for fragment in (
+        "https://arxiv.org/abs/2605.22765",
+        "simplex-valued plug-in bridge parameter",
+        "leave-one-out (LOO) posterior",
+        "not the ordinary denoising posterior",
+        "temperature/top-p should act on the raw LOO logits",
+        "does not enforce exact invariance",
+    ):
+        assert fragment in markdown
+
+
 def test_generated_health_teaching_binds_exact_gate_and_later_diagnostic(
     tmp_path: Path,
 ):
@@ -246,7 +307,8 @@ def test_generated_health_teaching_binds_exact_gate_and_later_diagnostic(
         "scripts/udlm/launch_health_panel.py",
         "scripts/udlm/validate_health_panel.py",
         "health-w{W}-e-{H}",
-        "Both config materialization at $H$ and registry freezing at R0",
+        "Completed health-to-selection firewall",
+        "R3=`b49e900`",
         "permits only screen authorization",
         "$B_{\\mathrm{eff}}=Wma_W=16$",
         "Only after each 1,000-update training receipt validates",
@@ -290,7 +352,71 @@ def test_generated_health_teaching_binds_exact_gate_and_later_diagnostic(
     assert "at exactly 10% is rejected" in compact_all_markdown
     assert "never interrupts or kills" in compact_all_markdown
     assert "deterministic `health-w{W}-{r,s,e}-{H}` names" in compact_all_markdown
-    assert "Only after those training runs, seed 1100 x 32 requests" in (
+    assert "Only after all three training receipts pass may seed 1100 x 32 requests" in (
         compact_all_markdown
     )
     compile(code, "stage-20-udlm-evidence-code", "exec")
+
+
+def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path):
+    destination = tmp_path / "updated.ipynb"
+    updater.update_notebook(SOURCE_NOTEBOOK, destination)
+    notebook = json.loads(destination.read_text())
+    cells = _cells_by_id(notebook)
+    markdown = " ".join(
+        "".join(cells["stage-20-udlm-selection-bound-scale-up"]["source"]).split()
+    )
+    code = "".join(
+        cells["stage-20-udlm-selection-bound-scale-up-code"]["source"]
+    )
+
+    for fragment in (
+        "https://arxiv.org/abs/2412.10193",
+        "https://arxiv.org/abs/2501.06158",
+        "R versus S changes only",
+        "S versus E",
+        "Concrete example and intuition",
+        "Code and tensor invariants",
+        "Difference from released implementations",
+        "Comprehension checkpoint",
+        "conditional on E-tuned optimization and conditioning",
+        "adds 14,962,176 conditioning parameters",
+        "first scale-up rung will use one GPU",
+        "no molecular benchmark or superiority result",
+        "[B,L,1880]",
+        "[B,1,H]",
+        "utilization strictly below 10%",
+        "up to four",
+    ):
+        assert fragment in markdown
+    for fragment in (
+        "scheduler_evidence.json",
+        "scheduler_selection.json",
+        "conditioning_evidence.json",
+        "conditioning_selection.json",
+        "76a4ec9771dd0e875bf4532beb217da0ed54426427d39d92dbb218c50673c705",
+        "e93d1face65bab573b32898da1a0a7a209a95a1a21fde58c509bcb3db8bac272",
+        "e63010c52f97e788bb25ea8f46b4f5ba9f2ae1e95bca484ee139a871ae57d612",
+        "ea1473ccfbff5b55e6f0e27dea4ea1c6ecca20de1a69935857da782b929193d0",
+        '"selected_arm_id"] == "E-L1"',
+        '"selected_arm_id"] == "E-A1"',
+        '"generation_metrics_included"] is False',
+        '"final_generation_seeds_used"] == []',
+        '"screen_selection_artifacts_alone_authorize_scale_up": False',
+        '"supported_gpu_counts": [1, 2, 3, 4]',
+        '"planned_first_registered_gpu_count": 1',
+        '"reseed_after_model_initialization_each": True',
+    ):
+        assert fragment in code
+    compile(code, "stage-20-udlm-selection-bound-scale-up-code", "exec")
+
+    ordered_ids = [cell["id"] for cell in notebook["cells"]]
+    assert ordered_ids.index("stage-20-udlm-selection-bound-scale-up") == (
+        ordered_ids.index("stage-20-udlm-stream-sharding-code") + 1
+    )
+    assert ordered_ids.index("stage-20-udlm-selection-bound-scale-up-code") == (
+        ordered_ids.index("stage-20-udlm-selection-bound-scale-up") + 1
+    )
+    assert ordered_ids.index("stage19-report-note") == (
+        ordered_ids.index("stage-20-udlm-selection-bound-scale-up-code") + 1
+    )

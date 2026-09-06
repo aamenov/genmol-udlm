@@ -1607,7 +1607,38 @@ class DenovoReportTests(unittest.TestCase):
             ):
                 report.collect_report(runs)
 
-    def test_active_gpu_process_is_rejected_even_below_utilization_threshold(self):
+    def test_active_gpu_process_is_accepted_when_fully_recorded_and_safe(self):
+        with self._workspace() as directory:
+            runs = Path(directory) / "runs"
+            self._three_runs(runs)
+            for seed in range(3):
+                path = runs / f"seed_{seed}" / "summary.json"
+                document = json.loads(path.read_text(encoding="utf-8"))
+                launch_environment = document["environment"]["launch_environment"]
+                launch_snapshot = json.loads(
+                    launch_environment["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"]
+                )
+                launch_snapshot["policy"]["active_compute_processes_allowed"] = True
+                launch_environment["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"] = (
+                    json.dumps(launch_snapshot)
+                )
+                path.write_text(json.dumps(document), encoding="utf-8")
+            summary_path = runs / "seed_0" / "summary.json"
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            launch = summary["environment"]["launch_environment"]
+            snapshot = json.loads(launch["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"])
+            process = {"pid": 123, "process_name": "other", "used_memory_mib": 4}
+            snapshot["gpu_inventory_at_selection"][0]["compute_processes"] = [process]
+            snapshot["physical_gpu_at_final_uuid_probe"]["compute_processes"] = [process]
+            snapshot["physical_gpu_at_final_uuid_probe"]["utilization_percent"] = 9
+            launch["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"] = json.dumps(snapshot)
+            summary_path.write_text(json.dumps(summary), encoding="utf-8")
+
+            result = report.collect_report(runs)
+
+            self.assertEqual(result["seed_runs"][0]["seed"], 0)
+
+    def test_active_gpu_process_is_rejected_when_policy_forbids_it(self):
         with self._workspace() as directory:
             runs = Path(directory) / "runs"
             self._three_runs(runs)
@@ -1618,13 +1649,9 @@ class DenovoReportTests(unittest.TestCase):
             snapshot["physical_gpu_at_final_uuid_probe"]["compute_processes"] = [
                 {"pid": 123, "process_name": "other", "used_memory_mib": 4}
             ]
-            snapshot["physical_gpu_at_final_uuid_probe"]["utilization_percent"] = 14
             launch["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"] = json.dumps(snapshot)
             summary_path.write_text(json.dumps(summary), encoding="utf-8")
-            with self.assertRaisesRegex(
-                report.ReportValidationError,
-                "active compute processes",
-            ):
+            with self.assertRaisesRegex(report.ReportValidationError, "active compute"):
                 report.collect_report(runs)
 
     def test_gpu_utilization_equal_to_exclusive_threshold_is_rejected(self):

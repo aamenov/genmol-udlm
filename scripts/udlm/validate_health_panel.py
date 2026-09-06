@@ -32,6 +32,7 @@ HEALTH_PANEL_SEED = 1
 HEALTH_PANEL_MAX_UTILIZATION_PERCENT = 10
 HEALTH_PANEL_MIN_FREE_MEMORY_MIB = 30_000
 HEALTH_PANEL_ACTIVE_COMPUTE_PROCESSES_ALLOWED = True
+HEALTH_PANEL_SUPPORTED_GPU_COUNTS = (1, 2)
 EXPECTED_MDLM_CHECKPOINT_PATH = (
     PROJECT_ROOT / "outputs" / "paper_v1" / "checkpoints" / "50000.ckpt"
 )
@@ -47,11 +48,31 @@ class HealthPanelValidationError(ValueError):
     """Raised when retained artifacts do not prove the exact health panel."""
 
 
+def validate_health_gpu_count(value: object) -> int:
+    """Keep the historical health protocol at W=1 or W=2.
+
+    The shared pilot layer also supports later scale-up worlds, but widening
+    that generic execution primitive must not silently widen the already
+    frozen health experiment.
+    """
+
+    try:
+        gpu_count = launch_train_pilot.validate_gpu_count(value)
+    except ValueError as error:
+        raise HealthPanelValidationError(str(error)) from error
+    if gpu_count not in HEALTH_PANEL_SUPPORTED_GPU_COUNTS:
+        raise HealthPanelValidationError(
+            "health gpu-count must be one of "
+            f"{HEALTH_PANEL_SUPPORTED_GPU_COUNTS}; observed {gpu_count!r}"
+        )
+    return gpu_count
+
+
 def health_run_name(gpu_count: int, training_variant: str, source_revision: str) -> str:
     """Return the deterministic run name for one registered health arm."""
 
     try:
-        gpu_count = launch_train_pilot.validate_gpu_count(gpu_count)
+        gpu_count = validate_health_gpu_count(gpu_count)
         training_variant = launch_train_pilot.validate_training_variant(
             training_variant
         )
@@ -803,17 +824,9 @@ def validate_health_panel(
         terminal_expected.get("source_revision"), label="health source revision"
     )
     gpu_count = terminal_expected.get("world_size")
-    try:
-        gpu_count = launch_train_pilot.validate_gpu_count(gpu_count)
-    except ValueError as error:
-        raise HealthPanelValidationError(str(error)) from error
+    gpu_count = validate_health_gpu_count(gpu_count)
     if expected_gpu_count is not None:
-        try:
-            expected_gpu_count = launch_train_pilot.validate_gpu_count(
-                expected_gpu_count
-            )
-        except ValueError as error:
-            raise HealthPanelValidationError(str(error)) from error
+        expected_gpu_count = validate_health_gpu_count(expected_gpu_count)
         _exact(gpu_count, expected_gpu_count, label="health GPU count")
     if expected_source_revision is not None:
         expected_source_revision = _git_revision(

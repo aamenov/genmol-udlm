@@ -1,3 +1,4 @@
+import json
 import subprocess
 import threading
 from pathlib import Path
@@ -170,6 +171,38 @@ def test_checkpoint_snapshot_streams_hash_without_retaining_payload(
     assert payload == b""
     assert snapshot["size_bytes"] == len(checkpoint_bytes)
     assert snapshot["sha256"] == launcher.hashlib.sha256(checkpoint_bytes).hexdigest()
+
+
+def test_repository_snapshot_rejects_ancestor_swap_before_descriptor_walk(
+    monkeypatch, tmp_path
+):
+    repository_root = tmp_path / "worktree"
+    udlm_root = repository_root / "output" / "udlm"
+    inside = udlm_root / "R" / "receipt.json"
+    inside.parent.mkdir(parents=True)
+    inside.write_bytes(b"INSIDE\n")
+    outside = tmp_path / "outside"
+    outside_file = outside / "R" / "receipt.json"
+    outside_file.parent.mkdir(parents=True)
+    outside_file.write_bytes(b"OUTSIDE\n")
+    monkeypatch.setattr(launcher, "REPOSITORY_ROOT", repository_root)
+    original_normalize = launcher._repository_artifact_path
+
+    def swap_after_lexical_validation(*args, **kwargs):
+        candidate = original_normalize(*args, **kwargs)
+        udlm_root.rename(repository_root / "output" / "udlm-original")
+        udlm_root.symlink_to(outside, target_is_directory=True)
+        return candidate
+
+    monkeypatch.setattr(
+        launcher, "_repository_artifact_path", swap_after_lexical_validation
+    )
+    with pytest.raises(ValueError, match="direct real directory"):
+        launcher.stable_repository_artifact_snapshot(
+            inside,
+            suffix=".json",
+            label="ancestor-swap fixture",
+        )
 
 
 @pytest.mark.parametrize(
@@ -384,13 +417,75 @@ def _gpu(
     )
 
 
-def test_gpu_request_accepts_only_a_count_capped_at_two():
-    assert launcher.validate_gpu_count(1) == 1
-    assert launcher.validate_gpu_count(2) == 2
-    with pytest.raises(ValueError, match="1 or 2"):
-        launcher.validate_gpu_count(3)
-    with pytest.raises(ValueError, match="1 or 2"):
-        launcher.validate_gpu_count(True)
+def _selection_bound_scale_up_fixture(position, *, config_sha256=None):
+    variants = list(launcher.MATCHED_PANEL_VARIANT_ORDER)
+    arm_ids = ["R", "S", "E"]
+    if config_sha256 is None:
+        config_sha256 = f"{position + 1}" * 64
+
+    def json_reference(name):
+        return {
+            "root": "repository",
+            "relative_path": f"experiments/udlm/screens/{name}.json",
+            "sha256": "a" * 64,
+            "size_bytes": 123,
+            "schema_version": 1,
+            "canonical_sha256": "b" * 64,
+        }
+
+    return {
+        "schema_version": 1,
+        "registry": {
+            "relative_path": (
+                "experiments/udlm/protocols/"
+                "selection_bound_scale_up_registry_gpu4.json"
+            ),
+            "sha256": "c" * 64,
+            "size_bytes": 456,
+            "canonical_sha256": "d" * 64,
+            "schema_version": 1,
+        },
+        "screen_authority": {
+            "scheduler_evidence": json_reference("scheduler_evidence"),
+            "scheduler_selection": json_reference("scheduler_selection"),
+            "conditioning_evidence": json_reference("conditioning_evidence"),
+            "conditioning_selection": json_reference("conditioning_selection"),
+        },
+        "selected_design": {
+            "scheduler_arm_id": "E-L1",
+            "conditioning_arm_id": "E-A1",
+        },
+        "member": {
+            "arm_id": arm_ids[position],
+            "arm_order": arm_ids,
+            "position": position,
+            "training_variant": variants[position],
+            "training_variant_order": variants,
+            "registered_config": {
+                "root": "repository",
+                "relative_path": (
+                    "experiments/udlm/protocols/"
+                    f"selection_bound_scale_up_configs_gpu4/{arm_ids[position].lower()}.json"
+                ),
+                "sha256": "e" * 64,
+                "size_bytes": 789,
+                "canonical_sha256": config_sha256,
+            },
+            "registered_config_source_revision": "f" * 40,
+        },
+    }
+
+
+def test_gpu_request_accepts_only_a_count_capped_at_four():
+    assert [launcher.validate_gpu_count(value) for value in range(1, 5)] == [
+        1,
+        2,
+        3,
+        4,
+    ]
+    for invalid in (0, 5, True):
+        with pytest.raises(ValueError, match="from 1 through 4"):
+            launcher.validate_gpu_count(invalid)
 
     parsed = launcher._parse_args(
         [
@@ -430,6 +525,52 @@ def test_gpu_request_accepts_only_a_count_capped_at_two():
                 "--scratch",
                 "--genesis",
             ]
+        )
+
+
+def test_selection_bound_scale_up_is_exact_and_advances_one_member():
+    r_binding = _selection_bound_scale_up_fixture(0)
+    s_binding = _selection_bound_scale_up_fixture(1)
+
+    assert (
+        launcher.validate_selection_bound_scale_up(
+            r_binding,
+            expected_training_variant="udlm",
+            expected_position=0,
+            expected_world_size=4,
+            expected_resolved_config_sha256="1" * 64,
+        )
+        == r_binding
+    )
+    assert (
+        launcher._validate_selection_bound_scale_up_link(
+            s_binding,
+            r_binding,
+            current_training_variant="schedule_uniform",
+            current_world_size=4,
+        )
+        == s_binding
+    )
+
+    changed_authority = json.loads(json.dumps(s_binding))
+    changed_authority["selected_design"]["scheduler_arm_id"] = "E-L0"
+    with pytest.raises(ValueError, match="changes its common authority"):
+        launcher._validate_selection_bound_scale_up_link(
+            changed_authority,
+            r_binding,
+            current_training_variant="schedule_uniform",
+            current_world_size=4,
+        )
+
+    extra_key = json.loads(json.dumps(r_binding))
+    extra_key["member"]["unexpected"] = True
+    with pytest.raises(ValueError, match="keys differ"):
+        launcher.validate_selection_bound_scale_up(extra_key)
+
+    with pytest.raises(ValueError, match="registered/resolved config digest"):
+        launcher.validate_selection_bound_scale_up(
+            r_binding,
+            expected_resolved_config_sha256="0" * 64,
         )
 
 
@@ -673,7 +814,7 @@ def test_training_command_records_bounded_pilot_controls(monkeypatch, tmp_path):
     assert f"training.init_from_mdlm_checkpoint_sha256={'a' * 64}" in joined
     assert "training.udlm.exclude_special_tokens=true" in joined
     assert launcher.PILOT_EMPIRICAL_UNIFORM_MIX_OVERRIDE in command
-    with pytest.raises(ValueError, match="must be 1 or 2"):
+    with pytest.raises(ValueError, match="from 1 through 4"):
         launcher.build_training_command(
             gpu_count=True,
             run_dir=tmp_path / "pilot",
@@ -789,8 +930,8 @@ def test_child_command_sanitizes_python_and_binds_source_argv_config(
         launch_manifest_path=manifest_path,
         launch_manifest_sha256="c" * 64,
         expected_max_steps=10,
-        expected_world_size=2,
-        visible_uuids="GPU-one,GPU-two",
+        expected_world_size=4,
+        visible_uuids="GPU-one,GPU-two,GPU-three,GPU-four",
         seed=7,
     )
 
@@ -809,11 +950,11 @@ def test_child_command_sanitizes_python_and_binds_source_argv_config(
         checkpoint_path
     )
     assert environment["GENMOL_TRAIN_EXPECTED_MAX_STEPS"] == "10"
-    assert environment["GENMOL_TRAIN_EXPECTED_WORLD_SIZE"] == "2"
+    assert environment["GENMOL_TRAIN_EXPECTED_WORLD_SIZE"] == "4"
     assert environment["GENMOL_TRAIN_LAUNCH_MANIFEST_PATH"] == str(manifest_path)
     assert environment["GENMOL_TRAIN_EXPECTED_LAUNCH_MANIFEST_SHA256"] == "c" * 64
     assert environment["GENMOL_TRAIN_SELECTED_GPU_UUIDS_JSON"] == (
-        '["GPU-one","GPU-two"]'
+        '["GPU-one","GPU-two","GPU-three","GPU-four"]'
     )
     assert environment["PYTHONPATH"] == launcher.os.pathsep.join(
         [
@@ -840,6 +981,7 @@ def test_tmux_command_captures_both_pipeline_statuses_for_receipt(
     monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
     monkeypatch.setattr(launcher, "_python_executable", lambda: Path("/venv/python"))
     log_path = tmp_path / "output/logs/pilot.log"
+    launcher.reserve_log_path(log_path)
     summary_path = tmp_path / "output/udlm/pilot/training_summary.json"
     receipt_path = tmp_path / "output/udlm/pilot/pilot_exit_status.json"
     shell_command = launcher.build_tmux_shell_command(
@@ -852,7 +994,7 @@ def test_tmux_command_captures_both_pipeline_statuses_for_receipt(
         expected_argv_sha256="c" * 64,
         expected_summary_schema_version=launcher.TRAINING_SUMMARY_SCHEMA_VERSION,
         expected_max_steps=10,
-        expected_world_size=2,
+        expected_world_size=4,
         expected_final_checkpoint_path=(
             tmp_path / "output/udlm/pilot/checkpoints/10.ckpt"
         ),
@@ -860,7 +1002,9 @@ def test_tmux_command_captures_both_pipeline_statuses_for_receipt(
             tmp_path / "output/udlm/pilot/launch_manifest.json"
         ),
         expected_launch_manifest_sha256="d" * 64,
-        expected_selected_gpu_uuids_json='["GPU-one","GPU-two"]',
+        expected_selected_gpu_uuids_json=(
+            '["GPU-one","GPU-two","GPU-three","GPU-four"]'
+        ),
         expected_training_job_lock_path=(
             tmp_path / "output/udlm/.single_training_job.lock"
         ),
@@ -871,6 +1015,8 @@ def test_tmux_command_captures_both_pipeline_statuses_for_receipt(
     assert 'training_status="${pipeline_status[0]}"' in shell_command
     assert 'tee_status="${pipeline_status[1]}"' in shell_command
     assert "write_pilot_exit_status.py" in shell_command
+    assert "--safe-tee-log" in shell_command
+    assert "tee -a" not in shell_command
     assert str(receipt_path) in shell_command
     assert "--expected-launch-manifest-sha256" in shell_command
     assert "--expected-selected-gpu-uuids-json" in shell_command
@@ -1141,7 +1287,7 @@ def _predecessor_test_config(
         "training": {
             "ema": 0.9999,
             "pilot_fail_on_nonfinite_loss": True,
-            "reseed_after_model_initialization": False,
+            "reseed_after_model_initialization": (conditioning_variant == "film_adaln"),
             "udlm": {
                 "prior_variant": launcher.TRAINING_VARIANTS[training_variant][
                     "prior_variant"
@@ -1234,6 +1380,7 @@ def _write_successful_predecessor(
     summary_completed="2026-09-06T12:01:00+00:00",
     receipt_recorded="2026-09-06T12:02:00+00:00",
     conditioning_variant="additive",
+    selection_bound_scale_up=None,
 ):
     if lock_acquired is None:
         lock_acquired = manifest_created
@@ -1244,9 +1391,13 @@ def _write_successful_predecessor(
     runtime_path = run_dir / "runtime_config.json"
     summary_path = run_dir / "training_summary.json"
     checkpoint_path = run_dir / "checkpoints/10.ckpt"
+    log_path = repository_root / f"output/logs/{run_name}.log"
     lock_path = repository_root / "output/udlm/.single_training_job.lock"
     checkpoint_path.parent.mkdir()
     checkpoint_path.write_bytes(b"completed predecessor checkpoint\n")
+    (run_dir / "hydra").mkdir()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_bytes(b"")
     definition = launcher.TRAINING_VARIANTS[training_variant]
     position = launcher.MATCHED_PANEL_VARIANT_ORDER.index(training_variant)
     common = panel_spec["common_training_contract"]
@@ -1407,7 +1558,7 @@ def _write_successful_predecessor(
                 "after_exit_receipt_publication_for_completed_or_failed_pipeline"
             ),
         },
-        "log_path": str(repository_root / f"output/logs/{run_name}.log"),
+        "log_path": str(log_path),
         "log_reserved_exclusively_before_manifest": True,
         "checkpoint": common["initialization_checkpoint_path"],
         "checkpoint_sha256": common["initialization_checkpoint_sha256"],
@@ -1420,6 +1571,14 @@ def _write_successful_predecessor(
         "exclude_special_tokens": common["exclude_special_tokens"],
         "dry_run": False,
     }
+    if selection_bound_scale_up is not None:
+        manifest["selection_bound_scale_up"] = selection_bound_scale_up
+        manifest["output_directory_binding"] = (
+            launcher.build_output_directory_binding(
+                run_dir=run_dir,
+                log_path=log_path,
+            )
+        )
     manifest_path.write_text(
         launcher.json.dumps(manifest, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -1600,6 +1759,13 @@ def _write_successful_predecessor(
             "verified_mdlm_warm_start_report": warm_start_report,
         },
     }
+    if conditioning_variant == "film_adaln":
+        summary["startup"]["training_rng_policy"] = {
+            "policy": "reseed_all_training_rng_streams_after_model_and_warm_start",
+            "seed": common["seed"],
+            "purpose": "isolate_training_randomness_from_architecture_constructor_draws",
+            "applied_before_dataloader_and_trainer_construction": True,
+        }
     summary_path.write_text(
         launcher.json.dumps(summary, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -1962,6 +2128,64 @@ def test_predecessor_accepts_exact_film_parameter_schema(monkeypatch, tmp_path):
     )
 
     assert binding["state"] == "validated_successful_predecessor"
+
+
+def test_predecessor_chain_preserves_selection_bound_scale_up_authority(
+    monkeypatch, tmp_path
+):
+    repository_root = tmp_path / "worktree"
+    repository_root.mkdir()
+    monkeypatch.setattr(launcher, "REPOSITORY_ROOT", repository_root)
+    panel, panel_sha256 = _predecessor_test_panel(repository_root, gpu_count=4)
+    r_config = _predecessor_test_config(
+        repository_root,
+        "R_scale",
+        "udlm",
+        gpu_count=4,
+    )
+    r_scale_up = _selection_bound_scale_up_fixture(
+        0, config_sha256=launcher.canonical_json_sha256(r_config)
+    )
+    genesis = launcher.build_predecessor_receipt_binding(
+        training_variant="udlm",
+        explicit_genesis=True,
+        predecessor_receipt_path=None,
+        matched_panel_spec=panel,
+        matched_panel_spec_sha256=panel_sha256,
+        selection_bound_scale_up=r_scale_up,
+    )
+    receipt_path = _write_successful_predecessor(
+        repository_root,
+        run_name="R_scale",
+        training_variant="udlm",
+        panel_spec=panel,
+        panel_sha256=panel_sha256,
+        predecessor_binding=genesis,
+        selection_bound_scale_up=r_scale_up,
+    )
+    s_scale_up = _selection_bound_scale_up_fixture(1)
+
+    binding = launcher.build_predecessor_receipt_binding(
+        training_variant="schedule_uniform",
+        explicit_genesis=False,
+        predecessor_receipt_path=receipt_path,
+        matched_panel_spec=panel,
+        matched_panel_spec_sha256=panel_sha256,
+        selection_bound_scale_up=s_scale_up,
+    )
+
+    assert binding["state"] == "validated_successful_predecessor"
+    changed = json.loads(json.dumps(s_scale_up))
+    changed["screen_authority"]["scheduler_selection"]["sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="changes its common authority"):
+        launcher.build_predecessor_receipt_binding(
+            training_variant="schedule_uniform",
+            explicit_genesis=False,
+            predecessor_receipt_path=receipt_path,
+            matched_panel_spec=panel,
+            matched_panel_spec_sha256=panel_sha256,
+            selection_bound_scale_up=changed,
+        )
 
 
 @pytest.mark.parametrize(
@@ -3196,7 +3420,7 @@ def test_successor_receipt_must_strictly_predate_current_training_lock(
     tampered["chronology"]["predecessor_exit_receipt_recorded_at_utc"] = (
         tampered_receipt_time
     )
-    (repository_root / "output/logs").mkdir()
+    (repository_root / "output/logs").mkdir(exist_ok=True)
     monkeypatch.setattr(
         launcher,
         "probe_all_gpus",
@@ -3392,7 +3616,10 @@ def test_dry_run_is_nonmutating_and_never_probes_gpus_or_tmux(
     assert not (repository_root / "output").exists()
 
 
-def test_manifest_publication_and_log_reservation_are_exclusive(tmp_path):
+def test_manifest_publication_and_log_reservation_are_exclusive(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
     manifest_path = tmp_path / "run/launch_manifest.json"
     payload = b'{"complete":true}\n'
     digest = launcher._atomic_publish_bytes_exclusive(

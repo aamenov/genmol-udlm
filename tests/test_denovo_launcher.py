@@ -994,7 +994,7 @@ def test_selection_policy_schema_records_dynamic_full_inventory_semantics() -> N
         "max_utilization_percent": 10,
         "utilization_comparison": "strictly_less_than",
         "min_free_memory_mib": 30_000,
-        "active_compute_processes_allowed": False,
+        "active_compute_processes_allowed": True,
     }
     with pytest.raises(ValueError, match="must be 1 or 2"):
         launcher._selection_policy(
@@ -1004,7 +1004,7 @@ def test_selection_policy_schema_records_dynamic_full_inventory_semantics() -> N
         )
 
 
-def test_probe_gpu_parses_csv_and_rejects_compute_processes_under_policy() -> None:
+def test_probe_gpu_parses_csv_and_allows_fully_recorded_processes_under_policy() -> None:
     responses = [
         subprocess.CompletedProcess(
             [],
@@ -1033,15 +1033,15 @@ def test_probe_gpu_parses_csv_and_rejects_compute_processes_under_policy() -> No
             "used_memory_mib": 1500,
         },
     )
-    assert not launcher._eligible(
+    assert launcher._eligible(
         state,
-        max_utilization_percent=15,
+        max_utilization_percent=10,
         min_free_memory_mib=30_000,
     )
     assert state.rejection_reasons(
-        max_utilization_percent=15,
+        max_utilization_percent=10,
         min_free_memory_mib=30_000,
-    ) == ["1 active compute process(es) detected"]
+    ) == []
 
 
 @pytest.mark.parametrize(
@@ -1111,15 +1111,15 @@ def test_gpu_eligibility_enforces_free_memory_and_exclusive_utilization() -> Non
         )
 
 
-def test_final_probe_rechecks_policy_uuid_and_active_processes() -> None:
+def test_final_probe_rechecks_policy_uuid_and_allows_recorded_processes() -> None:
     candidate = _gpu()
-    reached_threshold = _gpu(utilization_percent=15)
+    reached_threshold = _gpu(utilization_percent=10)
     with mock.patch.object(
         launcher, "_probe_gpu", return_value=reached_threshold
     ) as probe:
         selected, reasons = launcher._recheck_gpu_for_launch(
             candidate,
-            max_utilization_percent=15,
+            max_utilization_percent=10,
             min_free_memory_mib=30_000,
         )
     assert selected is None
@@ -1127,6 +1127,7 @@ def test_final_probe_rechecks_policy_uuid_and_active_processes() -> None:
     probe.assert_called_once_with(candidate.uuid)
 
     shared_but_below_threshold = _gpu(
+        utilization_percent=9,
         processes=({"pid": 9, "process_name": "/other/python", "used_memory_mib": 20},)
     )
     with mock.patch.object(
@@ -1136,11 +1137,11 @@ def test_final_probe_rechecks_policy_uuid_and_active_processes() -> None:
     ):
         selected, reasons = launcher._recheck_gpu_for_launch(
             candidate,
-            max_utilization_percent=15,
+            max_utilization_percent=10,
             min_free_memory_mib=30_000,
         )
-    assert selected is None
-    assert any("active compute process" in reason for reason in reasons)
+    assert selected == shared_but_below_threshold
+    assert reasons == []
 
     with mock.patch.object(
         launcher,
@@ -1149,7 +1150,7 @@ def test_final_probe_rechecks_policy_uuid_and_active_processes() -> None:
     ):
         selected, reasons = launcher._recheck_gpu_for_launch(
             candidate,
-            max_utilization_percent=15,
+            max_utilization_percent=10,
             min_free_memory_mib=30_000,
         )
     assert selected is None

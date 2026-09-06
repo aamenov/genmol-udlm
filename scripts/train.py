@@ -19,11 +19,11 @@ import json
 import math
 import os
 import re
+import secrets
 import stat
 import struct
 import subprocess
 import sys
-import tempfile
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
@@ -153,11 +153,64 @@ def _in_repository_artifact_path(value, *, suffix, label):
     path = Path(os.path.abspath(os.fspath(value)))
     if (
         path == _REPOSITORY_ROOT
-        or _REPOSITORY_ROOT not in path.parents
+        or not path.is_relative_to(_REPOSITORY_ROOT)
         or path.suffix != suffix
     ):
         raise RuntimeError(f"pilot {label} must be an in-repository {suffix} file")
+    directory_fd, _normalized, _name = _open_direct_parent(
+        path,
+        label=f"pilot {label}",
+        create_missing=True,
+    )
+    os.close(directory_fd)
     return path
+
+
+def _open_direct_parent(path, *, label, create_missing):
+    """Open an absolute parent by descriptor without following symlinks."""
+
+    if type(create_missing) is not bool:
+        raise RuntimeError("create_missing must be boolean")
+    normalized = Path(os.path.abspath(os.fspath(path)))
+    if not normalized.is_absolute() or normalized == Path(normalized.anchor):
+        raise RuntimeError(f"{label} path must name a file below an absolute root")
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        directory_fd = os.open(normalized.anchor, flags)
+    except OSError as error:
+        raise RuntimeError(f"{label} root must be a direct real directory") from error
+    try:
+        for component in normalized.parent.parts[1:]:
+            try:
+                child_fd = os.open(component, flags, dir_fd=directory_fd)
+            except FileNotFoundError:
+                if not create_missing:
+                    raise RuntimeError(f"{label} parent is missing") from None
+                try:
+                    os.mkdir(component, mode=0o755, dir_fd=directory_fd)
+                except FileExistsError:
+                    pass
+                try:
+                    child_fd = os.open(component, flags, dir_fd=directory_fd)
+                except OSError as error:
+                    raise RuntimeError(
+                        f"{label} parent must be a direct real directory"
+                    ) from error
+            except OSError as error:
+                raise RuntimeError(
+                    f"{label} parent must be a direct real directory"
+                ) from error
+            os.close(directory_fd)
+            directory_fd = child_fd
+        return directory_fd, normalized, normalized.name
+    except BaseException:
+        os.close(directory_fd)
+        raise
 
 
 def _pilot_base_argv():
@@ -184,6 +237,12 @@ def _pilot_base_argv():
     if child_run_dir != base_run_dir:
         raise RuntimeError("pilot DDP child changed the Hydra run directory")
     return base_argv
+
+
+def _validated_pilot_world_size(value):
+    if type(value) is not int or value not in range(1, 5):
+        raise RuntimeError("GENMOL_TRAIN_EXPECTED_WORLD_SIZE must be from 1 through 4")
+    return value
 
 
 def _pilot_environment_contract():
@@ -240,6 +299,16 @@ def _pilot_environment_contract():
         != 4
     ):
         raise RuntimeError("pilot completion artifact paths must be distinct")
+    run_directory = summary_path.parent
+    if (
+        run_directory.parent != _REPOSITORY_ROOT / "output" / "udlm"
+        or runtime_path.parent != run_directory
+        or launch_manifest_path.parent != run_directory
+        or final_checkpoint_path.parent != run_directory / "checkpoints"
+    ):
+        raise RuntimeError(
+            "pilot completion artifacts must use one direct output/udlm run"
+        )
     integer_fields = {
         "summary_schema_version": (
             "GENMOL_TRAIN_EXPECTED_SUMMARY_SCHEMA_VERSION",
@@ -257,8 +326,9 @@ def _pilot_environment_contract():
         if value <= 0 or (exact_value is not None and value != exact_value):
             raise RuntimeError(f"{environment_name} has an invalid value")
         parsed_integers[output_name] = value
-    if parsed_integers["expected_world_size"] not in (1, 2):
-        raise RuntimeError("GENMOL_TRAIN_EXPECTED_WORLD_SIZE must be 1 or 2")
+    parsed_integers["expected_world_size"] = _validated_pilot_world_size(
+        parsed_integers["expected_world_size"]
+    )
     selected_gpu_uuids = _parse_selected_gpu_uuids(
         present["GENMOL_TRAIN_SELECTED_GPU_UUIDS_JSON"]
     )
@@ -359,24 +429,31 @@ def _stat_identity(value):
 
 
 def _stable_file_snapshot(path, *, capture_bytes=False):
-    """Hash one regular file while rejecting symlinks and path replacement."""
+    """Hash one file through a descriptor-walked, no-follow parent."""
 
-    path = Path(os.path.abspath(os.fspath(path)))
-    before_path = path.stat(follow_symlinks=False)
-    if not stat.S_ISREG(before_path.st_mode):
-        raise RuntimeError(f"pilot artifact is not a regular file: {path}")
-    flags = os.O_RDONLY
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
-    descriptor = os.open(path, flags)
+    directory_fd, normalized, name = _open_direct_parent(
+        path,
+        label="pilot artifact",
+        create_missing=False,
+    )
+    descriptor = None
     payload = bytearray() if capture_bytes else None
     digest = hashlib.sha256()
     try:
+        before_path = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if not stat.S_ISREG(before_path.st_mode):
+            raise RuntimeError(f"pilot artifact is not a regular file: {normalized}")
+        flags = (
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
+        descriptor = os.open(name, flags, dir_fd=directory_fd)
         before_descriptor = os.fstat(descriptor)
         if not stat.S_ISREG(before_descriptor.st_mode) or _stat_identity(
             before_descriptor
         ) != _stat_identity(before_path):
-            raise RuntimeError(f"pilot artifact changed before open: {path}")
+            raise RuntimeError(f"pilot artifact changed before open: {normalized}")
         while True:
             chunk = os.read(descriptor, 8 * 1024 * 1024)
             if not chunk:
@@ -385,9 +462,11 @@ def _stable_file_snapshot(path, *, capture_bytes=False):
             if payload is not None:
                 payload.extend(chunk)
         after_descriptor = os.fstat(descriptor)
+        after_path = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
     finally:
-        os.close(descriptor)
-    after_path = path.stat(follow_symlinks=False)
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(directory_fd)
     identities = {
         tuple(_stat_identity(value).items())
         for value in (
@@ -398,9 +477,9 @@ def _stable_file_snapshot(path, *, capture_bytes=False):
         )
     }
     if len(identities) != 1:
-        raise RuntimeError(f"pilot artifact changed while being hashed: {path}")
+        raise RuntimeError(f"pilot artifact changed while being hashed: {normalized}")
     snapshot = {
-        "path": str(path),
+        "path": str(normalized),
         **_stat_identity(after_path),
         "sha256": digest.hexdigest(),
         "stable_regular_file_verified": True,
@@ -430,6 +509,40 @@ def _validate_launch_manifest(path, *, expected_sha256, expected_selected_gpu_uu
         raise RuntimeError(
             "pilot launch manifest GPU count disagrees with its selected UUIDs"
         )
+    if "selection_bound_scale_up" in manifest:
+        selection_bound_scale_up = manifest["selection_bound_scale_up"]
+        from scripts.udlm.launch_train_pilot import (
+            validate_output_directory_binding,
+            validate_selection_bound_scale_up,
+        )
+
+        try:
+            validate_selection_bound_scale_up(
+                selection_bound_scale_up,
+                expected_training_variant=manifest.get("training_variant"),
+                expected_position=manifest.get("matched_panel_variant_position"),
+                expected_world_size=requested_gpu_count,
+                expected_resolved_config_sha256=manifest.get(
+                    "resolved_training_config_sha256"
+                ),
+            )
+            summary_path = manifest.get("training_summary_path")
+            log_path = manifest.get("log_path")
+            if not isinstance(summary_path, str) or not isinstance(log_path, str):
+                raise ValueError("scale-up output paths must be strings")
+            validate_output_directory_binding(
+                manifest.get("output_directory_binding"),
+                run_dir=Path(summary_path).parent,
+                log_path=Path(log_path),
+            )
+        except ValueError as error:
+            raise RuntimeError(
+                f"pilot launch manifest has invalid scale-up authority: {error}"
+            ) from error
+    elif "output_directory_binding" in manifest:
+        raise RuntimeError(
+            "pilot launch manifest has output binding without scale-up authority"
+        )
     return snapshot, manifest
 
 
@@ -449,42 +562,73 @@ def _launch_manifest_evidence():
 
 
 def _atomic_write_json_exclusive(path, value):
-    """Publish a complete JSON certificate exactly once."""
+    """Publish JSON once through a descriptor-walked, no-follow parent."""
 
-    path = Path(os.path.abspath(os.fspath(path)))
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if os.path.lexists(path):
-        raise FileExistsError(f"refusing to replace pilot training summary: {path}")
     encoded = (
         json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n"
     ).encode("utf-8")
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
+    directory_fd, normalized, name = _open_direct_parent(
+        path,
+        label="pilot JSON artifact",
+        create_missing=False,
     )
-    temporary = Path(temporary_name)
+    temporary_name = None
     try:
+        try:
+            os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            pass
+        else:
+            raise FileExistsError(
+                f"refusing to replace pilot JSON artifact: {normalized}"
+            )
+        descriptor = None
+        for _attempt in range(100):
+            candidate = f".{name}.{secrets.token_hex(16)}.tmp"
+            try:
+                descriptor = os.open(
+                    candidate,
+                    os.O_WRONLY
+                    | os.O_CREAT
+                    | os.O_EXCL
+                    | getattr(os, "O_CLOEXEC", 0)
+                    | getattr(os, "O_NOFOLLOW", 0),
+                    0o644,
+                    dir_fd=directory_fd,
+                )
+            except FileExistsError:
+                continue
+            temporary_name = candidate
+            break
+        if descriptor is None or temporary_name is None:  # pragma: no cover
+            raise RuntimeError("could not reserve temporary pilot JSON artifact")
         with os.fdopen(descriptor, "wb") as handle:
             os.fchmod(handle.fileno(), 0o644)
             handle.write(encoded)
             handle.flush()
             os.fsync(handle.fileno())
         try:
-            os.link(temporary, path)
+            os.link(
+                temporary_name,
+                name,
+                src_dir_fd=directory_fd,
+                dst_dir_fd=directory_fd,
+                follow_symlinks=False,
+            )
         except FileExistsError as error:
             raise FileExistsError(
-                f"refusing to replace pilot training summary: {path}"
+                f"refusing to replace pilot JSON artifact: {normalized}"
             ) from error
-        temporary.unlink()
-        directory_descriptor = os.open(path.parent, os.O_RDONLY)
-        try:
-            os.fsync(directory_descriptor)
-        finally:
-            os.close(directory_descriptor)
+        os.unlink(temporary_name, dir_fd=directory_fd)
+        temporary_name = None
+        os.fsync(directory_fd)
     finally:
-        if temporary.exists():
-            temporary.unlink()
+        if temporary_name is not None:
+            try:
+                os.unlink(temporary_name, dir_fd=directory_fd)
+            except FileNotFoundError:
+                pass
+        os.close(directory_fd)
 
 
 _PILOT_CONTRACT = _pilot_environment_contract()
@@ -830,6 +974,24 @@ def _registered_film_gradient_audit_contract():
     )
 
 
+def _has_optimization_screen_contract():
+    """Return whether this pilot carries the screen-only audit contract."""
+
+    if _PILOT_CONTRACT is None:
+        return False
+    manifest = _PILOT_CONTRACT.get("launch_manifest")
+    if manifest is None:
+        return False
+    if not isinstance(manifest, Mapping):
+        raise RuntimeError("pilot launch manifest must be an object")
+    screen = manifest.get("optimization_screen")
+    if screen is None:
+        return False
+    if not isinstance(screen, Mapping):
+        raise RuntimeError("optimization-screen launch contract must be an object")
+    return True
+
+
 def _runtime_conditioning_parameter_groups(pl_module):
     named_parameters = getattr(pl_module, "named_parameters", None)
     if not callable(named_parameters):
@@ -997,14 +1159,16 @@ def _pilot_callbacks(config):
     if config.trainer.get("detect_anomaly") is not True:
         raise RuntimeError("pilot config must enable backward anomaly detection")
     callbacks = [_PilotFiniteLossCallback()]
-    if _configured_conditioning_variant(config) == "film_adaln":
+    conditioning_variant = _configured_conditioning_variant(config)
+    if conditioning_variant == "film_adaln":
         if config.training.get("reseed_after_model_initialization") is not True:
-            raise RuntimeError(
-                "FiLM optimization screen requires post-initialization reseeding"
+            raise RuntimeError("FiLM pilot requires post-initialization reseeding")
+        if _has_optimization_screen_contract():
+            callbacks.append(
+                _FilmGradientActivationCallback(
+                    _registered_film_gradient_audit_contract()
+                )
             )
-        callbacks.append(
-            _FilmGradientActivationCallback(_registered_film_gradient_audit_contract())
-        )
     return callbacks
 
 
@@ -1375,14 +1539,14 @@ def _validate_and_record_pilot_config(config):
     if local_rank not in (None, "0"):
         return record
     runtime_path = _PILOT_CONTRACT["runtime_path"]
-    encoded = json.dumps(record, indent=2, sort_keys=True) + "\n"
+    encoded = (
+        json.dumps(record, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    ).encode("utf-8")
     try:
-        with runtime_path.open("x", encoding="utf-8") as handle:
-            handle.write(encoded)
-            handle.flush()
-            os.fsync(handle.fileno())
+        _atomic_write_json_exclusive(runtime_path, record)
     except FileExistsError:
-        if runtime_path.read_text(encoding="utf-8") != encoded:
+        _snapshot, retained = _stable_file_snapshot(runtime_path, capture_bytes=True)
+        if retained != encoded:
             raise RuntimeError(
                 "pilot runtime config record already exists with other data"
             )
@@ -2752,16 +2916,22 @@ def _write_pilot_training_summary(
         ]
     )
     configured_conditioning_variant = _configured_conditioning_variant(config)
-    if configured_conditioning_variant == "film_adaln":
+    requires_gradient_audit = (
+        configured_conditioning_variant == "film_adaln"
+        and _has_optimization_screen_contract()
+    )
+    if requires_gradient_audit:
         if len(film_callbacks) != 1:
             raise RuntimeError(
-                "FiLM pilot trainer must retain exactly one gradient-audit callback"
+                "FiLM optimization-screen trainer must retain exactly one "
+                "gradient-audit callback"
             )
         conditioning_gradient_audit = film_callbacks[0].completion_report()
     else:
         if film_callbacks:
             raise RuntimeError(
-                "non-FiLM pilot unexpectedly retained a gradient-audit callback"
+                "pilot without a FiLM optimization-screen contract unexpectedly "
+                "retained a gradient-audit callback"
             )
         conditioning_gradient_audit = None
     if not isinstance(preflight_record, Mapping):
@@ -2936,6 +3106,10 @@ def train(config):
     train_dataloader = None
     if _PILOT_CONTRACT is None:
         train_dataloader = get_dataloader(config)
+    else:
+        # Revalidate descriptor-bound scale-up output identities immediately
+        # before Lightning receives checkpoint and Hydra output paths.
+        _launch_manifest_evidence()
     trainer = hydra.utils.instantiate(
         config.trainer,
         default_root_dir=os.getcwd(),

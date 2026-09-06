@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -83,6 +84,22 @@ def test_cli_rejects_every_scientific_or_safety_tuning_knob(forbidden):
 def test_cli_rejects_non_registered_gpu_counts(value):
     with pytest.raises(SystemExit):
         launcher._parse_args(["--gpu-count", value])
+
+
+def test_main_rechecks_frozen_health_world_size_before_repository_access(monkeypatch):
+    monkeypatch.setattr(
+        launcher,
+        "_parse_args",
+        lambda _argv: SimpleNamespace(gpu_count=3, dry_run=True),
+    )
+    monkeypatch.setattr(
+        pilot,
+        "require_pushed_commit",
+        lambda: pytest.fail("invalid health world size must fail before Git access"),
+    )
+
+    with pytest.raises(ValueError, match="health gpu-count"):
+        launcher.main([])
 
 
 @pytest.mark.parametrize(

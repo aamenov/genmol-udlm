@@ -9,6 +9,7 @@ from omegaconf import OmegaConf
 
 from scripts import train as train_entrypoint
 from scripts.train import checkpoint_startup_mode
+from scripts.udlm import launch_train_pilot as pilot_launcher
 
 
 def _launch_manifest_fixture(tmp_path, selected_gpu_uuids):
@@ -250,6 +251,16 @@ def test_partial_pilot_environment_is_rejected(monkeypatch):
         train_entrypoint._pilot_environment_contract()
 
 
+def test_pilot_world_size_accepts_one_through_four_only():
+    assert [
+        train_entrypoint._validated_pilot_world_size(world_size)
+        for world_size in range(1, 5)
+    ] == [1, 2, 3, 4]
+    for invalid in (0, 5, True):
+        with pytest.raises(RuntimeError, match="from 1 through 4"):
+            train_entrypoint._validated_pilot_world_size(invalid)
+
+
 def test_pilot_launch_manifest_requires_exact_raw_hash_and_selected_uuids(tmp_path):
     selected_gpu_uuids = ["GPU-test-a", "GPU-test-b"]
     path, digest, snapshot = _launch_manifest_fixture(tmp_path, selected_gpu_uuids)
@@ -277,6 +288,63 @@ def test_pilot_launch_manifest_requires_exact_raw_hash_and_selected_uuids(tmp_pa
             expected_sha256=mutated_digest,
             expected_selected_gpu_uuids=selected_gpu_uuids,
         )
+
+
+def test_pilot_child_validates_optional_scale_up_manifest_authority(
+    tmp_path, monkeypatch
+):
+    path = tmp_path / "launch_manifest.json"
+    manifest = {
+        "cuda_visible_device_uuids": ["GPU-a", "GPU-b", "GPU-c", "GPU-d"],
+        "user_requested_gpu_count": 4,
+        "training_variant": "udlm_categorical",
+        "matched_panel_variant_position": 2,
+        "resolved_training_config_sha256": "a" * 64,
+        "selection_bound_scale_up": {"opaque_until_strict_validator": True},
+        "training_summary_path": str(tmp_path / "training_summary.json"),
+        "log_path": str(tmp_path / "training.log"),
+        "output_directory_binding": {"opaque_until_strict_validator": True},
+    }
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    observed = []
+    observed_output = []
+
+    def validate(value, **expectations):
+        observed.append((value, expectations))
+        return value
+
+    monkeypatch.setattr(pilot_launcher, "validate_selection_bound_scale_up", validate)
+    monkeypatch.setattr(
+        pilot_launcher,
+        "validate_output_directory_binding",
+        lambda value, **expectations: observed_output.append((value, expectations)),
+    )
+    train_entrypoint._validate_launch_manifest(
+        path,
+        expected_sha256=train_entrypoint.hashlib.sha256(path.read_bytes()).hexdigest(),
+        expected_selected_gpu_uuids=manifest["cuda_visible_device_uuids"],
+    )
+
+    assert observed == [
+        (
+            manifest["selection_bound_scale_up"],
+            {
+                "expected_training_variant": "udlm_categorical",
+                "expected_position": 2,
+                "expected_world_size": 4,
+                "expected_resolved_config_sha256": "a" * 64,
+            },
+        )
+    ]
+    assert observed_output == [
+        (
+            manifest["output_directory_binding"],
+            {
+                "run_dir": tmp_path,
+                "log_path": tmp_path / "training.log",
+            },
+        )
+    ]
 
 
 def test_pilot_selected_uuid_contract_must_equal_actual_cuda_exposure(monkeypatch):
@@ -924,6 +992,33 @@ def test_film_gradient_audit_binds_topology_lr_transition_and_staged_gradients(
         ]
         is True
     )
+
+
+def test_non_screen_film_pilot_omits_screen_only_gradient_callback(monkeypatch):
+    monkeypatch.setattr(
+        train_entrypoint,
+        "_PILOT_CONTRACT",
+        {"launch_manifest": {}},
+    )
+    config = OmegaConf.create(
+        {
+            "training": {
+                "pilot_fail_on_nonfinite_loss": True,
+                "reseed_after_model_initialization": True,
+                "udlm": {"conditioning_variant": "film_adaln"},
+            },
+            "trainer": {"detect_anomaly": True},
+        }
+    )
+
+    callbacks = train_entrypoint._pilot_callbacks(config)
+
+    assert [type(callback) for callback in callbacks] == [
+        train_entrypoint._PilotFiniteLossCallback
+    ]
+    config.training.reseed_after_model_initialization = False
+    with pytest.raises(RuntimeError, match="FiLM pilot requires"):
+        train_entrypoint._pilot_callbacks(config)
 
 
 def test_film_gradient_audit_rejects_a_dead_timestep_path_on_third_backward():

@@ -28,7 +28,9 @@ from scripts.udlm.validate_health_panel import (
     HEALTH_PANEL_MIN_FREE_MEMORY_MIB,
     HEALTH_PANEL_NUM_WORKERS,
     HEALTH_PANEL_SEED,
+    HEALTH_PANEL_SUPPORTED_GPU_COUNTS,
     health_run_name,
+    validate_health_gpu_count,
     validate_health_panel,
 )
 
@@ -43,7 +45,7 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--gpu-count",
         type=int,
-        choices=(1, 2),
+        choices=HEALTH_PANEL_SUPPORTED_GPU_COUNTS,
         required=True,
         help="User-selected number of dynamically chosen idle GPUs.",
     )
@@ -193,7 +195,7 @@ def _pilot_argv(
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
-    gpu_count = launch_train_pilot.validate_gpu_count(args.gpu_count)
+    gpu_count = validate_health_gpu_count(args.gpu_count)
     source_revision = launch_train_pilot.require_pushed_commit()
     paths = _run_paths(
         gpu_count=gpu_count,

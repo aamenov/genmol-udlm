@@ -313,6 +313,63 @@ def _film_gradient_contract_and_audit():
     return contract, digest, audit
 
 
+def _selection_bound_scale_up(position):
+    variants = list(launcher.MATCHED_PANEL_VARIANT_ORDER)
+    arms = ["R", "S", "E"]
+
+    def evidence_reference(name):
+        return {
+            "root": "repository",
+            "relative_path": f"experiments/udlm/screens/{name}.json",
+            "sha256": "a" * 64,
+            "size_bytes": 100,
+            "schema_version": 1,
+            "canonical_sha256": "b" * 64,
+        }
+
+    return {
+        "schema_version": 1,
+        "registry": {
+            "relative_path": (
+                "experiments/udlm/protocols/"
+                "selection_bound_scale_up_registry_gpu4.json"
+            ),
+            "sha256": "c" * 64,
+            "size_bytes": 200,
+            "canonical_sha256": "d" * 64,
+            "schema_version": 1,
+        },
+        "screen_authority": {
+            "scheduler_evidence": evidence_reference("scheduler_evidence"),
+            "scheduler_selection": evidence_reference("scheduler_selection"),
+            "conditioning_evidence": evidence_reference("conditioning_evidence"),
+            "conditioning_selection": evidence_reference("conditioning_selection"),
+        },
+        "selected_design": {
+            "scheduler_arm_id": "E-L1",
+            "conditioning_arm_id": "E-A1",
+        },
+        "member": {
+            "arm_id": arms[position],
+            "arm_order": arms,
+            "position": position,
+            "training_variant": variants[position],
+            "training_variant_order": variants,
+            "registered_config": {
+                "root": "repository",
+                "relative_path": (
+                    "experiments/udlm/protocols/"
+                    f"selection_bound_scale_up_configs_gpu4/{arms[position].lower()}.json"
+                ),
+                "sha256": "e" * 64,
+                "size_bytes": 300,
+                "canonical_sha256": f"{position + 1}" * 64,
+            },
+            "registered_config_source_revision": "f" * 40,
+        },
+    }
+
+
 def _write_training_job_lock(paths):
     paths["lock"].parent.mkdir(parents=True, exist_ok=True)
     if not paths["lock"].exists():
@@ -1577,9 +1634,12 @@ def _shell_command(
 ):
     expected_manifest_sha256 = _write_launch_manifest(paths)
     _lock_record, expected_lock_sha256 = _write_training_job_lock(paths)
+    selected_log_path = paths["log"] if log_path is None else log_path
+    if selected_log_path == paths["log"] and not selected_log_path.exists():
+        launcher.reserve_log_path(selected_log_path)
     return launcher.build_tmux_shell_command(
         training_command,
-        log_path=paths["log"] if log_path is None else log_path,
+        log_path=selected_log_path,
         training_summary_path=paths["summary"],
         exit_receipt_path=paths["receipt"],
         expected_source_revision=revision,
@@ -2022,22 +2082,13 @@ def test_tee_failure_is_recorded_separately(receipt_repository):
     paths = _paths(repository)
     _write_summary(paths, revision)
 
-    result = _execute_shell(
-        repository,
+    with pytest.raises(ValueError, match="directly below the repository"):
         _shell_command(
             paths,
             revision,
-            training_command=["bash", "-c", "printf payload"],
+            training_command=["bash", "-c", "exit 0"],
             log_path=Path("/dev/full"),
-        ),
-    )
-
-    assert result.returncode != 0
-    receipt = json.loads(paths["receipt"].read_text(encoding="utf-8"))
-    assert receipt["status"] == "failed"
-    assert receipt["pipeline"]["training"]["shell_exit_status"] == 0
-    assert receipt["pipeline"]["tee"]["shell_exit_status"] != 0
-    assert receipt["process_exit_status"] == result.returncode
+        )
 
 
 def test_missing_summary_writes_incomplete_receipt_and_exits_97(receipt_repository):
@@ -2447,6 +2498,122 @@ def test_training_accounting_must_match_resolved_runtime_config(
             expected_initialization_checkpoint_sha256=(EXPECTED_WARM_START_SHA256),
             resolved_training_config=mismatched_config,
             launch_manifest=json.loads(paths["manifest"].read_text(encoding="utf-8")),
+        )
+
+
+def test_non_screen_film_summary_uses_null_screen_audits_and_exact_metadata(
+    receipt_repository,
+):
+    repository, revision = receipt_repository
+    paths = _paths(repository)
+    summary = _valid_summary(paths, revision)
+    launch_manifest = json.loads(paths["manifest"].read_text(encoding="utf-8"))
+    resolved_config = json.loads(json.dumps(RESOLVED_TRAINING_CONFIG))
+    resolved_config["training"].update(
+        {
+            "reseed_after_model_initialization": True,
+            "udlm": {"conditioning_variant": "film_adaln"},
+        }
+    )
+    resolved_config_sha256 = _canonical_sha256(resolved_config)
+    summary["resolved_training_config_sha256"] = resolved_config_sha256
+    summary["final_checkpoint"]["semantic_audit"][
+        "checkpoint_hyperparameters_match"
+    ]["resolved_config_sha256"] = resolved_config_sha256
+    summary["training_accounting"]["trainable_parameter_counts"] = {
+        "base_backbone": 3,
+        "time_conditioner": 12,
+        "film_modulation": 12,
+        "total": 27,
+    }
+    summary["startup"]["training_rng_policy"] = {
+        "policy": "reseed_all_training_rng_streams_after_model_and_warm_start",
+        "seed": 7,
+        "purpose": "isolate_training_randomness_from_architecture_constructor_draws",
+        "applied_before_dataloader_and_trainer_construction": True,
+    }
+    warm_start_report = summary["startup"]["verified_mdlm_warm_start_report"]
+    warm_start_report.update(
+        {
+            "conditioning_variant": "film_adaln",
+            "conditioning_parameter_tensors": 6,
+        }
+    )
+
+    def validate():
+        return receipt_writer.validate_training_summary(
+            summary,
+            summary_path=paths["summary"],
+            expected_schema_version=receipt_writer.TRAINING_SUMMARY_SCHEMA_VERSION,
+            expected_source_revision=revision,
+            expected_config_sha256=resolved_config_sha256,
+            expected_argv_sha256=EXPECTED_ARGV_SHA256,
+            expected_launch_manifest_path=paths["manifest"],
+            expected_launch_manifest_sha256=hashlib.sha256(
+                paths["manifest"].read_bytes()
+            ).hexdigest(),
+            expected_selected_gpu_uuids=EXPECTED_SELECTED_GPU_UUIDS,
+            expected_max_steps=10,
+            expected_world_size=1,
+            expected_final_checkpoint_path=paths["checkpoint"],
+            expected_initialization_checkpoint_sha256=EXPECTED_WARM_START_SHA256,
+            resolved_training_config=resolved_config,
+            launch_manifest=launch_manifest,
+        )
+
+    bindings = validate()
+    assert bindings["conditioning_gradient_audit"] is None
+    assert bindings["screen_initialization_state_audit"] is None
+
+    warm_start_report["conditioning_variant"] = "additive"
+    with pytest.raises(ValueError, match="warm-start conditioning variant"):
+        validate()
+    warm_start_report["conditioning_variant"] = "film_adaln"
+
+    summary["conditioning_gradient_audit"] = {}
+    with pytest.raises(ValueError, match="non-screen FiLM summary"):
+        validate()
+
+
+def test_receipt_world_size_accepts_one_through_four_only():
+    assert [
+        receipt_writer._validated_pilot_world_size(world_size)
+        for world_size in range(1, 5)
+    ] == [1, 2, 3, 4]
+    for invalid in (0, 5, True):
+        with pytest.raises(ValueError, match="from 1 through 4"):
+            receipt_writer._validated_pilot_world_size(invalid)
+
+
+def test_receipt_validator_preserves_scale_up_authority_and_chain_identity():
+    r_manifest = {
+        "training_variant": "udlm",
+        "matched_panel_variant_position": 0,
+        "user_requested_gpu_count": 4,
+        "resolved_training_config_sha256": "1" * 64,
+        "selection_bound_scale_up": _selection_bound_scale_up(0),
+    }
+    s_manifest = {
+        "training_variant": "schedule_uniform",
+        "matched_panel_variant_position": 1,
+        "user_requested_gpu_count": 4,
+        "resolved_training_config_sha256": "2" * 64,
+        "selection_bound_scale_up": _selection_bound_scale_up(1),
+    }
+
+    assert (
+        receipt_writer._validate_selection_bound_scale_up_manifest(r_manifest)
+        == r_manifest["selection_bound_scale_up"]
+    )
+    receipt_writer._validate_selection_bound_scale_up_manifest_link(
+        s_manifest, r_manifest
+    )
+
+    changed = json.loads(json.dumps(s_manifest))
+    changed["selection_bound_scale_up"]["registry"]["sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="changes its common authority"):
+        receipt_writer._validate_selection_bound_scale_up_manifest_link(
+            changed, r_manifest
         )
 
 

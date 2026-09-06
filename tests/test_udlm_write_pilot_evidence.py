@@ -49,6 +49,32 @@ def _live_snapshot(path: Path) -> dict[str, Any]:
     return writer.read_stable_regular_file(path, label=path.name).snapshot()
 
 
+def test_stable_reader_rejects_ancestor_swap_before_descriptor_walk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repository = tmp_path / "repository"
+    udlm_root = repository / "output" / "udlm"
+    inside = udlm_root / "run" / "receipt.json"
+    inside.parent.mkdir(parents=True)
+    inside.write_bytes(b"INSIDE\n")
+    outside = tmp_path / "outside"
+    outside_file = outside / "run" / "receipt.json"
+    outside_file.parent.mkdir(parents=True)
+    outside_file.write_bytes(b"OUTSIDE\n")
+    monkeypatch.setattr(writer, "REPOSITORY_ROOT", repository)
+    original_validate = writer._absolute_in_repository
+
+    def swap_after_lexical_validation(path: Path, *, label: str) -> Path:
+        candidate = original_validate(path, label=label)
+        udlm_root.rename(repository / "output" / "udlm-original")
+        udlm_root.symlink_to(outside, target_is_directory=True)
+        return candidate
+
+    monkeypatch.setattr(writer, "_absolute_in_repository", swap_after_lexical_validation)
+    with pytest.raises(writer.PilotEvidenceError, match="unavailable"):
+        writer.read_stable_regular_file(inside, label="ancestor-swap fixture")
+
+
 def _successful_receipt(root: Path, checkpoint: dict[str, Any]) -> dict[str, Any]:
     run_root = root / "output" / "udlm" / "training-r"
     summary_path = run_root / "training_summary.json"
@@ -428,6 +454,18 @@ def test_public_training_receipt_validator_returns_timestamp_and_inputs(
     ]
 
 
+def test_training_receipt_world_size_accepts_one_through_four_only() -> None:
+    assert [writer._validated_pilot_world_size(value) for value in range(1, 5)] == [
+        1,
+        2,
+        3,
+        4,
+    ]
+    for invalid in (0, 5, True):
+        with pytest.raises(writer.PilotEvidenceError, match="one through four"):
+            writer._validated_pilot_world_size(invalid)
+
+
 def test_accepts_checkpoint_inside_containing_project(
     harness: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -514,6 +552,35 @@ def test_rejects_non_successful_or_non_schema5_receipt(
 
     assert not harness.output.exists()
     assert not harness.worker_calls
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        lambda receipt: receipt.__setitem__("process_exit_status", False),
+        lambda receipt: receipt["pipeline"].__setitem__(
+            "pipefail_shell_exit_status", False
+        ),
+        lambda receipt: receipt["pipeline"]["training"].__setitem__(
+            "shell_exit_status", False
+        ),
+        lambda receipt: receipt["pipeline"]["tee"].__setitem__("succeeded", 1),
+        lambda receipt: receipt["source_at_receipt"].__setitem__("verified", 1),
+    ),
+)
+def test_rejects_boolean_integer_smuggling_in_success_receipt(
+    harness: Harness, mutation
+) -> None:
+    mutation(harness.receipt)
+    harness.receipt_path.write_bytes(_bytes(harness.receipt))
+
+    with pytest.raises(writer.PilotEvidenceError):
+        harness.collect()
+
+
+def test_strict_json_rejects_overflow_float_exponents() -> None:
+    with pytest.raises(writer.PilotEvidenceError, match="non-finite JSON number"):
+        writer.strict_json_loads(b'{"value":1e999}', label="overflow fixture")
 
 
 def test_rejects_receipt_checkpoint_or_chronology_mismatch(harness: Harness) -> None:

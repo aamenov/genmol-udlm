@@ -57,7 +57,10 @@ def test_verified_checkpoint_file_detects_pathname_replacement(tmp_path):
     torch.save({"value": torch.tensor([2])}, replacement_path)
     expected_sha256 = _sha256(checkpoint_path)
 
-    with pytest.raises(RuntimeError, match="changed during deserialization"):
+    with pytest.raises(
+        RuntimeError,
+        match=r"changed during (?:checkpoint )?deserialization",
+    ):
         with verified_checkpoint_file(
             checkpoint_path,
             expected_sha256=expected_sha256,

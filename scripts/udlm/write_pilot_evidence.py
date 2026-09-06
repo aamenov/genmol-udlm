@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import stat
@@ -192,6 +193,12 @@ def _integer(value: object, label: str, *, minimum: int = 0) -> int:
     return value
 
 
+def _validated_pilot_world_size(value: object) -> int:
+    if type(value) is not int or value not in range(1, 5):
+        raise PilotEvidenceError("receipt world_size must be from one through four")
+    return value
+
+
 def _sha256(value: object, label: str) -> str:
     if not isinstance(value, str) or HEX_SHA256.fullmatch(value) is None:
         raise PilotEvidenceError(f"{label} must be 64 lowercase hexadecimal digits")
@@ -231,6 +238,13 @@ def _reject_constant(value: str) -> None:
     raise PilotEvidenceError(f"non-finite JSON constant is forbidden: {value}")
 
 
+def _finite_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise PilotEvidenceError(f"non-finite JSON number is forbidden: {value}")
+    return parsed
+
+
 def strict_json_loads(payload: bytes, *, label: str) -> Any:
     """Decode strict UTF-8 JSON without duplicate keys or nonfinite constants."""
 
@@ -243,6 +257,7 @@ def strict_json_loads(payload: bytes, *, label: str) -> Any:
             text,
             object_pairs_hook=_strict_pairs,
             parse_constant=_reject_constant,
+            parse_float=_finite_float,
         )
     except PilotEvidenceError:
         raise
@@ -262,12 +277,47 @@ def canonical_json_sha256(value: object) -> str:
 
 
 def _absolute_in_repository(path: Path, *, label: str) -> Path:
-    root = REPOSITORY_ROOT.resolve(strict=True)
+    root = Path(os.path.abspath(os.fspath(REPOSITORY_ROOT)))
     candidate = path if path.is_absolute() else root / path
     candidate = Path(os.path.abspath(candidate))
-    if candidate == root or root not in candidate.parents:
+    if candidate == root or not candidate.is_relative_to(root):
         raise PilotEvidenceError(f"{label} must remain inside the repository")
     return candidate
+
+
+def _open_direct_scoped_parent(
+    path: Path, *, scope_root: Path, label: str
+) -> tuple[int, Path, str]:
+    """Open an artifact parent component-by-component without symlink traversal."""
+
+    normalized = Path(os.path.abspath(os.fspath(path)))
+    normalized_scope = Path(os.path.abspath(os.fspath(scope_root)))
+    if normalized == normalized_scope or not normalized.is_relative_to(normalized_scope):
+        raise PilotEvidenceError(f"{label} must remain inside its reviewed scope")
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        directory_fd = os.open(normalized.anchor, flags)
+    except OSError as error:  # pragma: no cover - system root invariant
+        raise PilotEvidenceError(f"cannot open filesystem root for {label}") from error
+    try:
+        for component in normalized.parent.parts[1:]:
+            try:
+                child_fd = os.open(component, flags, dir_fd=directory_fd)
+            except OSError as error:
+                raise PilotEvidenceError(
+                    f"{label} parent must be an existing direct real directory"
+                ) from error
+            os.close(directory_fd)
+            directory_fd = child_fd
+        return directory_fd, normalized, normalized.name
+    except BaseException:
+        os.close(directory_fd)
+        raise
 
 
 def _existing_directory(path: Path, *, label: str) -> Path:
@@ -297,20 +347,28 @@ def read_stable_regular_file(
         if project_scope
         else _absolute_in_repository(path, label=label)
     )
+    scope_root = _project_root() if project_scope else REPOSITORY_ROOT
     try:
-        resolved = candidate.resolve(strict=True)
-        path_before = candidate.stat(follow_symlinks=False)
-    except OSError as error:
+        directory_fd, candidate, name = _open_direct_scoped_parent(
+            candidate,
+            scope_root=scope_root,
+            label=label,
+        )
+        path_before = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+    except (OSError, PilotEvidenceError) as error:
         raise PilotEvidenceError(f"{label} is unavailable: {candidate}") from error
-    if resolved != candidate:
-        raise PilotEvidenceError(f"{label} must not traverse a symlink")
+    if stat.S_ISLNK(path_before.st_mode):
+        os.close(directory_fd)
+        raise PilotEvidenceError(f"{label} must not be a symlink")
     if not stat.S_ISREG(path_before.st_mode):
+        os.close(directory_fd)
         raise PilotEvidenceError(f"{label} is not a regular file")
 
     flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
-        descriptor = os.open(candidate, flags)
+        descriptor = os.open(name, flags, dir_fd=directory_fd)
     except OSError as error:
+        os.close(directory_fd)
         raise PilotEvidenceError(f"cannot safely open {label}: {candidate}") from error
     try:
         before = os.fstat(descriptor)
@@ -344,13 +402,10 @@ def read_stable_regular_file(
             if chunks is not None:
                 chunks.append(chunk)
         after = os.fstat(descriptor)
+        path_after = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
     finally:
         os.close(descriptor)
-
-    try:
-        path_after = candidate.stat(follow_symlinks=False)
-    except OSError as error:
-        raise PilotEvidenceError(f"{label} disappeared while being read") from error
+        os.close(directory_fd)
     for observed in (after, path_after):
         observed_identity = (
             int(observed.st_dev),
@@ -363,6 +418,33 @@ def read_stable_regular_file(
         )
         if observed_identity != identity:
             raise PilotEvidenceError(f"{label} changed while being read")
+    try:
+        current_directory_fd, _current, current_name = _open_direct_scoped_parent(
+            candidate,
+            scope_root=scope_root,
+            label=label,
+        )
+        try:
+            current_path = os.stat(
+                current_name,
+                dir_fd=current_directory_fd,
+                follow_symlinks=False,
+            )
+        finally:
+            os.close(current_directory_fd)
+    except (OSError, PilotEvidenceError) as error:
+        raise PilotEvidenceError(f"{label} path changed while being read") from error
+    current_identity = (
+        int(current_path.st_dev),
+        int(current_path.st_ino),
+        int(current_path.st_mode),
+        int(current_path.st_nlink),
+        int(current_path.st_size),
+        int(current_path.st_mtime_ns),
+        int(current_path.st_ctime_ns),
+    )
+    if current_identity != identity:
+        raise PilotEvidenceError(f"{label} path changed while being read")
     if identity[4] < 1 and not allow_empty:
         raise PilotEvidenceError(f"{label} is empty")
     payload = None if chunks is None else b"".join(chunks)
@@ -444,7 +526,11 @@ def _validate_pipeline(value: object) -> None:
         {"training", "tee", "pipefail_shell_exit_status"},
         "training receipt pipeline",
     )
-    if pipeline["pipefail_shell_exit_status"] != 0:
+    if _integer(
+        pipeline["pipefail_shell_exit_status"],
+        "training receipt pipeline pipefail status",
+        minimum=0,
+    ) != 0:
         raise PilotEvidenceError("training receipt pipeline is not successful")
     expected = {
         "shell_exit_status": 0,
@@ -456,7 +542,7 @@ def _validate_pipeline(value: object) -> None:
     for name in ("training", "tee"):
         component = _mapping(pipeline.get(name), f"training receipt pipeline {name}")
         _exact_keys(component, _PIPELINE_COMPONENT_FIELDS, f"pipeline {name}")
-        if dict(component) != expected:
+        if canonical_json_sha256(dict(component)) != canonical_json_sha256(expected):
             raise PilotEvidenceError(
                 f"training receipt pipeline {name} is not successful"
             )
@@ -469,6 +555,10 @@ def _validate_snapshot(value: object, *, label: str) -> Mapping[str, Any]:
         raise PilotEvidenceError(f"{label} was not verified as a stable regular file")
     _sha256(snapshot.get("sha256"), f"{label} digest")
     _integer(snapshot.get("size_bytes"), f"{label} size", minimum=1)
+    for field in ("device", "inode", "mtime_ns", "ctime_ns"):
+        _integer(snapshot.get(field), f"{label} {field}", minimum=0)
+    for field in ("mode", "link_count"):
+        _integer(snapshot.get(field), f"{label} {field}", minimum=1)
     return snapshot
 
 
@@ -476,7 +566,9 @@ def _require_live_snapshot(
     value: object, artifact: StableArtifact, *, label: str
 ) -> Mapping[str, Any]:
     claim = _validate_snapshot(value, label=label)
-    if any(claim.get(key) != observed for key, observed in artifact.snapshot().items()):
+    if canonical_json_sha256(dict(claim)) != canonical_json_sha256(
+        artifact.snapshot()
+    ):
         raise PilotEvidenceError(f"{label} differs from the live stable file")
     return claim
 
@@ -504,10 +596,8 @@ def _production_training_artifact_validator(
     )
     if parsed_manifest != dict(manifest):
         raise PilotEvidenceError("launch-manifest validator changed retained content")
-    receipt_writer._require_exact_keys(  # noqa: SLF001
-        parsed_manifest,
-        receipt_writer._PILOT_LAUNCH_MANIFEST_KEYS,  # noqa: SLF001
-        label="pilot launch manifest",
+    receipt_writer._validate_pilot_launch_manifest_keys(  # noqa: SLF001
+        parsed_manifest, label="pilot launch manifest"
     )
     if parsed_manifest.get("launch_manifest_schema_version") != 2:
         raise PilotEvidenceError("pilot launch manifest is not schema 2")
@@ -571,11 +661,19 @@ def validate_successful_training_receipt(
     """Validate the exact successful schema-5 shape and benchmark checkpoint join."""
 
     _exact_keys(receipt, _RECEIPT_FIELDS, "training exit receipt")
+    schema_version = _integer(
+        receipt.get("schema_version"), "training exit receipt schema", minimum=1
+    )
+    process_exit_status = _integer(
+        receipt.get("process_exit_status"),
+        "training exit receipt process status",
+        minimum=0,
+    )
     if (
-        receipt.get("schema_version") != EXIT_RECEIPT_SCHEMA_VERSION
+        schema_version != EXIT_RECEIPT_SCHEMA_VERSION
         or receipt.get("status") != "completed"
         or receipt.get("overall_status") != "completed"
-        or receipt.get("process_exit_status") != 0
+        or process_exit_status != 0
     ):
         raise PilotEvidenceError(
             "training exit receipt is not a successful schema-5 receipt"
@@ -600,10 +698,11 @@ def validate_successful_training_receipt(
 
     expected = _mapping(receipt.get("expected_contract"), "receipt expected contract")
     _exact_keys(expected, _EXPECTED_CONTRACT_FIELDS, "receipt expected contract")
-    if (
-        expected.get("training_summary_schema_version")
-        != TRAINING_SUMMARY_SCHEMA_VERSION
-    ):
+    if _integer(
+        expected.get("training_summary_schema_version"),
+        "receipt training-summary schema",
+        minimum=1,
+    ) != TRAINING_SUMMARY_SCHEMA_VERSION:
         raise PilotEvidenceError(
             "receipt expects an unsupported training-summary schema"
         )
@@ -616,9 +715,7 @@ def validate_successful_training_receipt(
     ):
         _sha256(expected.get(field), f"receipt {field}")
     _integer(expected.get("max_steps"), "receipt max_steps", minimum=1)
-    world_size = _integer(expected.get("world_size"), "receipt world_size", minimum=1)
-    if world_size not in (1, 2):
-        raise PilotEvidenceError("receipt world_size must be one or two")
+    world_size = _validated_pilot_world_size(expected.get("world_size"))
     initialization_sha = expected.get("initialization_checkpoint_sha256")
     if initialization_sha is not None:
         _sha256(initialization_sha, "receipt initialization checkpoint digest")
@@ -643,7 +740,7 @@ def validate_successful_training_receipt(
         "output_directory_excluded_from_cleanliness_check": True,
     }
     _exact_keys(source, set(expected_source), "receipt source evidence")
-    if dict(source) != expected_source:
+    if canonical_json_sha256(dict(source)) != canonical_json_sha256(expected_source):
         raise PilotEvidenceError("receipt clean pushed-source evidence is invalid")
 
     training_run_dir = receipt_path.parent
@@ -1372,7 +1469,7 @@ def collect_completed_pilot_evidence(
 
 
 def _project_root() -> Path:
-    repository_root = REPOSITORY_ROOT.resolve(strict=True)
+    repository_root = Path(os.path.abspath(os.fspath(REPOSITORY_ROOT)))
     if repository_root.parent.name == "run_sources":
         return repository_root.parent.parent
     return repository_root
@@ -1385,7 +1482,7 @@ def _absolute_project_checkpoint_path(value: object, *, label: str) -> Path:
     if not path.is_absolute() or Path(os.path.abspath(path)) != path:
         raise PilotEvidenceError(f"{label} must be a normalized absolute path")
     project_root = _project_root()
-    if path == project_root or project_root not in path.parents:
+    if path == project_root or not path.is_relative_to(project_root):
         raise PilotEvidenceError(f"{label} must remain inside the containing project")
     return path
 

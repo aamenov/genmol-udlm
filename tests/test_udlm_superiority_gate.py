@@ -6,10 +6,42 @@ import json
 import statistics
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from scripts.udlm import superiority_gate as gate
+
+
+_REAL_DEEP_SCALE_UP_VALIDATOR = gate._deep_validate_scale_up_registry
+_REAL_SCALE_UP_LAUNCH_REVISION_VALIDATOR = gate._validate_scale_up_launch_revision
+
+
+@pytest.fixture(autouse=True)
+def _synthetic_scale_up_registry_validator(monkeypatch):
+    """Keep broad gate fixtures small while exercising gate-local byte binding."""
+
+    def validate(payload, *, relative_path, expected_raw_sha256, expected_canonical_sha256):
+        parsed = json.loads(payload)
+        return SimpleNamespace(
+            data=parsed,
+            relative_path=Path(relative_path),
+            raw_sha256=expected_raw_sha256,
+            raw_size_bytes=len(payload),
+            canonical_sha256=expected_canonical_sha256,
+            reference={
+                "relative_path": relative_path,
+                "sha256": expected_raw_sha256,
+                "size_bytes": len(payload),
+                "canonical_sha256": expected_canonical_sha256,
+                "schema_version": 1,
+            },
+        )
+
+    monkeypatch.setattr(gate, "_deep_validate_scale_up_registry", validate)
+    monkeypatch.setattr(
+        gate, "_validate_scale_up_launch_revision", lambda *args, **kwargs: None
+    )
 
 
 def _load_json(relative_path: Path) -> dict:
@@ -347,6 +379,132 @@ def _stable_snapshot(path: Path) -> dict:
     }
 
 
+def _output_directory_binding(run_dir: Path, log_path: Path) -> dict:
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.touch(exist_ok=True)
+    (run_dir / "hydra").mkdir(exist_ok=True)
+    (run_dir / "checkpoints").mkdir(exist_ok=True)
+
+    def identity(path: Path) -> dict:
+        observed = path.stat(follow_symlinks=False)
+        return {
+            "path": str(path),
+            "device": observed.st_dev,
+            "inode": observed.st_ino,
+            "mode": observed.st_mode,
+        }
+
+    return {
+        "schema_version": 1,
+        "run_directory": identity(run_dir),
+        "log_file": identity(log_path),
+        "hydra_directory": identity(run_dir / "hydra"),
+        "checkpoint_directory": identity(run_dir / "checkpoints"),
+        "policy": gate._OUTPUT_DIRECTORY_BINDING_POLICY,
+    }
+
+
+def _write_synthetic_scale_up_registry(
+    tmp_path: Path, *, resolved_config_sha256_by_position: tuple[str, str, str]
+) -> tuple[dict, tuple[dict, dict, dict]]:
+    def json_reference(label: str) -> dict:
+        return {
+            "root": "repository",
+            "relative_path": f"experiments/udlm/screens/{label}.json",
+            "sha256": hashlib.sha256(f"{label}-raw".encode()).hexdigest(),
+            "size_bytes": 123,
+            "schema_version": 1,
+            "canonical_sha256": hashlib.sha256(
+                f"{label}-canonical".encode()
+            ).hexdigest(),
+        }
+
+    authority = {
+        "scheduler_evidence": json_reference("scheduler_evidence"),
+        "scheduler_selection": json_reference("scheduler_selection"),
+        "conditioning_evidence": json_reference("conditioning_evidence"),
+        "conditioning_selection": json_reference("conditioning_selection"),
+    }
+    variants = ("udlm", "schedule_uniform", "udlm_categorical")
+    slugs = ("r", "s", "e")
+    filenames = ("r_udlm.json", "s_schedule_uniform.json", "e_udlm_categorical.json")
+    members = []
+    for position, (variant, slug, filename, config_digest) in enumerate(
+        zip(
+            variants,
+            slugs,
+            filenames,
+            resolved_config_sha256_by_position,
+            strict=True,
+        )
+    ):
+        members.append(
+            {
+                "position": position,
+                "slug": slug,
+                "training_variant": variant,
+                "prior_variant": (
+                    "release_uniform"
+                    if position == 0
+                    else "schedule_uniform"
+                    if position == 1
+                    else "empirical_frequency"
+                ),
+                "comparison_role": "synthetic",
+                "run_name": ("r-predecessor", "synthetic-candidate", "e-terminal")[
+                    position
+                ],
+                "output_directory": (
+                    "output/udlm/r-predecessor",
+                    "output/udlm/synthetic-candidate",
+                    "output/udlm/e-terminal",
+                )[position],
+                "config": {
+                    "root": "repository",
+                    "relative_path": (
+                        "experiments/udlm/protocols/"
+                        f"selection_bound_scale_up_configs_gpu1/{filename}"
+                    ),
+                    "sha256": hashlib.sha256(
+                        f"{variant}-config-raw".encode()
+                    ).hexdigest(),
+                    "size_bytes": 456,
+                    "canonical_sha256": config_digest,
+                },
+            }
+        )
+    registry = {
+        "schema_version": 1,
+        "publication": {"config_revision": "5" * 40},
+        "screen_authority": authority,
+        "selected_design": {
+            "scheduler_arm_id": "E-L1",
+            "conditioning_arm_id": "E-A1",
+        },
+        "members": members,
+    }
+    registry_path = (
+        tmp_path
+        / "experiments/udlm/protocols/selection_bound_scale_up_registry_gpu1.json"
+    )
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = _json_bytes(registry)
+    registry_path.write_bytes(payload)
+    reference = {
+        "relative_path": str(registry_path.relative_to(tmp_path)),
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "size_bytes": len(payload),
+        "canonical_sha256": gate.canonical_json_sha256(registry),
+        "schema_version": 1,
+    }
+    validated = SimpleNamespace(data=registry, reference=reference)
+    bindings = tuple(
+        gate.scale_up_registry.expected_manifest_binding(validated, position=position)
+        for position in range(3)
+    )
+    return registry, bindings
+
+
 def _write_r_predecessor_chain(
     tmp_path: Path,
     panel: dict,
@@ -355,6 +513,7 @@ def _write_r_predecessor_chain(
     mutate_summary=None,
     mutate_receipt=None,
     conditioning_variant="additive",
+    selection_bound_scale_up: dict,
 ) -> dict:
     predecessor_dir = tmp_path / "output/udlm/r-predecessor"
     predecessor_dir.mkdir(parents=True)
@@ -496,6 +655,10 @@ def _write_r_predecessor_chain(
         "hydra_config_name": "udlm",
         "udlm_prior_variant": "release_uniform",
         "udlm_comparison_role": "faithful_release_control",
+        "selection_bound_scale_up": copy.deepcopy(selection_bound_scale_up),
+        "output_directory_binding": _output_directory_binding(
+            predecessor_dir, tmp_path / "output/logs/r-predecessor.log"
+        ),
         "matched_panel_spec": panel,
         "matched_panel_spec_sha256": panel_sha256,
         "matched_panel_variant_position": 0,
@@ -932,6 +1095,24 @@ def _write_valid_training_evidence(
     ]
     manifest_training_argv = [str(python_path), "-u", *child_training_argv]
     resolved_config_sha = gate.canonical_json_sha256(resolved_config)
+    r_resolved_config = copy.deepcopy(resolved_config)
+    r_resolved_config["training"]["udlm"]["prior_variant"] = "release_uniform"
+    r_resolved_config["callback"]["dirpath"] = str(
+        tmp_path / "output/udlm/r-predecessor/checkpoints"
+    )
+    e_resolved_config = copy.deepcopy(resolved_config)
+    e_resolved_config["training"]["udlm"]["prior_variant"] = "empirical_frequency"
+    e_resolved_config["callback"]["dirpath"] = str(
+        tmp_path / "output/udlm/e-terminal/checkpoints"
+    )
+    _registry, scale_up_bindings = _write_synthetic_scale_up_registry(
+        tmp_path,
+        resolved_config_sha256_by_position=(
+            gate.canonical_json_sha256(r_resolved_config),
+            resolved_config_sha,
+            gate.canonical_json_sha256(e_resolved_config),
+        ),
+    )
     training_argv_sha = gate.canonical_json_sha256(child_training_argv)
     training["resolved_training_config_sha256"] = resolved_config_sha
     training["training_argv_sha256"] = training_argv_sha
@@ -1048,6 +1229,7 @@ def _write_valid_training_evidence(
         mutate_summary=mutate_predecessor_summary,
         mutate_receipt=mutate_predecessor_receipt,
         conditioning_variant=conditioning_variant,
+        selection_bound_scale_up=scale_up_bindings[0],
     )
     manifest = {
         "launch_manifest_schema_version": gate.LAUNCH_MANIFEST_SCHEMA_VERSION,
@@ -1061,6 +1243,11 @@ def _write_valid_training_evidence(
         "hydra_config_name": "udlm",
         "udlm_prior_variant": "schedule_uniform",
         "udlm_comparison_role": "schedule_repair_uniform_control",
+        "selection_bound_scale_up": copy.deepcopy(scale_up_bindings[1]),
+        "output_directory_binding": _output_directory_binding(
+            manifest_path.parent,
+            tmp_path / "output/logs/synthetic-candidate.log",
+        ),
         "matched_panel_spec": panel,
         "matched_panel_spec_sha256": gate.canonical_json_sha256(panel),
         "matched_panel_variant_position": 1,
@@ -1411,6 +1598,7 @@ def _write_valid_training_evidence(
         "summary": summary,
         "receipt": receipt,
         "training_accounting": training_accounting,
+        "scale_up_bindings": scale_up_bindings,
     }
 
 
@@ -1541,6 +1729,12 @@ def _write_terminal_e_training_evidence(
             "hydra_config_name": "udlm_categorical",
             "udlm_prior_variant": "empirical_frequency",
             "udlm_comparison_role": "empirical_prior_treatment",
+            "selection_bound_scale_up": copy.deepcopy(
+                selected_documents["scale_up_bindings"][2]
+            ),
+            "output_directory_binding": _output_directory_binding(
+                run_dir, tmp_path / "output/logs/e-terminal.log"
+            ),
             "matched_panel_spec": panel,
             "matched_panel_spec_sha256": panel_sha256,
             "matched_panel_variant_position": 2,
@@ -2880,6 +3074,36 @@ def test_candidate_lock_accepts_exact_film_parameter_schema(protocol):
     }
 
 
+@pytest.mark.parametrize("world_size", [3, 4])
+def test_candidate_lock_accepts_registry_supported_scale_world_sizes(
+    protocol, world_size
+):
+    candidate_lock = _candidate_lock()
+    candidate_lock["training"]["world_size"] = world_size
+
+    normalized = gate.validate_candidate_lock(candidate_lock, protocol)
+
+    assert normalized["world_size"] == world_size
+
+
+@pytest.mark.parametrize(
+    ("world_size", "error_fragment"),
+    [
+        (0, "must be at least 1"),
+        (5, "registry maximum of 4"),
+        (True, "must be an integer"),
+    ],
+)
+def test_candidate_lock_rejects_world_size_outside_exact_registry_range(
+    protocol, world_size, error_fragment
+):
+    candidate_lock = _candidate_lock()
+    candidate_lock["training"]["world_size"] = world_size
+
+    with pytest.raises(gate.GateValidationError, match=error_fragment):
+        gate.validate_candidate_lock(candidate_lock, protocol)
+
+
 @pytest.mark.parametrize(
     ("mutation", "error_fragment"),
     [
@@ -3590,6 +3814,9 @@ def test_completed_matched_panel_accepts_full_r_s_e_with_selected_s(
         "selected_exit_receipt_recorded_at_utc": ("2026-09-06T00:10:01+00:00"),
         "candidate_locked_at_utc": "2026-09-06T01:00:00+00:00",
         "matched_panel_spec_sha256": selected_evidence["matched_panel_spec_sha256"],
+        "selection_bound_scale_up_common_sha256": selected_evidence[
+            "selection_bound_scale_up_common_sha256"
+        ],
         "chain_depth": 3,
         "variant_order": ["udlm", "schedule_uniform", "udlm_categorical"],
         "receipt_members": [
@@ -3858,6 +4085,257 @@ def test_training_summary_and_exit_receipt_are_joined_to_lock(
         gate.validate_training_evidence(normalized)
 
 
+def test_gate_requires_selection_bound_scale_up_on_current_manifest(
+    tmp_path, monkeypatch, protocol
+):
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
+    candidate_lock = _candidate_lock()
+    _write_valid_training_evidence(
+        tmp_path,
+        candidate_lock,
+        mutate_manifest=lambda document: document.pop("selection_bound_scale_up"),
+    )
+    normalized = gate.validate_candidate_lock(candidate_lock, protocol)
+
+    with pytest.raises(gate.GateValidationError, match="selection_bound_scale_up"):
+        gate.validate_training_evidence(normalized)
+
+
+def test_gate_requires_scale_binding_recursively_on_r_predecessor(
+    tmp_path, monkeypatch, protocol
+):
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
+    candidate_lock = _candidate_lock()
+
+    def remove_scale_binding(document):
+        document.pop("selection_bound_scale_up")
+        document.pop("output_directory_binding")
+
+    _write_valid_training_evidence(
+        tmp_path,
+        candidate_lock,
+        mutate_predecessor_manifest=remove_scale_binding,
+    )
+    normalized = gate.validate_candidate_lock(candidate_lock, protocol)
+
+    with pytest.raises(gate.GateValidationError, match="bound predecessor.*missing"):
+        gate.validate_training_evidence(normalized)
+
+
+def test_gate_rejects_scale_authority_change_across_predecessor_edge(
+    tmp_path, monkeypatch, protocol
+):
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
+    candidate_lock = _candidate_lock()
+    _write_valid_training_evidence(
+        tmp_path,
+        candidate_lock,
+        mutate_predecessor_manifest=lambda document: document[
+            "selection_bound_scale_up"
+        ]["selected_design"].__setitem__("scheduler_arm_id", "E-L0"),
+    )
+    normalized = gate.validate_candidate_lock(candidate_lock, protocol)
+
+    with pytest.raises(
+        gate.GateValidationError,
+        match="authority changes across the predecessor chain",
+    ):
+        gate.validate_training_evidence(normalized)
+
+
+def test_gate_rejects_scale_binding_that_differs_from_verified_registry(
+    tmp_path, monkeypatch, protocol
+):
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
+    candidate_lock = _candidate_lock()
+    _write_valid_training_evidence(
+        tmp_path,
+        candidate_lock,
+        mutate_manifest=lambda document: document["selection_bound_scale_up"][
+            "selected_design"
+        ].__setitem__("scheduler_arm_id", "E-L0"),
+    )
+    normalized = gate.validate_candidate_lock(candidate_lock, protocol)
+
+    with pytest.raises(
+        gate.GateValidationError, match="differs from the verified registry"
+    ):
+        gate.validate_training_evidence(normalized)
+
+
+def test_gate_accepts_r5_config_binding_with_distinct_r6_launch_source(
+    tmp_path, monkeypatch, protocol
+):
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
+    candidate_lock = _candidate_lock()
+    documents = _write_valid_training_evidence(tmp_path, candidate_lock)
+    config_revision = documents["manifest"]["selection_bound_scale_up"]["member"][
+        "registered_config_source_revision"
+    ]
+    launch_revision = documents["manifest"]["git_sha"]
+
+    evidence = gate.validate_training_evidence(
+        gate.validate_candidate_lock(candidate_lock, protocol)
+    )
+
+    assert config_revision == "5" * 40
+    assert launch_revision == "a" * 40
+    assert config_revision != launch_revision
+    assert evidence["successful_exit_receipt"] is True
+
+
+def test_gate_rejects_changed_live_scale_registry_bytes(
+    tmp_path, monkeypatch, protocol
+):
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
+    candidate_lock = _candidate_lock()
+    documents = _write_valid_training_evidence(tmp_path, candidate_lock)
+    registry_relative_path = documents["manifest"]["selection_bound_scale_up"][
+        "registry"
+    ]["relative_path"]
+    registry_path = tmp_path / registry_relative_path
+    registry_path.write_bytes(registry_path.read_bytes() + b" ")
+    normalized = gate.validate_candidate_lock(candidate_lock, protocol)
+
+    with pytest.raises(
+        gate.GateValidationError, match="differs from its manifest reference"
+    ):
+        gate.validate_training_evidence(normalized)
+
+
+def test_gate_revalidates_scale_output_node_identity(
+    tmp_path, monkeypatch, protocol
+):
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
+    candidate_lock = _candidate_lock()
+    _write_valid_training_evidence(
+        tmp_path,
+        candidate_lock,
+        mutate_manifest=lambda document: document["output_directory_binding"][
+            "log_file"
+        ].__setitem__("inode", 1),
+    )
+    normalized = gate.validate_candidate_lock(candidate_lock, protocol)
+
+    with pytest.raises(gate.GateValidationError, match="differs from the live node"):
+        gate.validate_training_evidence(normalized)
+
+
+def test_gate_output_identity_rejects_ancestor_swapped_to_symlink(
+    tmp_path, monkeypatch
+):
+    repository = tmp_path / "repository"
+    run_directory = repository / "output/udlm/run"
+    target = run_directory / "hydra"
+    target.mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "hydra").mkdir()
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", repository)
+    original_open = gate.os.open
+    swapped = False
+
+    def racing_open(path, flags, mode=0o777, *, dir_fd=None):
+        nonlocal swapped
+        if path == "run" and dir_fd is not None and not swapped:
+            run_directory.rename(run_directory.with_name("run-before-swap"))
+            run_directory.symlink_to(outside, target_is_directory=True)
+            swapped = True
+        if dir_fd is None:
+            return original_open(path, flags, mode)
+        return original_open(path, flags, mode, dir_fd=dir_fd)
+
+    monkeypatch.setattr(gate.os, "open", racing_open)
+
+    with pytest.raises(
+        gate.GateValidationError, match="cannot safely open an ancestor"
+    ):
+        gate._live_output_node_identity(
+            target, label="racing output", require_directory=True
+        )
+    assert swapped is True
+
+
+def test_gate_delegates_registry_semantics_to_independent_scale_verifier(
+    monkeypatch,
+):
+    sentinel = object()
+    observed = {}
+
+    def validate(payload, **kwargs):
+        observed["payload"] = payload
+        observed.update(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(
+        gate.scale_up_registry, "load_validated_registry", validate
+    )
+
+    result = _REAL_DEEP_SCALE_UP_VALIDATOR(
+        b"registry",
+        relative_path=(
+            "experiments/udlm/protocols/"
+            "selection_bound_scale_up_registry_gpu1.json"
+        ),
+        expected_raw_sha256="a" * 64,
+        expected_canonical_sha256="b" * 64,
+    )
+
+    assert result is sentinel
+    assert observed == {
+        "payload": b"registry",
+        "relative_path": (
+            "experiments/udlm/protocols/"
+            "selection_bound_scale_up_registry_gpu1.json"
+        ),
+        "expected_raw_sha256": "a" * 64,
+        "expected_canonical_sha256": "b" * 64,
+    }
+
+
+def test_gate_validates_exact_r5_to_r6_registry_publication(monkeypatch):
+    payload = b"frozen registry bytes"
+    registry = SimpleNamespace(
+        data={"publication": {"config_revision": "5" * 40}},
+        relative_path=Path(
+            "experiments/udlm/protocols/selection_bound_scale_up_registry_gpu1.json"
+        ),
+        raw_size_bytes=len(payload),
+        raw_sha256=hashlib.sha256(payload).hexdigest(),
+    )
+    observed = {}
+
+    def validate_edge(**kwargs):
+        observed["edge"] = kwargs
+
+    def require_absent(revision, path, **kwargs):
+        observed["absent"] = (revision, path, kwargs)
+
+    monkeypatch.setattr(
+        gate.scale_up_registry, "_validate_revision_edge", validate_edge
+    )
+    monkeypatch.setattr(gate.scale_up_registry, "_git_blob_absent", require_absent)
+    monkeypatch.setattr(
+        gate.scale_up_registry.screen,
+        "git_blob_loader",
+        lambda revision, path: payload,
+    )
+
+    _REAL_SCALE_UP_LAUNCH_REVISION_VALIDATOR(
+        registry, launch_source_revision="6" * 40
+    )
+
+    assert observed["edge"]["parent"] == "5" * 40
+    assert observed["edge"]["child"] == "6" * 40
+    assert observed["edge"]["expected_paths"] == frozenset(
+        {registry.relative_path.as_posix()}
+    )
+    assert observed["absent"][:2] == (
+        "5" * 40,
+        registry.relative_path.as_posix(),
+    )
+
+
 def test_training_evidence_accepts_film_parameter_schema_across_predecessor_chain(
     tmp_path, monkeypatch, protocol
 ):
@@ -4014,6 +4492,66 @@ def test_gate_rejects_sparse_recorded_process_evidence(tmp_path, monkeypatch, pr
     normalized = gate.validate_candidate_lock(candidate_lock, protocol)
 
     with pytest.raises(gate.GateValidationError, match="compute_processes.*fields"):
+        gate.validate_training_evidence(normalized)
+
+
+@pytest.mark.parametrize(
+    ("processes", "error_match"),
+    [
+        (
+            [
+                {
+                    "pid": 4321,
+                    "process_name": "null-memory",
+                    "used_memory_mib": None,
+                }
+            ],
+            "used_memory_mib must be an integer",
+        ),
+        (
+            [
+                {
+                    "pid": True,
+                    "process_name": "boolean-pid",
+                    "used_memory_mib": 512,
+                }
+            ],
+            "pid must be an integer",
+        ),
+        (
+            [
+                {
+                    "pid": 4321,
+                    "process_name": "first",
+                    "used_memory_mib": 256,
+                },
+                {
+                    "pid": 4321,
+                    "process_name": "duplicate",
+                    "used_memory_mib": 256,
+                },
+            ],
+            "duplicate PID",
+        ),
+    ],
+)
+def test_gate_rejects_null_boolean_or_duplicate_process_telemetry(
+    tmp_path, monkeypatch, protocol, processes, error_match
+):
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
+    candidate_lock = _candidate_lock()
+    _write_valid_training_evidence(
+        tmp_path,
+        candidate_lock,
+        mutate_manifest=lambda value: _set_manifest_gpu_state_fields(
+            value,
+            utilization_percent=9,
+            compute_processes=processes,
+        ),
+    )
+    normalized = gate.validate_candidate_lock(candidate_lock, protocol)
+
+    with pytest.raises(gate.GateValidationError, match=error_match):
         gate.validate_training_evidence(normalized)
 
 
