@@ -1,0 +1,356 @@
+{
+  "attempts": [
+    {
+      "arm_id": "E-A0",
+      "artifacts": {
+        "exit_receipt": {
+          "canonical_sha256": "4e3f7b9d044fe30abdf5dcb2b53e838c9ad9310dc2dddb702e1a71230832b8aa",
+          "relative_path": "output/udlm/screens/gpu1_conditioning_e_a0__e_l1/pilot_exit_status.json",
+          "root": "repository",
+          "schema_version": 5,
+          "sha256": "2b1638d2590cd1a86bda37a5f2e8ab3f8225894c8fdf90421cbfaaf9ab267a82",
+          "size_bytes": 10848
+        },
+        "launch_manifest": {
+          "canonical_sha256": "733301232776f3255e61df4408fe243bc266d4113971c207d8c55c87fce2b586",
+          "relative_path": "output/udlm/screens/gpu1_conditioning_e_a0__e_l1/launch_manifest.json",
+          "root": "repository",
+          "schema_version": 2,
+          "sha256": "8bd26ed622a07f0117bca2504283e042f35c272036b46c69e380baa5d0f21d6a",
+          "size_bytes": 16266
+        },
+        "runtime_config": {
+          "canonical_sha256": "22123b1e13a4a18e479ff0ae747ed6546a32832597888026ec880f6f4383e3f1",
+          "relative_path": "output/udlm/screens/gpu1_conditioning_e_a0__e_l1/runtime_config.json",
+          "root": "repository",
+          "schema_version": 2,
+          "sha256": "fc9ebc95ddbf821a29583af67124423c0dad06046f86edc7a56c8ed2aa41f5ff",
+          "size_bytes": 7911
+        },
+        "training_summary": {
+          "canonical_sha256": "8036af1c91fab3518fea4c81ed1b96382e11db9b0ddb6603ab0ac83290a308e8",
+          "relative_path": "output/udlm/screens/gpu1_conditioning_e_a0__e_l1/training_summary.json",
+          "root": "repository",
+          "schema_version": 5,
+          "sha256": "49e03ad083448fb494520ec661d3db02b8a8eff9f460d6e0a27c53dcbb02dc90",
+          "size_bytes": 10316
+        }
+      },
+      "attempt_id": "conditioning-e-a0-g1",
+      "checkpoint": {
+        "global_step": 500,
+        "relative_path": "output/udlm/screens/gpu1_conditioning_e_a0__e_l1/checkpoints/500.ckpt",
+        "root": "repository",
+        "sha256": "9d07f0450cfe56252614cc43b20ef10a62d940510f729a078d557dcbb7be0c3f",
+        "size_bytes": 1409664896
+      },
+      "conditioning_gradient_audit": null,
+      "denoising_report": {
+        "canonical_sha256": "896a3c57c82353bc2f44fdae1d5f071d4da12fbfac10e58d54faf9354cf3de61",
+        "relative_path": "output/udlm/screens/gpu1_conditioning_e_a0__e_l1/denoising_binding.json",
+        "root": "repository",
+        "schema_version": 1,
+        "sha256": "b199f524dde312857bf135a64e10850fee829b244b53987f3faa0cd3f76ba6c7",
+        "size_bytes": 1331
+      },
+      "failure_reason": null,
+      "gpu_count": 1,
+      "initialization": {
+        "ema_reset": true,
+        "global_step_reset": true,
+        "mode": "fresh_independent_mdlm_ema_warm_start_each_arm",
+        "optimizer_reset": true,
+        "scheduler_reset": true,
+        "source_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+        "state_audit": {
+          "common_backbone_state_sha256": "b7ae1ed650e1c4f7b1d70fd85a531a82d2686cda8625d9ad0315c5969f3029e3",
+          "common_backbone_tensor_count": 204,
+          "conditioning_variant": "additive",
+          "full_initial_state_sha256": "7152c4f41980180d565341c31c79ecd7061c93d5ea9494c524c1439d71f168ee",
+          "full_initial_tensor_count": 208,
+          "phase": "after_verified_mdlm_ema_warm_start_before_training_rng_reseed_and_optimizer_creation",
+          "resolved_training_config_sha256": "15cded3e63be5c665e100bd4785f8c34fb6d55832d97682ee2330242aafffc4e",
+          "schema_version": 1,
+          "source_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+          "training_seed": 17
+        },
+        "weights": "ema"
+      },
+      "optimizer_updates": 500,
+      "output_directory": "output/udlm/screens/gpu1_conditioning_e_a0__e_l1",
+      "resolved_config": {
+        "canonical_sha256": "15cded3e63be5c665e100bd4785f8c34fb6d55832d97682ee2330242aafffc4e",
+        "relative_path": "experiments/udlm/protocols/optimization_screen_configs_gpu1/conditioning_e_a0__e_l1.json",
+        "root": "repository",
+        "sha256": "9c4a6a186c1688be4d4bbf5604f80d4043de1e83a0859cd7a1204fba4f5bc872",
+        "size_bytes": 2658
+      },
+      "source_revision": "d32df6abe4b46589f4259b04e67cc4040f25aaa8",
+      "status": "completed",
+      "training_seed": 17
+    },
+    {
+      "arm_id": "E-A1",
+      "artifacts": {
+        "exit_receipt": {
+          "canonical_sha256": "b144a4dc27a4214e2a41a2fbdb19b01a004c22b5ecbe75b6f3899c3540fff2b8",
+          "relative_path": "output/udlm/screens/gpu1_conditioning_e_a1__e_l1/pilot_exit_status.json",
+          "root": "repository",
+          "schema_version": 5,
+          "sha256": "7cc8051e051a9bb6ae98a6f7e6251cefdfeb81690a286cc93947a7048cc62f7d",
+          "size_bytes": 14742
+        },
+        "launch_manifest": {
+          "canonical_sha256": "bb4333067e68570d3804d0a7bec3a4186c70875d94e72dfad23e15aa46ee123c",
+          "relative_path": "output/udlm/screens/gpu1_conditioning_e_a1__e_l1/launch_manifest.json",
+          "root": "repository",
+          "schema_version": 2,
+          "sha256": "90ad9c0147cf516fec7fdeab4786c55c8af5e4a0b2362484dfb165bf1b982853",
+          "size_bytes": 21851
+        },
+        "runtime_config": {
+          "canonical_sha256": "ad8b3f411f48b3a0466a0c7e52d2d3921048b6f861504da12842c51df49257fb",
+          "relative_path": "output/udlm/screens/gpu1_conditioning_e_a1__e_l1/runtime_config.json",
+          "root": "repository",
+          "schema_version": 2,
+          "sha256": "b57d2214e0a30a1ef9c04934cff8f29bcd94af32d089298fdc6cec917438fe56",
+          "size_bytes": 7920
+        },
+        "training_summary": {
+          "canonical_sha256": "59b10dce4bfce469c27124d3f15092ebc0cf0118a504be99d0bfdf5c0d88758c",
+          "relative_path": "output/udlm/screens/gpu1_conditioning_e_a1__e_l1/training_summary.json",
+          "root": "repository",
+          "schema_version": 5,
+          "sha256": "8aed1431c0c8f221de44c07f7ff3e653beb37c4b339d7ca782a21d09786baa4f",
+          "size_bytes": 13938
+        }
+      },
+      "attempt_id": "conditioning-e-a1-g1",
+      "checkpoint": {
+        "global_step": 500,
+        "relative_path": "output/udlm/screens/gpu1_conditioning_e_a1__e_l1/checkpoints/500.ckpt",
+        "root": "repository",
+        "sha256": "06c93827cebed15b1a8f7423d11ac35817bf23d36a0e79a101d42cfa4723ecfb",
+        "size_bytes": 1636491592
+      },
+      "conditioning_gradient_audit": {
+        "first_positive_lr_optimizer_step": 2,
+        "observation_point": "on_before_optimizer_step_global_rank_zero_after_gradient_accumulation",
+        "optimizer_checks": [
+          {
+            "film_groups": [
+              {
+                "all_gradients_finite": true,
+                "all_gradients_present": true,
+                "all_parameter_gradients_nonzero": true,
+                "gradient_element_count": 14174208,
+                "group_id": "film_modulation",
+                "ordered_parameter_manifest_sha256": "cbb5478406610839894e54a0bf7bca256a837f1fe4e8dd502e1df32cd1df4e7d",
+                "parameter_count": 24
+              }
+            ],
+            "learning_rate_before_step": 0.0,
+            "optimizer_gradient_observation_index": 1,
+            "optimizer_step_index": 1,
+            "timestep_mlp_groups": [
+              {
+                "all_gradients_finite": true,
+                "all_gradients_present": true,
+                "all_parameter_gradients_nonzero": false,
+                "gradient_element_count": 787968,
+                "group_id": "timestep_mlp",
+                "ordered_parameter_manifest_sha256": "61d6f58e9f586fb79ad51a898e41fb21f05a9c4ee912e88983646e1652fb0c4f",
+                "parameter_count": 4
+              }
+            ]
+          },
+          {
+            "film_groups": [
+              {
+                "all_gradients_finite": true,
+                "all_gradients_present": true,
+                "all_parameter_gradients_nonzero": true,
+                "gradient_element_count": 14174208,
+                "group_id": "film_modulation",
+                "ordered_parameter_manifest_sha256": "cbb5478406610839894e54a0bf7bca256a837f1fe4e8dd502e1df32cd1df4e7d",
+                "parameter_count": 24
+              }
+            ],
+            "learning_rate_before_step": 5.999999999999999e-06,
+            "optimizer_gradient_observation_index": 2,
+            "optimizer_step_index": 2,
+            "timestep_mlp_groups": [
+              {
+                "all_gradients_finite": true,
+                "all_gradients_present": true,
+                "all_parameter_gradients_nonzero": false,
+                "gradient_element_count": 787968,
+                "group_id": "timestep_mlp",
+                "ordered_parameter_manifest_sha256": "61d6f58e9f586fb79ad51a898e41fb21f05a9c4ee912e88983646e1652fb0c4f",
+                "parameter_count": 4
+              }
+            ]
+          },
+          {
+            "film_groups": [
+              {
+                "all_gradients_finite": true,
+                "all_gradients_present": true,
+                "all_parameter_gradients_nonzero": true,
+                "gradient_element_count": 14174208,
+                "group_id": "film_modulation",
+                "ordered_parameter_manifest_sha256": "cbb5478406610839894e54a0bf7bca256a837f1fe4e8dd502e1df32cd1df4e7d",
+                "parameter_count": 24
+              }
+            ],
+            "learning_rate_before_step": 1.1999999999999999e-05,
+            "optimizer_gradient_observation_index": 3,
+            "optimizer_step_index": 3,
+            "timestep_mlp_groups": [
+              {
+                "all_gradients_finite": true,
+                "all_gradients_present": true,
+                "all_parameter_gradients_nonzero": true,
+                "gradient_element_count": 787968,
+                "group_id": "timestep_mlp",
+                "ordered_parameter_manifest_sha256": "61d6f58e9f586fb79ad51a898e41fb21f05a9c4ee912e88983646e1652fb0c4f",
+                "parameter_count": 4
+              }
+            ]
+          }
+        ],
+        "registered_contract_sha256": "ff45961276df75f445221fd1aa4629262d21fdb852bd9b226ad56fe2559315d5",
+        "schema_version": 1,
+        "status": "completed",
+        "timestep_mlp_required_optimizer_check": 3
+      },
+      "denoising_report": {
+        "canonical_sha256": "a9fe7deca910ad669a0cf1f4057731c54dedf452bf2c813f62ee16e5c92ae5ce",
+        "relative_path": "output/udlm/screens/gpu1_conditioning_e_a1__e_l1/denoising_binding.json",
+        "root": "repository",
+        "schema_version": 1,
+        "sha256": "699485f4647d3317dee563036160a105fb3a4dc0161308d830ed1d8b2d0271e1",
+        "size_bytes": 1331
+      },
+      "failure_reason": null,
+      "gpu_count": 1,
+      "initialization": {
+        "ema_reset": true,
+        "global_step_reset": true,
+        "mode": "fresh_independent_mdlm_ema_warm_start_each_arm",
+        "optimizer_reset": true,
+        "scheduler_reset": true,
+        "source_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+        "state_audit": {
+          "common_backbone_state_sha256": "b7ae1ed650e1c4f7b1d70fd85a531a82d2686cda8625d9ad0315c5969f3029e3",
+          "common_backbone_tensor_count": 204,
+          "conditioning_variant": "film_adaln",
+          "full_initial_state_sha256": "97e9c5c8f816f334917b12ada7acc74bc33495802c8b21666cf3c54c3dbd983d",
+          "full_initial_tensor_count": 232,
+          "phase": "after_verified_mdlm_ema_warm_start_before_training_rng_reseed_and_optimizer_creation",
+          "resolved_training_config_sha256": "7640a05fd01e2e1fa5b133f1d38086fabf9f1a406065ab65cee8ed32e4d407e2",
+          "schema_version": 1,
+          "source_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+          "training_seed": 17
+        },
+        "weights": "ema"
+      },
+      "optimizer_updates": 500,
+      "output_directory": "output/udlm/screens/gpu1_conditioning_e_a1__e_l1",
+      "resolved_config": {
+        "canonical_sha256": "7640a05fd01e2e1fa5b133f1d38086fabf9f1a406065ab65cee8ed32e4d407e2",
+        "relative_path": "experiments/udlm/protocols/optimization_screen_configs_gpu1/conditioning_e_a1__e_l1.json",
+        "root": "repository",
+        "sha256": "bea7bbc65a68f9e6ef65677c042df63bee2236a7b6f4c9ba6b5063d1f420b53a",
+        "size_bytes": 2661
+      },
+      "source_revision": "d32df6abe4b46589f4259b04e67cc4040f25aaa8",
+      "status": "completed",
+      "training_seed": 17
+    }
+  ],
+  "final_generation_seeds_included": [],
+  "generation_metrics_included": false,
+  "initialization_audit": {
+    "attention_mask_sha256": "9e8ecc2bbf6398a70a407393d626470d7902bcab0050fe0f8a56dc82482fb7c9",
+    "candidate_arm_id": "E-A1",
+    "candidate_config_canonical_sha256": "7640a05fd01e2e1fa5b133f1d38086fabf9f1a406065ab65cee8ed32e4d407e2",
+    "candidate_logits": {
+      "relative_path": "output/udlm/screens/gpu1_conditioning_e_a1__e_l1/initialization_logits_E-A1.bin",
+      "root": "repository",
+      "sha256": "3e6ef7368f9a11d061640948ac5955fba81c2acac6546a12adc4efc5e22e15b8",
+      "size_bytes": 60160
+    },
+    "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+    "exact_equal": true,
+    "fixture": {
+      "canonical_sha256": "96ed170d2e3db2c68101dd07d603ff44db7f77a95c3b9578d6c378d1e1f85d1b",
+      "relative_path": "experiments/udlm/protocols/conditioning_init_fixture_v1.json",
+      "root": "repository",
+      "schema_version": 1,
+      "sha256": "a7069082bd9a5a7d76d7d52b324345f4a46ba2dea386b87411b1fcb8112cc989",
+      "size_bytes": 643
+    },
+    "input_ids_sha256": "6892785dbbbb56dda21b315721ead5c78e4dc386e742eda2a5f68e17ed161b0b",
+    "logits_dtype": "float32-little-endian-c-order",
+    "logits_shape": [
+      2,
+      4,
+      1880
+    ],
+    "noise_tensor_sha256": "f83b26be4986b4d7bd12b777226261cf5db12a3417cfff76110ca25a3d3b4e23",
+    "probe_phase": "after_mdlm_ema_load_before_training_rng_reseed_and_optimizer_creation",
+    "producer_source": {
+      "relative_path": "scripts/udlm/audit_conditioning_initialization.py",
+      "root": "repository",
+      "sha256": "0e8f959307cda7b81ee82b4432993247d4f0e52ccdeeae0c647b6f1fcdf0f1c7",
+      "size_bytes": 35350
+    },
+    "reference_arm_id": "E-A0",
+    "reference_config_canonical_sha256": "15cded3e63be5c665e100bd4785f8c34fb6d55832d97682ee2330242aafffc4e",
+    "reference_logits": {
+      "relative_path": "output/udlm/screens/gpu1_conditioning_e_a0__e_l1/initialization_logits_E-A0.bin",
+      "root": "repository",
+      "sha256": "3e6ef7368f9a11d061640948ac5955fba81c2acac6546a12adc4efc5e22e15b8",
+      "size_bytes": 60160
+    },
+    "schema_version": 1,
+    "source_revision": "d32df6abe4b46589f4259b04e67cc4040f25aaa8",
+    "timestep_tensor_sha256": "79cd929e095901c3e5625aaee850c49564b962af3ecdf01a8877f7ad960def8e"
+  },
+  "producer_source": {
+    "relative_path": "scripts/udlm/collect_optimization_screen_evidence.py",
+    "root": "repository",
+    "sha256": "a696cd3b6ef6220285b245869a0399c4fc180ce8817a3be83c7319b1ec7945d3",
+    "size_bytes": 28471
+  },
+  "registry": {
+    "canonical_sha256": "0ad9f5785ab72b515f8784883d4347b4e8c3820bcfad331269a298f9558c67b9",
+    "relative_path": "experiments/udlm/protocols/optimization_screen_registry_v2.json",
+    "schema_version": 2,
+    "sha256": "c1c3078d3bfb9461f759d4cf36f64e890046d0bd85a860882d0612fbc36cf226"
+  },
+  "run_source_revision": "d32df6abe4b46589f4259b04e67cc4040f25aaa8",
+  "scheduler_dependency": {
+    "authorization_revision": "d32df6abe4b46589f4259b04e67cc4040f25aaa8",
+    "scheduler_evidence": {
+      "canonical_sha256": "c8d4f70fec521daab4a45db2bd71881bb4a4291e2e28790ecc52894850fc0afb",
+      "relative_path": "experiments/udlm/screens/scheduler_evidence.json",
+      "root": "repository",
+      "schema_version": 1,
+      "sha256": "76a4ec9771dd0e875bf4532beb217da0ed54426427d39d92dbb218c50673c705",
+      "size_bytes": 9429
+    },
+    "scheduler_selection": {
+      "canonical_sha256": "b5939878a797a05b9ee7ee033cd653ce818b38aa25c1744a88f02c4a192e1e2d",
+      "relative_path": "experiments/udlm/screens/scheduler_selection.json",
+      "root": "repository",
+      "schema_version": 1,
+      "sha256": "e93d1face65bab573b32898da1a0a7a209a95a1a21fde58c509bcb3db8bac272",
+      "size_bytes": 2852
+    }
+  },
+  "schema_version": 1,
+  "stage_id": "conditioning",
+  "status": "closed_after_registered_attempts"
+}

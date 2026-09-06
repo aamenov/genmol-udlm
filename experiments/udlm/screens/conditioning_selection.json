@@ -1,0 +1,106 @@
+{
+  "complete_threshold_fallback_used": false,
+  "dependency": {
+    "authorization_revision": "d32df6abe4b46589f4259b04e67cc4040f25aaa8",
+    "scheduler_evidence": {
+      "canonical_sha256": "c8d4f70fec521daab4a45db2bd71881bb4a4291e2e28790ecc52894850fc0afb",
+      "relative_path": "experiments/udlm/screens/scheduler_evidence.json",
+      "root": "repository",
+      "schema_version": 1,
+      "sha256": "76a4ec9771dd0e875bf4532beb217da0ed54426427d39d92dbb218c50673c705",
+      "size_bytes": 9429
+    },
+    "scheduler_selection": {
+      "canonical_sha256": "b5939878a797a05b9ee7ee033cd653ce818b38aa25c1744a88f02c4a192e1e2d",
+      "relative_path": "experiments/udlm/screens/scheduler_selection.json",
+      "root": "repository",
+      "schema_version": 1,
+      "sha256": "e93d1face65bab573b32898da1a0a7a209a95a1a21fde58c509bcb3db8bac272",
+      "size_bytes": 2852
+    },
+    "selected_scheduler_arm_id": "E-L1"
+  },
+  "evidence": {
+    "canonical_sha256": "98a37cb13cf42ddcbef4cf556e0864c4ec1b57a3f87d982a1b82bb2b58700564",
+    "relative_path": "experiments/udlm/screens/conditioning_evidence.json",
+    "schema_version": 1,
+    "sha256": "e63010c52f97e788bb25ea8f46b4f5ba9f2ae1e95bca484ee139a871ae57d612"
+  },
+  "final_generation_seeds_used": [],
+  "gates": {
+    "all_required_gates_pass": true,
+    "every_bin_candidate_le_102_percent_control": true,
+    "exact_initialization_equality": true,
+    "pooled_candidate_le_98_percent_control": true,
+    "pooled_clean_token_accuracy_nondecreasing": true,
+    "registered_gradient_contract_pass": true
+  },
+  "generation_metrics_used": false,
+  "metrics": {
+    "E-A0": {
+      "by_time": [
+        {
+          "clean_token_top1_correct": 2491,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "64066.94200980663",
+          "time": "0.1"
+        },
+        {
+          "clean_token_top1_correct": 2491,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "35848.87871217728",
+          "time": "0.5"
+        },
+        {
+          "clean_token_top1_correct": 2491,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "14567.738687872887",
+          "time": "0.9"
+        }
+      ],
+      "clean_token_top1_correct": 7473,
+      "denominator_tokens": 40881,
+      "production_loss_sum_fraction": "114483559409856797/1000000000000"
+    },
+    "E-A1": {
+      "by_time": [
+        {
+          "clean_token_top1_correct": 12549,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "6850.309685194142",
+          "time": "0.1"
+        },
+        {
+          "clean_token_top1_correct": 8540,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "19092.889724576322",
+          "time": "0.5"
+        },
+        {
+          "clean_token_top1_correct": 3293,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "14041.261480270885",
+          "time": "0.9"
+        }
+      ],
+      "clean_token_top1_correct": 24382,
+      "denominator_tokens": 40881,
+      "production_loss_sum_fraction": "39984460890041349/1000000000000"
+    }
+  },
+  "reason_codes": [
+    "candidate_satisfied_all_registered_thresholds"
+  ],
+  "registry": {
+    "canonical_sha256": "0ad9f5785ab72b515f8784883d4347b4e8c3820bcfad331269a298f9558c67b9",
+    "relative_path": "experiments/udlm/protocols/optimization_screen_registry_v2.json",
+    "schema_version": 2,
+    "sha256": "c1c3078d3bfb9461f759d4cf36f64e890046d0bd85a860882d0612fbc36cf226"
+  },
+  "run_source_revision": "d32df6abe4b46589f4259b04e67cc4040f25aaa8",
+  "schema_version": 1,
+  "selected_arm_id": "E-A1",
+  "selection_rule_id": "a1_if_exact_init_and_pooled_loss_le_98pct_a0_and_each_bin_le_102pct_and_pooled_accuracy_nondecreasing_and_registered_gradients_pass",
+  "stage_id": "conditioning",
+  "status": "completed"
+}
