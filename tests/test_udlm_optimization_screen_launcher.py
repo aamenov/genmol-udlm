@@ -390,6 +390,7 @@ def test_real_launch_uses_final_uuid_probe_before_manifest_and_tmux(
     monkeypatch, tmp_path
 ):
     plan = _plan(tmp_path)
+    monkeypatch.setattr(pilot, "REPOSITORY_ROOT", tmp_path)
     state = pilot.GPUState(
         physical_index=7,
         uuid="GPU-idle-seven",
@@ -427,7 +428,7 @@ def test_real_launch_uses_final_uuid_probe_before_manifest_and_tmux(
     original_publish = pilot._atomic_publish_bytes_exclusive
 
     def publish(path, payload, *, label):
-        events.append("manifest")
+        events.append(label)
         return original_publish(path, payload, label=label)
 
     monkeypatch.setattr(pilot, "_atomic_publish_bytes_exclusive", publish)
@@ -473,7 +474,8 @@ def test_real_launch_uses_final_uuid_probe_before_manifest_and_tmux(
         "select",
         "source",
         "final_probe",
-        "manifest",
+        "pilot log",
+        "optimization-screen launch manifest",
         "tmux",
     ]
     assert log_path.is_file()

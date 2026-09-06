@@ -2,10 +2,11 @@
 
 The controller is intended to run inside ``tmux``. The caller supplies only a
 GPU count of one or two. Before each child starts, the controller inventories
-every NVIDIA GPU and dynamically chooses an idle device under the configured
-utilization, memory, compute-mode, and process guards. It then re-probes that
-exact UUID and maps it into the child as logical ``cuda:0``. The controller
-never interrupts or reuses a device with an active compute process.
+every NVIDIA GPU and dynamically chooses a policy-eligible device under the configured
+utilization, memory, and compute-mode guards. It then re-probes that exact UUID
+and maps it into the child as logical ``cuda:0``. Active compute processes are
+allowed only when the utilization and free-memory guards still pass; their
+complete NVIDIA telemetry is retained in both probes and never interrupted.
 """
 
 from __future__ import annotations
@@ -85,10 +86,6 @@ class GPUState:
             )
         if self.compute_mode.lower() == "prohibited":
             reasons.append("compute mode is prohibited")
-        if self.compute_processes:
-            reasons.append(
-                f"{len(self.compute_processes)} active compute process(es) detected"
-            )
         return reasons
 
     def as_dict(self) -> dict[str, Any]:
@@ -388,7 +385,7 @@ def _selection_policy(
         "max_utilization_percent": max_utilization_percent,
         "utilization_comparison": "strictly_less_than",
         "min_free_memory_mib": min_free_memory_mib,
-        "active_compute_processes_allowed": False,
+        "active_compute_processes_allowed": True,
     }
 
 
@@ -2017,7 +2014,7 @@ def main(argv: Optional[list[str]] = None) -> None:
         if len(eligible) < requested_now:
             raise RuntimeError(
                 f"dry-run requested {requested_now} concurrent GPU(s), but only "
-                f"{len(eligible)} are genuinely idle"
+                f"{len(eligible)} satisfy the GPU safety policy"
             )
         print(
             json.dumps(

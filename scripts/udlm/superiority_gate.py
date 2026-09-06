@@ -31,6 +31,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from scripts.exps.denovo import report as denovo_report  # noqa: E402
+from scripts.udlm import verify_scale_up_registry as scale_up_registry  # noqa: E402
 
 
 SCHEMA_VERSION = 1
@@ -1968,8 +1969,11 @@ def validate_candidate_lock(
     if checkpoint_step != optimizer_updates:
         raise GateValidationError("checkpoint step and optimizer updates disagree")
     world_size = _integer(training.get("world_size"), "training world size", minimum=1)
-    if world_size not in (1, 2):
-        raise GateValidationError("candidate training may use only one or two GPUs")
+    if world_size > scale_up_registry.MAX_GPU_COUNT:
+        raise GateValidationError(
+            "candidate training world size must not exceed the scale-up registry "
+            f"maximum of {scale_up_registry.MAX_GPU_COUNT}"
+        )
     training_seed = _integer(
         training.get("training_seed"), "candidate training seed", minimum=0
     )
@@ -2309,6 +2313,8 @@ _LAUNCH_MANIFEST_KEYS = {
     "hydra_config_name",
     "udlm_prior_variant",
     "udlm_comparison_role",
+    "selection_bound_scale_up",
+    "output_directory_binding",
     "matched_panel_spec",
     "matched_panel_spec_sha256",
     "matched_panel_variant_position",
@@ -2353,6 +2359,24 @@ _LAUNCH_MANIFEST_KEYS = {
     "exclude_special_tokens",
     "dry_run",
 }
+_SCALE_UP_BINDING_KEYS = {
+    "schema_version",
+    "registry",
+    "screen_authority",
+    "selected_design",
+    "member",
+}
+_SCALE_UP_COMMON_AUTHORITY_KEYS = {
+    "registry",
+    "screen_authority",
+    "selected_design",
+    "arm_order",
+    "training_variant_order",
+    "registered_config_source_revision",
+}
+_OUTPUT_DIRECTORY_BINDING_POLICY = (
+    "descriptor_walk_no_symlink_ancestors_revalidate_at_child_boundaries"
+)
 _GPU_STATE_KEYS = {
     "physical_index",
     "uuid",
@@ -2448,6 +2472,344 @@ _MATCHED_PANEL_VARIANT_ORDER = (
     "schedule_uniform",
     "udlm_categorical",
 )
+
+
+def _deep_validate_scale_up_registry(
+    payload: bytes,
+    *,
+    relative_path: str,
+    expected_raw_sha256: str,
+    expected_canonical_sha256: str,
+) -> scale_up_registry.ValidatedScaleUpRegistry:
+    """Run the independent registry verifier behind one gate-local seam."""
+
+    try:
+        return scale_up_registry.load_validated_registry(
+            payload,
+            relative_path=relative_path,
+            expected_raw_sha256=expected_raw_sha256,
+            expected_canonical_sha256=expected_canonical_sha256,
+        )
+    except scale_up_registry.ScaleUpValidationError as error:
+        raise GateValidationError(
+            f"selection-bound scale-up registry is invalid: {error}"
+        ) from error
+
+
+def _validate_scale_up_launch_revision(
+    registry: scale_up_registry.ValidatedScaleUpRegistry,
+    *,
+    launch_source_revision: str,
+) -> None:
+    """Prove the launch source is exact pushed R6, not the R5 config commit."""
+
+    publication = _mapping(
+        registry.data.get("publication"), "scale-up registry publication"
+    )
+    config_revision = _git_revision(
+        publication.get("config_revision"), "scale-up config revision"
+    )
+    launch_revision = _git_revision(
+        launch_source_revision, "scale-up launch source revision"
+    )
+    registry_path = PurePosixPath(registry.relative_path.as_posix())
+    try:
+        scale_up_registry._validate_revision_edge(
+            parent=config_revision,
+            child=launch_revision,
+            expected_paths=frozenset({registry_path.as_posix()}),
+            label="config-to-registry publication",
+            git_ancestor_checker=scale_up_registry.screen.git_ancestor_checker,
+            git_sole_parent_checker=scale_up_registry.screen.git_sole_parent_checker,
+            git_pushed_checker=scale_up_registry.screen.git_pushed_checker,
+            git_diff_checker=scale_up_registry.screen.git_diff_checker,
+            changed_paths_loader=scale_up_registry.git_changed_paths_loader,
+        )
+        scale_up_registry._git_blob_absent(
+            config_revision,
+            registry_path.as_posix(),
+            git_tree_paths_loader=scale_up_registry.screen.git_tree_paths_loader,
+            label="scale-up registry",
+        )
+        committed = scale_up_registry.screen.git_blob_loader(
+            launch_revision, registry_path
+        )
+    except scale_up_registry.ScaleUpValidationError as error:
+        raise GateValidationError(
+            f"scale-up launch source is not exact registry publication R6: {error}"
+        ) from error
+    if (
+        len(committed) != registry.raw_size_bytes
+        or _sha256_bytes(committed) != registry.raw_sha256
+    ):
+        raise GateValidationError(
+            "scale-up launch source registry blob differs from the live binding"
+        )
+
+
+def _validate_selection_bound_scale_up(
+    value: object,
+    *,
+    training_variant: str,
+    position: int,
+    world_size: int,
+    resolved_config_sha256: str,
+    source_revision: str,
+) -> dict[str, Any]:
+    """Validate a manifest member against the live, deeply verified registry."""
+
+    binding = _mapping(value, "selection-bound scale-up binding")
+    _exact_keys(binding, _SCALE_UP_BINDING_KEYS, "selection-bound scale-up binding")
+    if _integer(
+        binding.get("schema_version"),
+        "selection-bound scale-up schema",
+        minimum=1,
+    ) != 1:
+        raise GateValidationError("selection-bound scale-up schema is unsupported")
+    registry_reference = _mapping(
+        binding.get("registry"), "selection-bound scale-up registry reference"
+    )
+    _exact_keys(
+        registry_reference,
+        {
+            "relative_path",
+            "sha256",
+            "size_bytes",
+            "canonical_sha256",
+            "schema_version",
+        },
+        "selection-bound scale-up registry reference",
+    )
+    registry_path = _relative_path(
+        registry_reference.get("relative_path"),
+        "selection-bound scale-up registry path",
+        suffix=".json",
+    )
+    expected_registry_path = Path(
+        "experiments/udlm/protocols/"
+        f"selection_bound_scale_up_registry_gpu{world_size}.json"
+    )
+    if registry_path != expected_registry_path:
+        raise GateValidationError(
+            "selection-bound scale-up registry path disagrees with world size"
+        )
+    if _integer(
+        registry_reference.get("schema_version"),
+        "selection-bound scale-up registry schema",
+        minimum=1,
+    ) != 1:
+        raise GateValidationError("selection-bound scale-up registry schema is unsupported")
+    raw_sha256 = _sha256(
+        registry_reference.get("sha256"), "selection-bound registry raw digest"
+    )
+    canonical_sha256 = _sha256(
+        registry_reference.get("canonical_sha256"),
+        "selection-bound registry canonical digest",
+    )
+    size_bytes = _integer(
+        registry_reference.get("size_bytes"),
+        "selection-bound registry size",
+        minimum=1,
+    )
+    payload = _repository_artifact_bytes(
+        registry_path, label="selection-bound scale-up registry"
+    )
+    if len(payload) != size_bytes or _sha256_bytes(payload) != raw_sha256:
+        raise GateValidationError(
+            "selection-bound scale-up registry differs from its manifest reference"
+        )
+    parsed = _mapping(
+        strict_json_loads(payload, label="selection-bound scale-up registry"),
+        "selection-bound scale-up registry",
+    )
+    if (
+        parsed.get("schema_version") != 1
+        or canonical_json_sha256(parsed) != canonical_sha256
+    ):
+        raise GateValidationError(
+            "selection-bound scale-up registry schema or canonical digest differs"
+        )
+    validated_registry = _deep_validate_scale_up_registry(
+        payload,
+        relative_path=registry_path.as_posix(),
+        expected_raw_sha256=raw_sha256,
+        expected_canonical_sha256=canonical_sha256,
+    )
+    _validate_scale_up_launch_revision(
+        validated_registry, launch_source_revision=source_revision
+    )
+    try:
+        expected = scale_up_registry.expected_manifest_binding(
+            validated_registry, position=position
+        )
+    except scale_up_registry.ScaleUpValidationError as error:
+        raise GateValidationError(
+            f"selection-bound scale-up member is invalid: {error}"
+        ) from error
+    if canonical_json_sha256(binding) != canonical_json_sha256(expected):
+        raise GateValidationError(
+            "selection-bound scale-up binding differs from the verified registry"
+        )
+    member = _mapping(binding.get("member"), "selection-bound scale-up member")
+    registered_config = _mapping(
+        member.get("registered_config"),
+        "selection-bound scale-up registered config",
+    )
+    if (
+        member.get("training_variant") != training_variant
+        or member.get("position") != position
+        or registered_config.get("canonical_sha256") != resolved_config_sha256
+    ):
+        raise GateValidationError(
+            "selection-bound scale-up member disagrees with the launch manifest"
+        )
+    return json.loads(json.dumps(binding, allow_nan=False))
+
+
+def _selection_bound_scale_up_common(value: object) -> dict[str, Any]:
+    """Return the authority that must remain byte-identical across R→S→E."""
+
+    binding = _mapping(value, "selection-bound scale-up binding")
+    member = _mapping(binding.get("member"), "selection-bound scale-up member")
+    common = {
+        "registry": binding.get("registry"),
+        "screen_authority": binding.get("screen_authority"),
+        "selected_design": binding.get("selected_design"),
+        "arm_order": member.get("arm_order"),
+        "training_variant_order": member.get("training_variant_order"),
+        "registered_config_source_revision": member.get(
+            "registered_config_source_revision"
+        ),
+    }
+    _exact_keys(
+        common,
+        _SCALE_UP_COMMON_AUTHORITY_KEYS,
+        "selection-bound scale-up common authority",
+    )
+    return json.loads(json.dumps(common, allow_nan=False))
+
+
+def _live_output_node_identity(
+    path: Path, *, label: str, require_directory: bool
+) -> dict[str, Any]:
+    """Re-probe a node through held no-follow directory descriptors."""
+
+    repository = Path(os.path.abspath(REPOSITORY_ROOT))
+    normalized = Path(os.path.abspath(path))
+    try:
+        relative = normalized.relative_to(repository)
+    except ValueError as error:
+        raise GateValidationError(
+            f"{label} must be a direct repository output node"
+        ) from error
+    if not relative.parts:
+        raise GateValidationError(f"{label} cannot be the repository root")
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        directory_fd = os.open(repository, directory_flags)
+    except OSError as error:
+        raise GateValidationError(
+            f"cannot safely open repository root for {label}"
+        ) from error
+    try:
+        if not stat.S_ISDIR(os.fstat(directory_fd).st_mode):
+            raise GateValidationError("gate repository root is not a directory")
+        for component in relative.parts[:-1]:
+            try:
+                child_fd = os.open(component, directory_flags, dir_fd=directory_fd)
+            except OSError as error:
+                raise GateValidationError(
+                    f"cannot safely open an ancestor of {label}"
+                ) from error
+            os.close(directory_fd)
+            directory_fd = child_fd
+            if not stat.S_ISDIR(os.fstat(directory_fd).st_mode):
+                raise GateValidationError(f"an ancestor of {label} is not a directory")
+        try:
+            state = os.stat(
+                relative.parts[-1], dir_fd=directory_fd, follow_symlinks=False
+            )
+        except OSError as error:
+            raise GateValidationError(f"{label} is unavailable: {normalized}") from error
+    finally:
+        os.close(directory_fd)
+    expected_kind = stat.S_ISDIR if require_directory else stat.S_ISREG
+    if not expected_kind(state.st_mode) or stat.S_ISLNK(state.st_mode):
+        kind = "directory" if require_directory else "regular file"
+        raise GateValidationError(f"{label} must be a direct {kind}")
+    return {
+        "path": str(normalized),
+        "device": int(state.st_dev),
+        "inode": int(state.st_ino),
+        "mode": int(state.st_mode),
+    }
+
+
+def _validate_output_directory_binding(
+    value: object, *, run_directory: Path, log_path: Path
+) -> None:
+    """Require the launch-time output identities to still name the same nodes."""
+
+    binding = _mapping(value, "scale-up output-directory binding")
+    _exact_keys(
+        binding,
+        {
+            "schema_version",
+            "run_directory",
+            "log_file",
+            "hydra_directory",
+            "checkpoint_directory",
+            "policy",
+        },
+        "scale-up output-directory binding",
+    )
+    if (
+        _integer(
+            binding.get("schema_version"),
+            "scale-up output-directory binding schema",
+            minimum=1,
+        )
+        != 1
+        or binding.get("policy") != _OUTPUT_DIRECTORY_BINDING_POLICY
+    ):
+        raise GateValidationError("scale-up output-directory binding policy is invalid")
+    expected = {
+        "run_directory": (run_directory, True),
+        "log_file": (log_path, False),
+        "hydra_directory": (run_directory / "hydra", True),
+        "checkpoint_directory": (run_directory / "checkpoints", True),
+    }
+    for key, (path, require_directory) in expected.items():
+        record = _mapping(binding.get(key), f"scale-up output binding {key}")
+        _exact_keys(
+            record,
+            {"path", "device", "inode", "mode"},
+            f"scale-up output binding {key}",
+        )
+        live = _live_output_node_identity(
+            path,
+            label=f"scale-up output binding {key}",
+            require_directory=require_directory,
+        )
+        if not isinstance(record.get("path"), str):
+            raise GateValidationError(
+                f"scale-up output binding {key} path must be a string"
+            )
+        for field in ("device", "inode", "mode"):
+            _integer(
+                record.get(field),
+                f"scale-up output binding {key} {field}",
+                minimum=1,
+            )
+        if dict(record) != live:
+            raise GateValidationError(
+                f"scale-up output binding {key} differs from the live node"
+            )
 
 
 def _validate_successful_pipeline(value: object, *, label: str) -> None:
@@ -3176,6 +3538,9 @@ def _validate_predecessor_receipt_chain(
         or position != _MATCHED_PANEL_VARIANT_ORDER.index(variant)
     ):
         raise GateValidationError("predecessor-chain treatment position is invalid")
+    scale_up_common_sha256 = canonical_json_sha256(
+        _selection_bound_scale_up_common(manifest.get("selection_bound_scale_up"))
+    )
     current_receipt_path = current_receipt_reference.get("relative_path")
     current_receipt_sha256 = current_receipt_reference.get("sha256")
     if (
@@ -3242,6 +3607,7 @@ def _validate_predecessor_receipt_chain(
             "chain_depth": 1,
             "variant_order_prefix": ["udlm"],
             "receipt_members": [current_receipt_member],
+            "selection_bound_scale_up_common_sha256": scale_up_common_sha256,
             "machine_enforced": True,
         }
 
@@ -3298,6 +3664,15 @@ def _validate_predecessor_receipt_chain(
         _LAUNCH_MANIFEST_KEYS,
         "bound predecessor launch manifest",
     )
+    predecessor_scale_up_common_sha256 = canonical_json_sha256(
+        _selection_bound_scale_up_common(
+            predecessor_manifest.get("selection_bound_scale_up")
+        )
+    )
+    if predecessor_scale_up_common_sha256 != scale_up_common_sha256:
+        raise GateValidationError(
+            "selection-bound scale-up authority changes across the predecessor chain"
+        )
     _exact_keys(
         predecessor_summary,
         _TRAINING_SUMMARY_KEYS,
@@ -3451,10 +3826,18 @@ def _validate_predecessor_receipt_chain(
     prefix = predecessor_evidence["predecessor_receipt_chain"]
     if prefix["chain_depth"] != position:
         raise GateValidationError("R/S/E predecessor chain has the wrong depth")
+    if (
+        prefix.get("selection_bound_scale_up_common_sha256")
+        != scale_up_common_sha256
+    ):
+        raise GateValidationError(
+            "recursive selection-bound scale-up authority is discontinuous"
+        )
     return {
         "chain_depth": position + 1,
         "variant_order_prefix": [*prefix["variant_order_prefix"], variant],
         "receipt_members": [*prefix["receipt_members"], current_receipt_member],
+        "selection_bound_scale_up_common_sha256": scale_up_common_sha256,
         "machine_enforced": True,
     }
 
@@ -3486,6 +3869,7 @@ def _validate_gpu_state(value: object, *, label: str) -> dict[str, Any]:
         isinstance(process, Mapping) for process in processes
     ):
         raise GateValidationError(f"{label}.compute_processes must be an object array")
+    seen_process_pids: set[int] = set()
     for index, process in enumerate(processes):
         process_label = f"{label}.compute_processes[{index}]"
         _exact_keys(
@@ -3493,15 +3877,22 @@ def _validate_gpu_state(value: object, *, label: str) -> dict[str, Any]:
             {"pid", "process_name", "used_memory_mib"},
             process_label,
         )
-        _integer(process.get("pid"), f"{process_label}.pid", minimum=1)
+        pid = _integer(process.get("pid"), f"{process_label}.pid", minimum=1)
+        if pid in seen_process_pids:
+            raise GateValidationError(
+                f"{label}.compute_processes contains a duplicate PID"
+            )
+        seen_process_pids.add(pid)
         if (
             not isinstance(process.get("process_name"), str)
             or not process["process_name"]
         ):
             raise GateValidationError(f"{process_label}.process_name must be nonempty")
-        used_memory = process.get("used_memory_mib")
-        if used_memory is not None:
-            _integer(used_memory, f"{process_label}.used_memory_mib", minimum=0)
+        _integer(
+            process.get("used_memory_mib"),
+            f"{process_label}.used_memory_mib",
+            minimum=0,
+        )
     return {**dict(state), "uuid": uuid}
 
 
@@ -3575,6 +3966,11 @@ def _validate_launch_manifest(
         _expected_artifact_path(Path("output/logs") / f"{run_name}.log")
     ):
         raise GateValidationError("launch manifest log path is not run-bound")
+    _validate_output_directory_binding(
+        manifest.get("output_directory_binding"),
+        run_directory=_expected_artifact_path(expected_run_directory),
+        log_path=_expected_artifact_path(Path("output/logs") / f"{run_name}.log"),
+    )
     world_size = lock["world_size"]
     if manifest.get("user_requested_gpu_count") != world_size:
         raise GateValidationError("launch manifest GPU count disagrees with lock")
@@ -3724,6 +4120,22 @@ def _validate_launch_manifest(
         != lock["resolved_training_config_sha256"]
     ):
         raise GateValidationError("launch manifest resolved training config is unbound")
+    training_variant = manifest.get("training_variant")
+    position = manifest.get("matched_panel_variant_position")
+    if (
+        training_variant not in _MATCHED_PANEL_VARIANT_ORDER
+        or type(position) is not int
+        or position != _MATCHED_PANEL_VARIANT_ORDER.index(training_variant)
+    ):
+        raise GateValidationError("launch scale-up treatment position is invalid")
+    _validate_selection_bound_scale_up(
+        manifest.get("selection_bound_scale_up"),
+        training_variant=training_variant,
+        position=position,
+        world_size=world_size,
+        resolved_config_sha256=lock["resolved_training_config_sha256"],
+        source_revision=lock["source_revision"],
+    )
     resolved_training = _mapping(
         resolved_config.get("training"), "launch resolved training section"
     )
@@ -5192,6 +5604,12 @@ def validate_training_evidence(
         "predecessor_receipt_chain": predecessor_chain,
         "training_variant": _manifest["training_variant"],
         "matched_panel_spec_sha256": _manifest["matched_panel_spec_sha256"],
+        "selection_bound_scale_up": json.loads(
+            json.dumps(_manifest["selection_bound_scale_up"], allow_nan=False)
+        ),
+        "selection_bound_scale_up_common_sha256": predecessor_chain[
+            "selection_bound_scale_up_common_sha256"
+        ],
         "launch_manifest_created_at_utc": _manifest["created_at"],
         "exit_receipt_recorded_at_utc": receipt["recorded_at_utc"],
     }
@@ -5343,6 +5761,19 @@ def validate_completed_matched_panel(
         raise GateValidationError(
             "terminal E and selected candidate do not share one matched panel"
         )
+    selected_scale_up_sha256 = selected_training_evidence.get(
+        "selection_bound_scale_up_common_sha256"
+    )
+    if (
+        not isinstance(selected_scale_up_sha256, str)
+        or HEX_SHA256.fullmatch(selected_scale_up_sha256) is None
+        or terminal_evidence.get("selection_bound_scale_up_common_sha256")
+        != selected_scale_up_sha256
+    ):
+        raise GateValidationError(
+            "terminal E and selected candidate do not share one selection-bound "
+            "scale-up authority"
+        )
     terminal_recorded_at = _utc_timestamp(
         terminal_receipt.get("recorded_at_utc"),
         "terminal E exit receipt timestamp",
@@ -5370,6 +5801,7 @@ def validate_completed_matched_panel(
         ],
         "candidate_locked_at_utc": locked_at.isoformat(),
         "matched_panel_spec_sha256": selected_panel_sha256,
+        "selection_bound_scale_up_common_sha256": selected_scale_up_sha256,
         "chain_depth": len(expected_order),
         "variant_order": expected_order,
         "receipt_members": receipt_members,

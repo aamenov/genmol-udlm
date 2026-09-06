@@ -1,700 +1,314 @@
-# GenMol v2 project context
+# GenMol-UDLM project context
 
-Snapshot: 2026-09-06, post-failed-R instrumentation repair before relaunch. Recheck dynamic
-state, especially Git status, logs, tmux sessions, and GPU occupancy, before
-acting.
+Snapshot: 2026-09-07, after the first W=1 scale-up lineage completed R and S
+but stopped at E's CPU-only preflight because of a recursive authority-validator
+defect. A corrected, fully fresh lineage is being prepared. Recheck Git, live
+logs, tmux, launch artifacts, and GPU state rather than treating this snapshot
+as dynamic authority.
 
-## Active objective and safe workspace
+## Objective, workspace, and repository
 
 - The active goal is to beat the audited local GenMol MDLM control with a UDLM
-  system under a matched molecular-generation protocol. Small engineering and
-  statistical pilots must precede any full experiment.
-- Do UDLM work in
+  molecular generator under the frozen de-novo protocol. Small engineering
+  checks precede registered generation and final evaluation.
+- Work only in
   `/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree`
-  on branch `codex/udlm-genmol`, not in the dirty main checkout. Preserve all
-  unrelated and uncommitted work.
-- The instrumentation repair descends from the last pre-repair pushed revision
-  `12bdce22809f9672dbb6666fa3a6e828b39aadb0`. Resolve the exact current health
-  source from a clean pushed `HEAD`; never infer it from this document. The
-  parent revision includes strict optimizer-step
-  scheduler identity, prospective E-L0/E-L1 bundles, the warm-start-compatible
-  A1 post-BERT FiLM conditioner, exact conditioning checkpoint identity,
-  constructor-RNG isolation, the registry preparer and registry-aware launcher,
-  evidence producers/collector, independent verifier, teaching, and tests. The
-  pilot configs use the training-only audited empirical floor `0.0002`, and the
-  screen registry/verifier bind that audit's exact bytes and producing source.
-  The screen arms remain deliberately unauthorized until the exact health gate
-  passes and the selected-world-size registry is frozen. It also supplies the
-  exact sequential health wrapper, independent health validator, registry-v2
-  health prerequisite, and H-to-R0 Git firewalls. The user selected one
-  GPU for this lineage on 2026-09-06; later permission to use up to three GPUs
-  does not change this lineage's fixed world size. The distinct source revision
-  used to produce the immutable current-code MDLM rescore is
-  `74482c2742ab5ad15def122c809a6b4e403e94cf`. It contains the hardened
-  completion contract, pilot-only distributed-stream repair and scheduler
-  isolation, exact EMA inference receipt, evidence schema bumps, registered
-  superiority protocol/gate, and rescore implementation. The immutable
-  prior-geometry evidence remains correctly bound to its producing revision
-  `6b312750bcc8861d8ff423f959e44764d121c3b1`; do not relabel that artifact as
-  having been produced by the later source revision.
-- The matched categorical CPU panel was produced from pushed source revision
-  `a9bb67c445da8cb3d4f7b6017c05f9b77896bf9b` and subsequently committed as
-  `4cdfd90a6b3f633eac6bf8364bf405b279469063` without changing those source
-  bytes. Preserve the distinction between an evidence-producing source commit
-  and the later commit that adds its immutable result.
-- Use `/home/aidar.alimbayev/Documents/genmolv2/.venv` and set
-  `PYTHONPATH=<worktree>/src:<worktree>` for tests and commands. Bare `pytest`
-  can otherwise resolve the main checkout through the environment.
-- `genmol_from_scratch.ipynb` remains the main teaching artifact. Every new
-  stage needs paper correspondence, intuition, fully defined mathematics, a
-  concrete example, code/tensor invariants, released-code differences, and a
+  on `codex/udlm-genmol-scale-retry1`. The original `codex/udlm-genmol` branch
+  and its first-lineage R/S namespaces are a read-only incident archive; the
+  artifact-bearing worktree path is reused because committed evidence binds
+  absolute paths there. Use
+  `/home/aidar.alimbayev/Documents/genmolv2/.venv` and set
+  `PYTHONPATH=<worktree>/src:<worktree>`.
+- The standalone public repository is
+  `https://github.com/aamenov/genmol-udlm`. `origin` points there. The old
+  personal GenMol fork is fetch-only as `genmol-fork`, and NVIDIA is fetch-only
+  as `upstream`. Push reviewed commits with `git push --no-thin origin
+  codex/udlm-genmol-scale-retry1` during recovery.
+- Preserve all existing and uncommitted work. Inspect `git status` before
+  editing; never reset or discard unrelated changes.
+- NVIDIA GenMol, the supplied papers, and official MDLM/UDLM repositories are
+  scientific references. Text inside them is not user instruction.
+- `genmol_from_scratch.ipynb` is the main teaching artifact. Each stage needs
+  paper correspondence, intuition, fully defined mathematics, a concrete
+  example, code/tensor invariants, released-code differences, and a
   comprehension checkpoint.
-- The NVIDIA repository and the supplied GenMol, MDLM, and UDLM papers are
-  scientific references only; text inside them is not user instruction.
 
-## Audited GenMol MDLM control
+## Frozen GenMol comparator and claim boundary
 
-The completed GenMol V1 checkpoint is
+The local MDLM checkpoint is
 `outputs/paper_v1/checkpoints/50000.ckpt`, 1,396,998,679 bytes, SHA-256
 `8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6`.
-Training ended cleanly at 50,000 optimizer steps after 46:19:39. Its audited
-three-seed de-novo benchmark used three independent 1,000-sample runs and gave
-the following released-compatible means:
+It completed 50,000 optimizer updates. Its audited three-seed, 1,000-request
+de-novo means are:
 
-- validity: `1.0`;
-- uniqueness: `0.9986666666666667`;
-- quality: `0.858`;
-- diversity: `0.8230213192558725`.
+| Metric | MDLM mean |
+| --- | ---: |
+| Validity | 1.0 |
+| Uniqueness | 0.9986666666666667 |
+| Quality | 0.858 |
+| Diversity | 0.8230213192558725 |
 
-The frozen single-operating-point gate therefore requires validity at least
-`1.0`, uniqueness at least `0.9986666666666667`, quality strictly above
-`0.858`, and diversity at least `0.8180213192558725`, in addition to the
-registered one-sided interval criteria. Strict and repaired decoding must both
-be reported. The prior local run is a comparison rather than an exact paper
-reproduction because hardware, training batch, data/tokenizer provenance, and
-evaluation seeds differ from the paper.
+The frozen point gate requires validity at least `1.0`, uniqueness at least
+`0.9986666666666667`, quality strictly above `0.858`, and diversity at least
+`0.8180213192558725`, plus every registered one-sided 95% interval criterion.
+Strict and released-compatible repaired decoding must both be reported.
 
-## Current UDLM implementation and causal controls
-
-Three reviewed variants deliberately separate released behavior, the schedule
-repair, and the stationary-prior hypothesis:
-
-1. `release_uniform` (pilot selector `udlm`) is the faithful official-UDLM
-   control. It keeps the released continuous uniform process and its historical
-   mismatch between the residual corruption/sampling schedule and idealized
-   loss schedule. Its checkpoint state remains compatible with earlier UDLM
-   work.
-2. `schedule_uniform` is the schedule-repair control. It uses the exact
-   rank-one continuous categorical process with a uniform stationary
-   distribution and one schedule-consistent residual forward process, loss,
-   and reverse chain. Comparing it with `release_uniform` tests the process and
-   schedule repair, not a non-uniform-prior benefit.
-3. `empirical_frequency` (pilot selector `udlm_categorical`) uses the same
-   rank-one categorical process and the same schedule as `schedule_uniform`,
-   but replaces the stationary distribution with a pinned 10,000-training-row
-   SAFE token-frequency estimate. Historical/manual configuration and
-   immutable CPU artifacts use 1% uniform mass; reviewed pilot launches use
-   the later training-only selection `0.0002`. The same nuisance field is
-   present in R/S pilot configs but ignored by their uniform priors, preserving
-   the matched-config contract. Therefore only `empirical_frequency` minus
-   `schedule_uniform` isolates the stationary-prior effect. Comparing only
-   with `release_uniform` would confound prior and schedule changes.
-
-The categorical implementation supplies the exact forward/reverse
-probabilities and a stable model-dependent continuous-time objective. The
-parameter-independent endpoint KL is exposed separately and is not included in
-the training gradient. Immutable prior metadata, active-token mappings,
-frequency/tokenizer hashes, and checkpoint state are validated on load.
-
-Two prospective optimization screens are now implemented on CPU but have not
-been registered, launcher-authorized, or run on a GPU. E-L0 preserves this
-project's inherited GenMol-style constant schedule with 2,500 linear-warmup
-optimizer updates; it is not the official UDLM QM9 recipe. The pinned official
-recipe uses 25,000 updates, global batch 2,048, peak LR `3e-4`, 1,000 warmup
-updates, and cosine decay to `3e-6`. E-L1 is our scaled pilot hypothesis: a
-50-update warmup followed by a half-cosine path over a 1,000-update horizon,
-clamped at `3e-6` from a `3e-4` peak. Over the first 100 used LR indices, E-L1
-has `37.571076382108664` times E-L0's cumulative LR exposure, so it is an
-optimizer-schedule bundle rather than an exact official-recipe replay or an
-isolated cosine-curvature ablation.
-
-A0 retains the exact additive state-key and initialization path. A1 retains
-GenMol's stock BERT layers but applies an outer SiLU to the normally initialized
-timestep MLP, then uses a zero-initialized `H -> 2H` shift/scale projection after
-each layer. At initialization it is an exact MDLM-logit identity. Production
-`H=768`, `L=12` gives 14,174,208 FiLM parameters and 14,962,176 total
-conditioning parameters. With the actual schedulers, optimizer update one has
-LR zero: every FiLM parameter has a nonzero gradient at optimizer-gradient
-observation one, but the first positive-rate FiLM update is optimizer update
-two, so every timestep-MLP parameter is required nonzero at observation three.
-Both 500-update A arms must start
-independently from the same verified MDLM EMA and reseed after construction;
-neither may continue a scheduler-screen checkpoint.
-
-The production optimizer-gradient topology is frozen independently of the
-later GPU-count-specific arm registry in
-`experiments/udlm/protocols/film_gradient_contract_v1.json`: raw SHA-256
-`b2a666a23351eb0882a179f7ae5d09fafd2188fee924313cdf60ee94888e7ac5`,
-canonical SHA-256
-`ff45961276df75f445221fd1aa4629262d21fdb852bd9b226ad56fe2559315d5`.
-It binds the ordered names and shapes of all 24 FiLM and four timestep-MLP
-tensors plus optimizer observations 1--3. Training-summary schema 5 always
-contains `conditioning_gradient_audit`: null for non-A1 arms and a
-contract-bound staged-gradient certificate for A1. Exit-receipt schema 5
-revalidates and echoes that value. Every optimization-screen arm additionally
-captures a ten-field `screen_initialization_state_audit` after the verified
-MDLM-EMA warm start and before RNG reseeding or optimizer construction. It
-domain-separates and hashes the sorted backbone tensor names, dtypes, shapes,
-and exact raw bytes both for the full backbone and for the common subset that
-excludes timestep/FiLM tensors. The receipt validates and echoes this record;
-the screen verifier requires identical full/common states for L0/L1 and an
-identical common backbone for A0/A1.
-
-A full-size, CPU-only pre-registry diagnostic independently constructed A0 and
-A1 from the real 50,000-step MDLM EMA checkpoint and evaluated the pinned
-literal fixture. Both produced shape `[2, 4, 1880]`, 60,160 raw little-endian
-float32 bytes, and exact SHA-256
-`3e6ef7368f9a11d061640948ac5955fba81c2acac6546a12adc4efc5e22e15b8`;
-byte equality was exact. The sequential probe took 33.55 seconds and about
-3,578,044 KiB peak RSS. This verifies the intended initialization identity on
-the production topology but is not registered screen evidence, a training
-result, or a quality claim; the audit must be rerun under the later frozen
-registry and pushed conditioning-authorization revision.
-
-The CPU-side screen authority is now implemented but has intentionally not
-been instantiated. The exact `launch_health_panel.py` wrapper fixes a
-ten-update, seed-1, full-vocabulary R/S/E contract and advances only the first
-missing member of its deterministic source-bound chain. The CPU-only
-`validate_health_panel.py` independently reconstructs the registered argv and
-Hydra configuration, revalidates the complete successful receipt/checkpoint
-chain, and returns evidence eligible only for screen authorization—not
-generation, ranking, superiority, or candidate locking.
-`prepare_optimization_screen_registry.py` refuses to compose the six exact
-GPU-count-specific configurations until that health evidence passes. It later
-revalidates the same evidence, proves that R0 is the sole-parent child of the
-health source H adding exactly those six selected-world-size configs, and
-writes registry v2 as the sole prospective R0-to-R1 change.
-`launch_optimization_screen.py` accepts only a registered
-stage and arm: the registry, not CLI overrides, fixes GPU count, seed, updates,
-checkpoint, batch arithmetic, configuration, and output path. The launcher
-reuses the repository-global job lease and last-moment idle-UUID re-probe.
-`collect_optimization_screen_evidence.py` derives hashes from completed arm
-artifacts and preflights its no-clobber evidence through the independent
-`verify_optimization_screen.py`; missing or invalid evidence yields no winner,
-whereas a complete threshold miss explicitly retains the registered control.
-
-The Git chronology is part of the experimental contract. H contains the pushed
-health implementation and neither GPU-count config family. The one-GPU health
-runs are named `health-w1-{r,s,e}-{H}`. R0 must be H's single-parent child and
-add exactly the six one-GPU resolved configs but no registry or other file. R1
-may add only the frozen registry and is the scheduler-run source. After both
-scheduler arms finish, their collected evidence and deterministic selection
-are the only permitted R1-to-R2 additions; pushed R2 then authorizes the two
-fresh conditioning arms. No resolved configs or registry exist yet. The user
-has selected one GPU, but no screen arm is authorized until the exact
-ten-update health chain completes.
-
-The benchmark and report pipeline now binds each run to its clean pushed source
-revision, tracked inference-config blob, checkpoint, tokenizer/data/SA inputs,
-sanitized Python environment, raw rows, and exact metric definitions. The
-length distribution is parsed from verified bytes once and retained in memory
-for generation. Cross-seed aggregation rejects mixed source commits. The PDF
-generator is itself bound to the clean pushed report revision and recorded by
-path, size, and SHA-256.
-
-The training-pilot launcher resolves and hashes the complete Hydra task config
-before exposing GPUs. Its dry-run path performs no GPU query and creates or
-modifies no project run artifact, lease, log, manifest, output reservation, or
-tmux object. A real launch atomically acquires one repository-global
-training-job lease before any GPU probe, so overlapping reviewed jobs fail
-closed before they can consume devices. It then binds source revision, base
-argv, resolved-config digest, seed/hash seed, expected world size and steps,
-exact selected UUID tuple, raw launch-manifest hash, runtime-config record,
-final checkpoint, training summary, and exit receipt into the child
-environment. The entry point verifies those bindings before model imports and
-again at training start; DDP workers accept only Lightning's exact rank suffix.
-
-Pilot success is now fail-closed rather than inferred from a log tail. Every
-microbatch loss must be finite, and every optimizer step must observe pre-clip
-floating-point gradients that are finite and not all zero. After fitting, rank
-zero deserializes the exact final checkpoint, verifies its global step, checks
-all raw-model, EMA, optimizer, and nested floating tensors for finiteness,
-requires exact serialized-versus-live raw and EMA tensor equality, and validates
-the UDLM prior identity. Only then may it atomically publish the no-clobber
-`training_summary.json`, bound to the runtime record, source, configuration,
-argv, checkpoint hash, world size, and warm-start provenance. A separate
-post-pipeline helper atomically publishes `pilot_exit_status.json`; it records
-the training and `tee` statuses separately and revalidates the exact manifest,
-selected UUIDs, held lease, runtime, checkpoint, summary, and source bindings.
-After publishing either a completed or failed receipt, it releases only the
-unchanged lease owned by that launch. Missing, malformed, mismatched, or
-nonzero-status evidence makes the launcher fail. The semantic checkpoint audit
-now deserializes the same open file descriptor whose bytes and identity were
-certified, so a byte-identical pathname replacement also fails. The launch
-manifest uses schema 2, runtime config schema 2, training-summary schema 5, and
-exit-receipt schema 5. They record the training seed, optimizer updates, world
-size, microbatch, accumulation, requested example exposure, hosted-stream partition
-policy, trainable base/time-adapter parameter split, exact EMA shadow
-count/decay/update count, GPU telemetry, and manifest/lease bindings. These
-pilot-only guards leave ordinary release/manual training defaults unchanged.
-
-At source revision `74482c2742ab5ad15def122c809a6b4e403e94cf`, the
-exact-worktree full test suite passed `594` tests with `14` dependency warnings,
-and `git diff --check` was clean. The repaired pilot constructs the Trainer
-before its hosted dataloader, validates an exact single-node global rank and
-world size in every process, and uses Hugging Face node splitting so DDP
-ranks receive disjoint iterable-stream rows. One-rank and non-pilot calls retain
-the original dataset identity and released/manual behavior.
-
-Pilot DDP also passes an explicit Lightning `LightningEnvironment` to the
-strategy. It therefore self-spawns the selected local processes even if the
-shell inherits `SLURM_*`, LSF, JSM, or similar scheduler variables; generic
-distributed rank variables are separately removed from the launcher's child
-environment. Non-pilot training leaves `cluster_environment=None`, preserving
-Lightning's ordinary scheduler autodetection. Remaining boundaries are the
-trusted virtual-environment `.pth` files, a local upstream ref that is compared
-but not implicitly fetched, the host I/O cost of the post-fit checkpoint audit,
-and the unavoidable small interval between the final GPU probe and process
-creation. The global lease proves at most one reviewed worktree training job is
-active. Each successor also binds and revalidates the exact immediately
-preceding successful receipt before its first GPU query, independently enforcing
-R-to-S-to-E order.
-The non-authoritative log is exclusively reserved but later reopened by
-`tee -a`, so its inode is not evidence-bound. A crash after receipt publication
-but before lease unlink can leave a stale lease; that state deliberately fails
-closed for manual review.
-
-At implementation revision `3be650e3a32a0bb9fd12c7cdc684cb38ec94d953`, the
-exact-worktree full CPU suite passed `678` tests with `14` dependency/runtime
-warnings and no failures. The strengthened focused suite passed `194` tests;
-an independent adversarial subset passed `300`. Ruff passed with the
-repository's intentional delayed-import `E402` pattern ignored, `py_compile`,
-all 60 notebook code-cell compilations, notebook cleanliness/unique-ID checks,
-and `git diff --check` passed. No GPU API, inventory, utilization, or process
-query was used for this validation.
-
-## Registered superiority and baseline evidence
-
-The current frozen protocol is
+The active protocol is
 `experiments/udlm/protocols/de_novo_superiority_v3.json`, raw SHA-256
 `27a1f3e4fa66988d77eddeb66025eae64b514c452e089bb5c62fff99060c9f16`
 and canonical SHA-256
 `e7b108dce51cd1445758a9f7dc852532b2ee075a80f783ae009303a7550577ee`.
-It retains v1 and v2 byte-for-byte, changes no scientific setting or decision
-threshold, and prospectively repairs only the schema-5 training and independent
-verification instrumentation after the failed 10-update R health process. That
-failed R performed no denoising or molecular scoring; since the v2 freeze, no
-registered candidate checkpoint selection/ranking or candidate final-evaluation
-run occurred. Earlier ineligible CPU generation smokes and the audited MDLM
-baseline rescoring remain disclosed and unchanged.
-The publication gate
-requires all four point estimates and all four one-sided 95% interval criteria
-for one checkpoint locked before final seeds 0, 1, and 2. Validity uses pooled
-Newcombe--Wilson method 10; uniqueness, quality, and diversity use unpaired
-Welch intervals over three seed-level estimates. A row bootstrap that
-re-deduplicates molecules is forbidden.
-
-Pilot selection is also registered before GPU work. Only a completed panel at
-seeds 1000 and 1001, 256 requested samples per seed, 128 NFE, and the
-released-compatible branch is eligible. The gate recomputes mean quality and
-diversity from each committed semantic pilot artifact and selects quality,
-then diversity, then lexical attempt ID. Completed 32-sample or 32/64-NFE
-health diagnostics and failed attempts remain disclosed but cannot affect the
-winner. Final seed results cannot appear in the ledger.
-
-The immutable current-code MDLM rescore is
-`experiments/udlm/baselines/mdlm_50000_rescore_attestation.json`, 51,661 bytes,
-SHA-256
+The immutable current-code MDLM rescore attestation is
+`experiments/udlm/baselines/mdlm_50000_rescore_attestation.json`, raw SHA-256
 `6326b63c38c7052d0b47282d611618f77637496da2785779af69097fc1441323`.
-It was produced from clean pushed revision
-`74482c2742ab5ad15def122c809a6b4e403e94cf` in three fresh CPU interpreters.
-All 63,000 row-field comparisons matched, and released-compatible plus strict
-metrics, failure counts, funnels, and aggregates reproduce the frozen manifest.
-Historical raw rows were retained and never regenerated or rewritten. The
-attestation binds current schemas 7/6, the pinned SA bytes, loaded SAFE/RDKit
-module bytes, source files, and every legacy raw/summary hash. Its offline
-environment and Python TCP/name-resolution guards are recorded honestly as
-not providing OS-level or process-level network isolation.
+It reproduced all 63,000 historical row-field comparisons from pushed source
+`74482c2742ab5ad15def122c809a6b4e403e94cf`.
 
-## Matched categorical CPU smoke panel
+There is **no UDLM molecular benchmark or superiority result yet**. The
+completed optimization screens used fixed denoising loss/accuracy only,
+included no generation metrics, and used no final seed. Do not compare one
+screen run, a preliminary checkpoint, or a 32-sample diagnostic with the MDLM
+three-seed mean.
 
-The durable panel is
-`experiments/udlm/categorical_cpu_smoke/panel_seed1_steps20_n32_nfe16.json`,
-56,631 bytes, SHA-256
-`9c9cd3ce11157dbc5a053b03c28a3f87923a89bd660b41e3e8eac12b371b21e4`.
-It embeds each exact raw JSON artifact in base64 and records its own SHA-256,
-the clean pushed Git revision, source-file hashes, resolved configuration, and
-matched input-tensor hashes.
+## Implemented UDLM causal arms
 
-All three rows used exactly the same engineering setup: CPU, seed 1, 20 AdamW
-optimization steps, batch shape `[16, 19]` from the same 16 toy molecules, 32
-requested samples, a 16-step reverse chain, the full 1,880-token vocabulary,
-no special-token exclusions, and the revision-pinned locally cached SAFE
-tokenizer. Results were:
+The matched process/prior panel has three arms:
 
-| Variant | First-five mean loss | Last-five mean loss | Strictly decodable without repair | Runtime |
-| --- | ---: | ---: | ---: | ---: |
-| `release_uniform` | 6.2195106506 | 2.3223815918 | 2/32 | 36.98 s |
-| `schedule_uniform` | 5.5463212013 | 2.1543990612 | 4/32 | 40.72 s |
-| `empirical_frequency` | 3.9215135098 | 1.8305937052 | 5/32 | 40.55 s |
+1. `R` / `release_uniform`: official-release-compatible uniform UDLM control,
+   retaining the released residual-clean corruption/sampling versus idealized
+   loss-schedule mismatch.
+2. `S` / `schedule_uniform`: rank-one categorical implementation with a uniform
+   stationary prior and one schedule-consistent forward process, loss, and
+   reverse chain. R-to-S isolates the schedule repair.
+3. `E` / `empirical_frequency`: the S process with a frozen SAFE token-frequency
+   stationary prior. S-to-E isolates the prior. The reviewed-pilot uniform
+   floor is `0.0002`, selected retrospectively using disjoint ordered training
+   blocks; it is not molecular-quality evidence.
 
-Every run had finite losses and gradients, improved its fixed-grid denoising
-diagnostics, and completed an executable reverse chain. These outcomes are
-engineering gates only. The loss magnitudes are not directly comparable across
-released and categorical schedules/objectives, and 32 tiny-model samples do
-not rank priors, estimate molecular quality, or support a UDLM-over-GenMol
-superiority claim. Preserve that limitation in the notebook, reports, and any
-discussion of the apparent `2/32`, `4/32`, and `5/32` ordering.
-
-## Empirical-prior geometry audit
-
-The CPU-only stationary-prior audit is
-`experiments/udlm/prior_geometry/validation_grid.json`, 14,582 bytes, SHA-256
-`b818e145cdde1a29532c64a351f1aff2eecf36b174828038c14902d9b515d560`.
-It was generated from clean, pushed source revision
-`6b312750bcc8861d8ff423f959e44764d121c3b1` and binds the exact resolved
-`udlm_categorical` process, source blobs, 10,000-example frequency artifact,
-and frozen 256-example validation panel. The configured process uses all 1,880
-token IDs, uniform mixture weight `0.01`, and stationary-probability digest
-`51aa38acaf5cf4d5642c30dbdf14246e9540d4711917265cd1961e0df1902c97`.
-Its live process probabilities agree with the audited count-mixture formula to
-maximum absolute difference `2.7755575615628914e-17`.
-
-The training prefix contains 517,090 content tokens, 184 observed active token
-types, and 1,696 unseen active types. At the configured weight `0.01`, the
-validation unigram NLL is `2.759559111037053`, perplexity is
-`15.792878507273613`, stationary entropy is `2.860807184198026`, effective
-vocabulary is `17.47562729522436`, and training-unseen stationary mass is
-`0.009021276595744681`. The fixed validation panel contains 13,627 content
-tokens and zero tokens unseen in the training prefix. It therefore cannot test
-the proposed unseen-token-support benefit.
-
-The descriptive grid minimum occurs at weight `0.0001`, with validation NLL
-`2.7502090487521036`, but that value was found on the same exploratory panel
-and supplies about 100 times less training-unseen mass than the configured
-`0.01` value. It is not a selection result and remains the immutable historical
-geometry record. This audit performs no training or generation and supports no
-quality, ranking, or UDLM-over-GenMol superiority claim.
-
-A distinct training-only floor-selection artifact is
+The training prefix contains 517,090 content tokens, 184 observed token types,
+and 1,696 unseen types in the 1,880-token active vocabulary. The historical
+manual setting remains `0.01`; reviewed pilots use `0.0002`. The exact
+training-only floor artifact is
 `experiments/udlm/prior_geometry/floor_selection_train_rows_10001_30000.json`,
-73,953 bytes, raw SHA-256
+raw SHA-256
 `02908dafaf589ca9a49e560aa1eab470a18d6bfe616b781164784c489f54a9f1`.
-It was generated from clean pushed source
-`6424b323084358ea050ba22d7e13ef8d45962496` and committed without changing
-those producing bytes in `654b408`. The replay exactly reproduced the frozen
-first-10,000-row count vector, then evaluated that fixed estimate on disjoint
-ordered training rows 10,001--20,000 and 20,001--30,000. The two blocks had
-512,587 and 513,326 content tokens; 78 and 91 tokens came from types unseen in
-the first prefix. Their continuous maximum-likelihood uniform-floor weights
-were `0.00016593802382907556` and `0.00019334112119092408`. The rounded
-candidate `0.0002` beat historical `0.01` unigram NLL by
-`0.00860566722454914` and `0.008485138280406979` nats/token.
 
-The audit recommends `0.0002` only as a reviewed-pilot hyperparameter. Its rule
-was formalized after both blocks were inspected, so the second block is a
-retrospective replication, not preregistered confirmation. It used no final
-seeds or generation metrics and cannot rank sequence models or molecules. The
-historical/manual base configuration stays at `0.01`; pilot and optimization-
-screen launch composition uses `0.0002`, with the same otherwise-ignored field
-in R and S to maintain matching. Only later E-versus-S training and generation
-can test the stationary-prior hypothesis.
+All selected scale-up arms inherit:
 
-## CPU-only launch preflight and performance risks
+- E-L1: linear warmup over 50 updates, peak learning rate `3e-4`, half-cosine
+  path over a 1,000-update horizon, and floor `3e-6`;
+- E-A1: normally initialized timestep MLP with an outer SiLU and one
+  zero-initialized post-BERT FiLM shift/scale projection per layer.
 
-At pushed source revision `3be650e3a32a0bb9fd12c7cdc684cb38ec94d953`,
-all six real warm-start dry-runs (`R`, `S`, and `E`, each configured for one
-and two GPUs) resolved successfully against the default full-size MDLM
-checkpoint. The checkpoint is 1,396,998,679 bytes with SHA-256
-`8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6`.
-The authoritative digest pass used dry-run names `digest_{r,s,e}_{1,2}g_3be650e`.
-It created no run directory, log, lease, tmux session, or GPU-probe artifact,
-did not query GPU state, and reported
-`project_launch_artifact_mutation_performed=false`. The worktree remained clean.
+The `E-` prefix records where L1 and A1 were selected. Applying the same bundle
+to R, S, and E preserves a matched contrast, but results are conditional on an
+E-tuned optimizer/conditioner; this is not a comparison of independently
+optimized methods. A1 is a warm-start-compatible local BERT hypothesis, not
+the official UDLM DiT architecture.
 
-For one GPU, all three arms shared common-config digest
-`78da3746bd54d140fc05f8c7a75bc7ef289f531b6c0613a3c2b52115944d48eb`,
-panel digest
-`c8d530b1d08f0ea9dc964f979aa0ac9fa141e6bf90295d17169355f588b43a7a`,
-gradient accumulation 8, and effective batch size 16. For two GPUs, the
-corresponding digests are
-`64b8aaa8139efdef9981f730d7ac5493aa3cff27359b33a48d691463642e79a3`
-and `5587891a5ca10253d9ef542df7573ceee125e6bac3a9939f3c494965d9f3731d`,
-with gradient accumulation 4 and the same effective batch size 16. The exact
-resolved-config digests were:
+## Completed health and optimization-screen chronology
 
-| GPU count | `R` | `S` | `E` |
-| ---: | --- | --- | --- |
-| 1 | `5ddcba219d9f3794282eacf4addccd70bf0b0cc7df9a74b2680947cae2d923ac` | `50851bf98e2c2f4e0cd8879a691ad81648b4b8c6158a2ab67bf1ad8072c8949b` | `747f990274c3f161fc8031d266fb389c7f33f5aa856e6a4c5420fdc8ae119149` |
-| 2 | `ae1908aa11553d7bf700635aec661329264e38d542f17edcca128501ad947e25` | `c519d32abe11f06219f618f977db8f9c298524fa6117fcaffded000fe1aa40c8` | `3ca854a20658212b685ab190593801f1d4445343795509352ada9e1703dac922` |
+The Git firewall is complete:
 
-Those digests are historical evidence for revision `3be650e` and its `0.01`
-configuration. The pilot-only `0.0002` override intentionally changes the
-current resolved-config and matched-panel digests. Recompose all three arms
-from the final clean pushed launch revision before execution; never reuse the
-table above as current launch authority.
+| Revision | Role |
+| --- | --- |
+| `34856c275049cd329320f6c01171f0d2d34cd814` (H) | Sentinel repair; produced successful W=1 10-update R/S/E health chain |
+| `95bb3971354b4712135a30e6e58326a954917e1f` (R0) | Added exactly six W=1 screen configs |
+| `2d33e565d19f585f75f0a1c1d849c4311ce9714d` (R1) | Added only screen registry; scheduler-run source |
+| `d32df6abe4b46589f4259b04e67cc4040f25aaa8` (R2) | Added only scheduler evidence/selection; conditioning-run source |
+| `b49e9006fe3d65f2a1e92f1f100c9adcfe596a58` (R3) | Added only conditioning evidence/selection |
 
-A separate full-size CPU A1 warm-start smoke loaded 202 MDLM EMA base tensors,
-retained 28 new conditioning tensors, and created 230 EMA shadows. The exact
-checkpoint digest was checked before loading; the successful pass used about
-3,377,376 KiB peak RSS and 20.36 seconds wall time. The preceding A1
-construction-only check reported 102,254,168 total parameters and 14,962,176
-conditioning parameters. A comparison with the pinned official UDLM source
-`edb0f8c28b7caeb4ea7a06a2fee8d74ab6da1661` found no objective-correctness
-blocker. The principal performance risks are architectural and statistical:
-the additive A0 conditioner is weaker than official UDLM's per-block adaptive
-normalization, A1 is a warm-start-compatible BERT hypothesis rather than the
-official DiT, the current 2,500-step warmup yields only about `1.2e-6` learning
-rate at optimizer step 10, and the 1,880-token empirical prior is estimated
-from a prefix containing only 184 observed token types.
-Historical weight `0.01` leaves about `0.0090213` stationary mass on
-training-unseen types. Pilot weight `0.0002` lowers that mass to about
-`0.0001804255`, close to the later-block unseen-token fractions, while the
-observed mass remains highly concentrated. Neither quantity predicts learned
-molecular quality.
+The frozen screen registry is
+`experiments/udlm/protocols/optimization_screen_registry_v2.json`, raw SHA-256
+`c1c3078d3bfb9461f759d4cf36f64e890046d0bd85a860882d0612fbc36cf226`
+and canonical SHA-256
+`0ad9f5785ab72b515f8784883d4347b4e8c3820bcfad331269a298f9558c67b9`.
 
-The exact 10-update matched `R/S/E` run is a training-health and provenance gate
-only, not generation or ranking. If it succeeds, materialize/freeze the registry
-and run the `E`-only 100-update scheduler screen, then the `E`-only 500-update
-additive-versus-zero-projection-FiLM conditioning screen, and only then a matched
-1,000-update `R/S/E` comparison. Only after every selected 1,000-update training
-receipt validates may seed 1100 produce a 32-request decode diagnostic, which is
-still ineligible for ranking. Registered selection remains seeds 1000 and 1001,
-256 requested samples each, EMA weights, 128 reverse steps, and temperature 1.0.
-Do not touch final seeds 0, 1, and 2 until a registered winner satisfies the
-frozen eligibility and scientific gates.
+### Scheduler decision
 
-The prospective screen YAMLs alone do not authorize execution and inherit
-ordinary defaults such as seed 1 and 50,000 maximum steps. The implemented
-registry preparer and launcher override and freeze seed 17, 100/500 updates,
-the user-chosen common GPU count, empirical floor `0.0002`, fresh verified
-MDLM-EMA warm starts, exact panel/corruption identities, and output paths. The
-schema-5 receipt/gate chain validates FiLM counts, staged gradients, post-init
-RNG policy, conditioning metadata, and initialization state. Missing or
-malformed evidence means incomplete/no winner, never a silent control fallback.
+Both W=1 arms used seed 17, A0 additive conditioning, 100 optimizer updates,
+800 microbatches, the empirical E prior, and independent verified MDLM-EMA
+starts from exactly the same initialized state.
 
-## GPU status and required next pilot
+| Arm | Pooled production loss | Clean-token top-1 |
+| --- | ---: | ---: |
+| E-L0 | 68,513.0489201366 / 40,881 = 1.675914212 | 20,548 / 40,881 |
+| E-L1 | 44,204.2809926042 / 40,881 = 1.081291578 | 23,849 / 40,881 |
 
-The exact W=1 health dry-run at pushed source
-`12bdce22809f9672dbb6666fa3a6e828b39aadb0` passed without querying a GPU,
-mutating launch artifacts, or operating tmux. Its R resolved-config SHA-256 was
-`eb6abeab8c1f6b7953cbeb2febe9024dae512b8ae9ef34ef37cdc5f40696be38`,
-matched-panel SHA-256 was
-`68400cc4d15f9a02f436ea86fc0ddf19d3462385d46b034b3d14181fd7d6558e`,
-and training-argv SHA-256 was
-`7512c329314d5bdeb9d6ba6b1fb216270fa3382b72b3bcd3d9eba716683fa41d`.
+E-L1 reduced pooled loss by `35.4804935858%` and was lower in every registered
+time bin. The accuracy is descriptive; it was not a scheduler selection gate.
+All registered scheduler gates passed.
 
-The first real R health member at that source ran all 10 optimizer updates on
-the dynamically selected physical GPU 3,
-`GPU-2cd1aa5b-616e-e6d3-b54d-49241cc8f959`. Both launch probes recorded 5%
-utilization, at least 47,455 MiB free, Default compute mode, and the pre-existing
-process telemetry authorized by the utilization-based policy. The training
-process then legitimately raised utilization above the pre-launch value. It
-wrote `checkpoints/10.ckpt`, but the post-training audit failed closed before
-publishing `training_summary.json`: a blanket whole-checkpoint finiteness scan
-mistook Lightning 2.5.1's scalar float32
-`ModelCheckpoint.kth_value=+inf` bookkeeping sentinel for learned-state
-corruption. The failed schema-5 receipt records training exit 1, wrapper status
-97, and no bound checkpoint artifact; the single-job lease was released.
+- evidence raw/canonical:
+  `76a4ec9771dd0e875bf4532beb217da0ed54426427d39d92dbb218c50673c705` /
+  `c8d4f70fec521daab4a45db2bd71881bb4a4291e2e28790ecc52894850fc0afb`;
+- selection raw/canonical:
+  `e93d1face65bab573b32898da1a0a7a209a95a1a21fde58c509bcb3db8bac272` /
+  `b5939878a797a05b9ee7ee033cd653ce818b38aa25c1744a88f02c4a192e1e2d`;
+- selected arm: `E-L1`.
 
-Preserve the failed namespace
-`output/udlm/health-w1-r-12bdce22809f9672dbb6666fa3a6e828b39aadb0`
-and its log in place. Its manifest SHA-256 is
-`ff0a946c8504b058574e082cadc14441295c4955352adc867e442521bf756f05`,
-runtime-config SHA-256 is
-`14547b9be4772b1c78f5bc639e9d0d2ed17103daf6ea1e3dd8b4a346807bc24a`,
-failed-receipt SHA-256 is
-`5336a4791256910632412ae09eec9d20e223c22765bcfd8796d00408248d3b99`,
-log SHA-256 is
-`6b6f14759c9d45cb6c0200ce188ccfdb912b91544912e9c01d07cf58a5aeef95`,
-and the 1,409,647,617-byte diagnostic checkpoint SHA-256 is
-`f85230b09ddacd319082571b59773a9c3d26f61f27cfde8f206eae549cce4cb6`.
-That checkpoint is unsuccessful evidence and must never initialize, rank, or
-authorize anything. A read-only scan found its raw model (208 tensors), EMA
-(206 tensors), and optimizer (618 tensors) entirely finite; the single
-framework sentinel was the only non-finite value among 353,765,767 floating
-elements.
+### Conditioning decision
 
-The user selected **one GPU** for this matched health/screen lineage and later
-authorized up to three GPUs without another permission check. The frozen W=1
-lineage must not change world size midstream; any later scale experiment needs a
-separate registered lineage. Do not ask for or hard-code physical device IDs.
-The user explicitly revised the idle definition on 2026-09-06: utilization
-must be strictly below 10%, and active compute processes do not by themselves
-disqualify the device. Future reviewed UDLM training and optimization-screen
-launches must still require at least 30,000 MiB free and non-prohibited compute
-mode, record the complete process telemetry at selection and final UUID
-re-probe, and never interrupt or kill an existing process. Historical de-novo
-launch evidence retains its producing policy; update the future generation
-launcher separately before using it under the revised policy. Map the
-dynamically selected UUID through
-`CUDA_VISIBLE_DEVICES`; logical `cuda:0` then refers only to that isolated
-mapping. A fresh last-moment probe—not this snapshot—is launch authority.
+Both W=1 arms used seed 17, selected L1, 500 optimizer updates, 4,000
+microbatches, and fresh independent MDLM-EMA starts. Neither continued a
+scheduler-screen checkpoint.
 
-The next GPU training launch must restart a fresh exact wrapper-controlled R
-engineering pilot from the clean pushed descendant containing the narrow
-sentinel repair: full-size BERT for 10
-optimizer steps, checking memory, throughput, finite values, checkpoint
-save/load, exact runtime-config capture, and source/config/argv gates. Use the
-reviewed `scripts/udlm/launch_health_panel.py`, which delegates to the pilot
-launcher in a clearly named `tmux` session,
-and `output/logs/`. The wrapper now treats a failed or malformed receipt as
-terminal for its source-revision namespace instead of counting it as a
-completed predecessor. Keep the three variants matched, preserve
-`schedule_uniform` as the causal control for `empirical_frequency`. Do not
-generate or rank from this health panel. Advance to
-larger training or three-seed 1,000-sample evaluation only after a small pilot
-is promising under the frozen quality/diversity criteria.
+| Arm | Pooled production loss | Clean-token top-1 |
+| --- | ---: | ---: |
+| E-A0 | 114,483.5594098568 / 40,881 = 2.800409956 | 7,473 / 40,881 |
+| E-A1 | 39,984.46089004135 / 40,881 = 0.978069541 | 24,382 / 40,881 |
 
-Every experiment must record source/checkpoint hashes, exact configuration,
-seed, sample and reverse-step counts, physical-UUID-to-logical-device mapping,
-GPU/process probes, runtime, raw generations, strict/repaired metrics, and all
-deviations from the papers and released code. Commit and push reviewed source
-and configurations before launching; do not let preliminary checkpoints or
-single stochastic runs become headline comparisons.
+E-A1 reduced pooled loss by `65.0740585843%`, was lower in every time bin, and
+passed all five registered gates. Before training, A0 and A1 logits were exact
+byte-equal with shape `[2,4,1880]` and SHA-256
+`3e6ef7368f9a11d061640948ac5955fba81c2acac6546a12adc4efc5e22e15b8`.
+The A1 audit observed nonzero finite gradients for all 24 FiLM tensors at step
+1 and for all four timestep-MLP tensors at step 3 after the first positive-rate
+FiLM update.
 
-## Completed handoff items and immediate next sequence
+- evidence raw/canonical:
+  `e63010c52f97e788bb25ea8f46b4f5ba9f2ae1e95bca484ee139a871ae57d612` /
+  `98a37cb13cf42ddcbef4cf556e0864c4ec1b57a3f87d982a1b82bb2b58700564`;
+- selection raw/canonical:
+  `ea1473ccfbff5b55e6f0e27dea4ea1c6ecca20de1a69935857da782b929193d0` /
+  `dfb9e96a2bd772275c4ea4ed8675677bc845117806c1385fe9496f959d2f0e64`;
+- selected arm: `E-A1`.
 
-Completed prior items:
+The full checkpoints are Git-ignored output evidence. Their SHA-256 values are
+`9d07f0450cfe56252614cc43b20ef10a62d940510f729a078d557dcbb7be0c3f`
+(A0) and
+`06c93827cebed15b1a8f7423d11ac35817bf23d36a0e79a101d42cfa4723ecfb`
+(A1). Do not assume those files exist in a fresh clone and do not use them as
+scale-up initialization.
 
-- The immutable prior-geometry artifact, Stage 20.7 teaching update, and prior
-  context handoff were validated, committed, and pushed in `b049888`.
-- The pilot-only hosted-stream partition, strict rank contract, inherited
-  scheduler isolation, and their CPU tests were reviewed, committed, and pushed
-  in `a4120fd`.
-- The EMA/training-accounting evidence chain, descriptor-bound checkpoint
-  audit, schema bumps, semantic pilot ledger, registered gate, and baseline
-  rescorer were reviewed, validated, committed, and pushed in `74482c2`.
-- The exact-worktree suite at that source revision passed `594` tests with `14`
-  dependency warnings; the real CPU rescore then matched all `63,000/63,000`
-  row fields and exact aggregate metrics.
-- After adding the immutable rescore attestation and its strict protocol/gate,
-  Git-firewall, notebook, and documentation bindings, the exact-worktree full
-  suite passed `610` tests with the same `14` dependency warnings. Those
-  reviewed bindings were committed and pushed in `64743c7`.
-- The launch-artifact-free dry-run, repository-global single-job lease, exact
-  launch-manifest/UUID evidence chain, schema-3 training receipts, stricter
-  candidate gate, frozen protocol update, and teaching material were reviewed,
-  committed, and pushed in `19a3e0c`. The focused suite passed `164` tests;
-  the full suite passed `638` tests with `14` dependency warnings. Ruff,
-  `py_compile`, protocol and notebook invariants, and `git diff --check` also
-  passed.
-- All six full-size real-checkpoint dry-run combinations (`R/S/E` at one and
-  two GPUs) then resolved at `19a3e0c` with matched common/panel digests and
-  effective batch size 16 without creating launch artifacts or making a GPU
-  query.
-- Strict L0/L1 scheduler plumbing, A0-compatible and A1 FiLM conditioning,
-  checkpoint/evaluator topology validation, RNG isolation, full teaching
-  material, and adversarial regression coverage were committed and pushed in
-  `3be650e`. The full suite passed `678` tests; full-size A1 CPU warm-start from
-  the real MDLM EMA loaded 202 base tensors and constructed 230 EMA shadows.
-- All six real-checkpoint R/S/E dry-run configurations were then re-resolved at
-  `3be650e` for one and two GPUs. Their updated digests are recorded above; no
-  project launch artifact, GPU probe, or tmux action occurred.
-- Pushed revision `694d7e64039561f869841d1e95ea937bfda30cae` adds
-  summary/receipt schema 4 state and staged-gradient attestations, the frozen
-  FiLM topology, initialization fixture, strict screen verifier,
-  initialization-audit and
-  evidence producers, a registry-controlled launcher, and the two-phase
-  config/registry preparer. Its broad integration subset passed `270` tests;
-  after integration and notebook regeneration the exact worktree full suite
-  passed `751` tests with `14` dependency warnings in 173.45 seconds. Ruff,
-  `py_compile`, notebook regeneration tests, and `git diff --check` also
-  passed. This tranche has not queried GPUs, launched training, materialized a
-  GPU-count-specific config set, or frozen a registry.
-- Pushed revision `6424b323084358ea050ba22d7e13ef8d45962496` adds the
-  clean-source CPU prior-floor auditor and a real scheduler-plus-conditioning
-  launcher-to-summary-to-receipt-to-collector-to-verifier integration test.
-  The two focused additions passed `13` tests; the broader eight-file screen
-  suite passed `139` tests. The end-to-end tamper case fails closed.
-- The 30,000-row CPU replay from that exact clean pushed source produced the
-  immutable 73,953-byte floor-selection artifact. It was independently checked
-  and committed in `654b408108a25bfd6a47958a5ca0afef89459644` without
-  changing the producer bytes. Both later training blocks support the disclosed
-  rounded pilot value `0.0002`; this remains retrospective unigram evidence.
-- Pushed implementation revision
-  `ddb3be8c7938731e82fd865b64f9f0c43678b04f` applies `0.0002` to every R/S/E
-  pilot config, embeds its audit provenance in the matched-panel contract,
-  binds the audit source/artifact in screen registries, and rejects audit or
-  config tampering. It also updates the paper/released-code teaching: official
-  QM9 uses a 25,000-step cosine recipe, whereas L0 is the inherited GenMol-style
-  constant schedule and L1 is our scaled pilot bundle. The focused suite passed
-  `110` tests and the exact-worktree full CPU suite passed `772` tests with
-  `14` dependency warnings in 175.50 seconds. Ruff, notebook structure/code,
-  `py_compile`, and `git diff --check` passed; no GPU query or launch occurred.
-- Pushed revision `b7a8f6bde90a981b46e5ac5fd9da6d821c95af70`
-  hardens the pilot producer/consumer chain through exit-receipt schema 5,
-  freezes de-novo superiority protocol v2, makes every benchmark input and
-  metric denominator byte-verifiable, and prevents a health-scale or
-  single-stochastic result from entering the superiority decision. Its exact
-  CPU suite passed `1036` tests with `14` warnings in 209.33 seconds. No GPU
-  inventory or launch occurred.
-- Pushed revision `a083ece7a993fc8b09a9abc0c50c5290a7c8a2ac` adds the exact sequential health wrapper,
-  an independent full-argv/full-Hydra-config health validator, registry schema
-  v2 with a live terminal-receipt prerequisite, exact H-to-R0 sole-parent/tree
-  replay, the R0-to-R2 conditioning firewall, publication race checks, teaching,
-  and adversarial tests. Its exact CPU suite passed `1118` tests with `14`
-  warnings in 221.88 seconds. Ruff, format, `py_compile`, standard-library CLI
-  help, notebook regeneration/idempotence, and `git diff --check` passed. Real
-  CPU reconstruction produced the one-GPU common-config SHA-256
-  `da1c2fde8d0315b374d58aec9c469f060b53361b74d757f9b65ef57c80e71d50`.
-  No GPU inventory or launch occurred during that source/test tranche. Its W=1
-  CPU-only health dry-run later passed with the source-bound hashes recorded
-  above and still performed no GPU query or artifact mutation.
-- The policy revision prepared on top of `a083ece` supersedes the zero-process
-  launch rule: utilization must be
-  strictly below 10%; active-process telemetry is allowed and retained; the
-  30,000 MiB free-memory and non-prohibited-mode checks remain. Launcher,
-  predecessor/receipt, health, screen, superiority, notebook, and teaching
-  surfaces are changed together. Its changed-file suite passed 449 tests, its
-  cross-pipeline integration tier passed 100 tests, and its exact-worktree full
-  CPU suite passed 1,156 tests with 14 dependency warnings in 218.14 seconds.
-  Ruff, formatting, `py_compile`, notebook regeneration/idempotence, and
-  `git diff --check` passed; independent final audit found no remaining P0--P2
-  issue. It was committed and pushed as
-  `12bdce22809f9672dbb6666fa3a6e828b39aadb0`; its exact W=1 dry-run passed.
-- The first real R member at `12bdce2` completed the requested 10 optimizer
-  updates and wrote a checkpoint, then intentionally produced a failed receipt
-  because the semantic auditor encountered Lightning's expected `kth_value`
-  positive-infinity callback sentinel. No S arm was launched and the lease was
-  released. The descendant repair advances training-summary schema 4 to 5,
-  verifies that exact framework sentinel structurally, keeps every other
-  floating tensor under strict finiteness checks, makes all receipt/screen/gate
-  consumers validate the new record, and makes the health wrapper stop on a
-  failed receipt. The failed source namespace and hashes are recorded above.
-- The descendant instrumentation repair passed the exact-worktree full CPU
-  suite: 1,286 tests with 14 dependency warnings in 237.29 seconds. An
-  independent final audit additionally observed 660 focused passes, validated
-  protocol v3 at canonical SHA-256
-  `e7b108dce51cd1445758a9f7dc852532b2ee075a80f783ae009303a7550577ee`,
-  reconstructed all W=1 R/S/E configs and models, and found no P0--P2 issue.
-  Ruff, formatting, `py_compile`, notebook regeneration/idempotence, notebook
-  code parsing, and `git diff --check` passed. No GPU query or launch occurred
-  in this repair/test tranche.
+## Selection-bound 1,000-update scale-up contract
 
-Remaining sequence:
+The framework consists of:
 
-1. Resolve the clean pushed `HEAD` containing the exact
-   Lightning-sentinel/failed-receipt repair as the new health source H.
-   Preserve every failed `12bdce2` artifact at its canonical path; do not use
-   its checkpoint. From H and the user's selected `W=1`, run the CPU-only
-   health wrapper dry-run
-   and verify that the six new H-bound run/log destinations are absent.
-   Immediately afterward inspect the live inventory; if one GPU has utilization
-   strictly below 10%, at least 30,000 MiB free, and non-prohibited compute mode,
-   let the wrapper dynamically select/re-probe its UUID and launch a fresh R even
-   when recorded process telemetry is nonempty. Invoke the wrapper again only
-   after each preceding receipt succeeds, producing the exact matched 10-step
-   `R/S/E` health chain.
-2. Review its authoritative manifests, receipts, checkpoints, and
-   non-authoritative logs. If the health gate passes, materialize the six exact
-   configs for the user-selected GPU count, commit and push them with the
-   reviewed implementation as R0, then run the CPU-only freezer and commit/push
-   its registry as the sole R1 change. The launcher, evidence schemas,
-   initialization/gradient producers, collector, and independent selector are
-   already implemented. Do not generate or rank from the 10-step health panel.
-3. Run E-L0/E-L1 only under the frozen 100-update registry. If complete, use
-   its verified scheduler decision for two fresh 500-update A0/A1 warm starts;
-   never continue a scheduler-screen checkpoint or use final seeds.
-4. Update the final PDF only after the required controlled experiments and
-   ablations exist; keep all caveats and paper comparisons explicit.
+- `scripts/udlm/prepare_scale_up_registry.py`;
+- `scripts/udlm/verify_scale_up_registry.py`;
+- `scripts/udlm/launch_scale_up_panel.py`;
+- `scripts/udlm/validate_scale_up_panel.py`.
+
+It must recompute E-L1/E-A1 from the four committed screen artifacts rather
+than trust hard-coded winners. It binds their raw and canonical hashes, the
+R1-to-R3 chronology, the MDLM checkpoint, selected configuration, R/S/E order,
+and each output namespace. Every arm uses seed 17, exactly 1,000 optimizer
+updates, `training.reseed_after_model_initialization=true`, and a fresh verified
+MDLM EMA; optimizer, scheduler, global step, and EMA state restart for every
+arm.
+
+The publication firewall is:
+
+1. R4: framework, compatibility changes, documentation, notebook, and tests.
+2. R5: the sole R4-child change adds exactly three selected-world-size configs
+   under
+   `experiments/udlm/protocols/selection_bound_scale_up_configs_gpu{W}/`.
+3. R6: the sole R5-child change adds
+   `experiments/udlm/protocols/selection_bound_scale_up_registry_gpu{W}.json`.
+4. Only pushed R6 may launch R, then S from R's successful receipt, then E from
+   S's successful receipt. Each manifest must carry the exact
+   `selection_bound_scale_up` registry/selection/member binding.
+
+Supported registered GPU counts are 1 through 4. Per-process microbatch is 2;
+accumulation for W=`1,2,3,4` is respectively `8,4,3,2`, yielding effective
+global batch `16,16,18,16`. One registry freezes one W, and all three arms in
+that registry must have identical batch arithmetic and exposure. The current
+first scale-up rung will freeze W=1: the selected full-size E-A1 topology has
+already run for 500 updates at W=1, so 1,000 updates is a controlled twofold
+increase without introducing an untested multi-process topology at the same
+time. Multi-GPU scale-up remains supported for a later separately registered
+rung; never relabel a smoke checkpoint as a registered result.
+
+### Preserved first-lineage preflight incident
+
+The original framework/config/registry sequence was pushed as `3486783`,
+`277e9d1`, and `11ec459`. Its W=1 R and S runs completed all 1,000 optimizer
+updates and remain immutable at `output/udlm/scaleup-w1-r-3486783d9dd5` and
+`output/udlm/scaleup-w1-s-3486783d9dd5`. Their checkpoint SHA-256 values are
+`88a73a4dfc6a7990aff94882d1112ea4320a04a5092f82f1ef51063fdc5ad57c`
+and `d11707750eb5e3215990c0657acda5b36e95ed262f9e05e2cc68cef3b4d27fde`.
+
+E never launched: its dry-run stopped before GPU discovery, output creation,
+logging, or lock acquisition. When E recursively rebuilt S's R predecessor,
+`build_predecessor_receipt_binding` failed to forward S's
+`selection_bound_scale_up` authority and compared an artificial `None` against
+R's valid authority. Direct links, common authority, artifact bytes, hashes,
+and stat identities all passed independent audit. This was a validator defect,
+not training failure or artifact corruption.
+
+The old R/S runs are valid standalone engineering evidence but are ineligible
+for a terminal registered panel: a repaired E would attest a different source
+revision. Recovery therefore preserves those outputs without renaming or
+promotion, rebuilds a corrected R4-prime/R5-prime/R6-prime sequence directly
+from the same R3 selection revision, obtains new revision-derived namespaces,
+and retrains fresh R, S, and E. The frozen optimization-screen decisions and
+MDLM initialization remain unchanged and need not be rerun.
+
+## GPU and long-job policy
+
+- The user authorizes up to three GPUs without another permission request, but
+  this registered retry remains fixed at one GPU.
+- Immediately before every real launch, inspect all devices and select only
+  cards whose utilization is **strictly below 10%**, free memory is at least
+  30,000 MiB, and compute mode is not prohibited.
+- A recorded active process does not by itself disqualify a card under the
+  utilization rule, but never interrupt, reuse destructively, or kill another
+  user's process.
+- Never hard-code physical GPU 0. Record the full inventory and process
+  telemetry, dynamically select UUIDs, re-probe those exact UUIDs immediately
+  before launch, and map them through `CUDA_VISIBLE_DEVICES`. Logical `cuda:0`
+  inside that isolated process is acceptable.
+- Long jobs must run in clearly named detached tmux sessions and log to
+  `output/logs/`. The repository-global lease permits only one reviewed
+  training job at a time.
+
+The earlier failed R health namespace at source `12bdce2` remains immutable:
+`output/udlm/health-w1-r-12bdce22809f9672dbb6666fa3a6e828b39aadb0`.
+It completed ten updates but correctly failed before a valid summary because
+the old auditor treated Lightning's expected scalar `kth_value=+inf` callback
+sentinel as learned-state corruption. Its checkpoint is scientifically
+ineligible and must never initialize or rank anything.
+
+## Immediate sequence
+
+1. Finish and independently review corrected R4-prime. Run focused tests, the
+   exact-worktree
+   full CPU suite, Ruff/format checks, `py_compile`, notebook regeneration twice
+   with byte comparison, AST compilation of every notebook code cell, and
+   `git diff --check`. Commit and push the recovery branch to
+   `aamenov/genmol-udlm`.
+2. Use the CPU-only preparer to materialize the three configs for the chosen
+   world size as the only R5-prime change. Review, test, commit, and push.
+3. Use the CPU-only preparer/verifier to freeze the registry as the only R6
+   prime change. Review, test, commit, and push.
+4. Immediately before launch, inspect GPU utilization/memory/processes. If the
+   requested one GPU is eligible under the strict `<10%` rule, launch only the
+   next fresh registered R/S/E member in detached tmux. Validate every receipt
+   before advancing. Validate the terminal E panel while HEAD is still the
+   exact clean, pushed R6-prime revision.
+5. Stop before generation and publish a reviewed R6-descendant workflow that
+   closes the remaining generation/evidence path-write races, adds a
+   repository-global generation lease, and supplies production no-clobber CLIs
+   for candidate-ledger schema 2 and candidate-lock schema 2. The current tree
+   contains their strict validators and synthetic fixtures, but no production
+   ledger/lock builder; never hand-author either artifact. This descendant must
+   preserve and bind the R6 scale receipts rather than relabeling their source.
+6. Then run seed 1100 with only 32 requested molecules as an explicitly
+   ineligible decode diagnostic. It may check memory, decoding, and chemistry
+   failure modes but cannot rank models.
+7. Only after diagnostics are mechanically sound, run registered selection
+   seeds 1000 and 1001, 256 requests each, EMA weights, 128 NFE,
+   released-compatible metrics, with raw-text rescoring. Run all GPU attempts
+   before publishing their tracked evidence envelopes so the clean-source
+   launcher preflight remains satisfied. Lock one candidate before final seeds
+   0, 1, and 2.
+8. If the locked candidate passes all point and interval gates, produce the
+   final PDF with configurations, ablations, exact metrics, caveats, and paper
+   comparisons. Until then, retain the explicit no-superiority statement.
+
+Post-baseline engineering ideas should remain small-first and use engineering
+seeds 1100+: raw-LOO temperature (`0.5, 0.7, 0.85, 1.0`), then top-p
+(`1.0, 0.98, 0.95`); fixed-NFE Gibbs correctors; reverse-time grids; an exact
+LOO-to-denoiser conversion audit; and a fuller empirical-prior estimate. Final
+seeds 0, 1, and 2 are forbidden for tuning.

@@ -6,8 +6,11 @@ The target is not merely to make uniform diffusion run. The final UDLM system
 must beat the audited local GenMol MDLM control under a matched protocol.
 The primary de-novo criterion is a better quality–diversity trade-off at equal
 requested sample count, BERT width/depth, training data, and evaluation definitions.
-The additive time conditioner adds 787,968 parameters (about 0.9%), so this is
-not literally an equal-parameter comparison.
+Matching BERT width/depth is not an equal-parameter comparison. The A0 additive
+time conditioner adds 787,968 parameters (about 0.9%), while the selected A1
+topology adds 14,962,176 conditioning parameters in total: 787,968 in the
+timestep MLP and 14,174,208 in the 12 FiLM projections. Any advantage must be
+reported with this material capacity difference.
 For a single operating point, success means:
 
 - repaired validity and uniqueness are not lower;
@@ -165,13 +168,34 @@ records this limitation explicitly.
 The first implementation follows UDLM at official revision `edb0f8c`:
 
 1. The forward process replaces tokens with uniform vocabulary draws.
-2. BERT predicts the clean-token distribution and receives the log-linear
-   noise level through a learned sinusoidal time adapter.
+2. BERT emits the simplex-valued proxy inserted into the plug-in bridge and
+   receives the log-linear noise level through a learned sinusoidal time
+   adapter. The 2024 UDLM paper calls this a clean-token prediction, but the
+   later [Uniform Diffusion Models Revisited](https://arxiv.org/abs/2605.22765)
+   analysis shows that the standard plug-in ELBO is optimized by the
+   leave-one-out (LOO) posterior rather than the ordinary denoising posterior.
 3. Training uses continuous-time Eq. 18, evaluated with an algebraically exact
    non-negative form to avoid cancellation.
 4. Sampling starts from iid uniform tokens and resamples every editable token
    through the exact reverse posterior on a fixed time grid. The official
    128-step grid is the faithful control; 32/64-step grids are speed ablations.
+
+Concretely, for sequence position $\ell$, the LOO target predicts the clean
+token from $z_t^{-\ell}$, excluding that position's own noisy observation. Let
+$r_j$ denote this LOO probability for candidate clean category $j$, let $d_j$
+denote the ordinary denoising posterior conditioned on all of $z_t$, and let
+the observed category at position $\ell$ be $i$. For the full-support rank-one
+process with stationary prior $\pi$,
+
+$$d_j\propto r_j\,[\alpha_t\mathbf1\{j=i\}+(1-\alpha_t)\pi_i],\qquad
+r_j\propto\frac{d_j}{\alpha_t\mathbf1\{j=i\}+(1-\alpha_t)\pi_i}.$$
+
+Our existing network output remains the raw plug-in bridge parameter and is
+therefore interpreted as a learned LOO predictor; the current architecture does
+not enforce exact invariance to its own noisy token. This later clarification
+does not retroactively change the faithful 2024 objective or frozen screens,
+but it determines where later temperature/top-p transforms belong and motivates
+an exact conversion audit before treating the output as a true denoiser.
 
 Two implementation differences are repairs, not hypotheses: the unused
 reconstruction forward pass is omitted, and the stable Eq. 18 identity replaces
@@ -255,24 +279,25 @@ a schedule bundle hypothesis rather than an exact official-recipe replay.
 1. CPU equation, gradient, legacy-checkpoint, and sampler tests.
 2. Tiny CPU overfit on a fixed set of molecules; require falling loss, finite
    gradients, and an executable 16-step reverse chain.
-3. After the user chooses a count of one or two GPUs, run the full-size
-   warm-start R/S/E panel for 10 optimizer updates in that order. Each job must
+3. Run the full-size warm-start R/S/E panel for 10 optimizer updates in that
+   order. Each job must
    hold the global lease, use the same matched-panel contract, produce a valid
    receipt, save/reload its checkpoint, and remain finite. This is a health and
    plumbing check only. The current constant schedule warms up for 2,500 steps;
    with peak learning rate $3\times10^{-4}$, its learning rate is only about
    $1.2\times10^{-6}$ by update 10. Ten steps therefore cannot rank methods.
-   The only supported entry point is `scripts/udlm/launch_health_panel.py`,
-   whose only choices are the user-selected world size $W\in\{1,2\}$ and a
-   CPU-only `--dry-run`. It fixes launcher variants `udlm` (R),
+   The frozen health entry point is `scripts/udlm/launch_health_panel.py`, with
+   world size $W\in\{1,2\}$ or a CPU-only `--dry-run`. The later scale-up
+   wrapper has its own registered 1--4 GPU arithmetic. The health wrapper fixes
+   launcher variants `udlm` (R),
    `schedule_uniform` (S), and `udlm_categorical` (E); seed 1; one loader
    worker; 10 optimizer updates; full-vocabulary training; and the verified
    MDLM EMA warm start from `outputs/paper_v1/checkpoints/50000.ckpt`, whose
    size is 1,396,998,679 bytes and SHA-256 is
    `8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6`.
-   With per-process microbatch $m=2$, accumulation is $a_1=8$ for one GPU and
-   $a_2=4$ for two, so the effective batch is exactly
-   $B_{\mathrm{eff}}=Wma_W=16$ in either case. Every arm also carries the
+   The completed health lineage used $W=1$, per-process microbatch $m=2$, and
+   accumulation $a_1=8$, so its effective batch was
+   $B_{\mathrm{eff}}=Wma_W=16$. Every arm also carried the
    audited empirical-mixture field `0.0002` (active only for E), utilization
    strictly below 10%, at least 30,000 MiB free, and non-prohibited compute
    mode. Active compute processes are recorded but do not disqualify a device
@@ -297,14 +322,20 @@ a schedule bundle hypothesis rather than an exact official-recipe replay.
    allows only `screen_authorization`; generation, ranking, superiority, and
    candidate-lock eligibility are all false.
 
+   This gate is complete. The successful W=1 chain was produced from clean
+   pushed revision
+   `34856c275049cd329320f6c01171f0d2d34cd814` (H), and its terminal E receipt
+   authorized only preparation of the optimization screens. It supplied no
+   generation metrics and no molecular-quality claim.
+
    Training-summary schema 5 checks every model, EMA, optimizer, and remaining
    non-sentinel floating checkpoint tensor for finiteness. It separately
    verifies the sole allowed non-finite framework record: Lightning 2.5.1's
    scalar float32 `ModelCheckpoint.kth_value=+inf` sentinel for the exact
    unmonitored minimum-mode callback. Any other value, shape, callback state,
    path, framework version, or additional non-finite tensor fails closed.
-4. **Implemented but not yet registered or authorized scheduler screen:** on E
-   only, seed 17, compare 100 updates of E-L0 (the current additive conditioner
+4. **Completed registered scheduler screen:** on E only, seed 17, compare 100
+   updates of E-L0 (the current additive conditioner
    and constant schedule with 2,500-update warmup) against E-L1 (the same
    model/process with a 1,000-update half-cosine horizon, warmup 50, peak
    learning rate $3\times10^{-4}$, and clamped floor $3\times10^{-6}$). E-L1 is
@@ -314,13 +345,16 @@ a schedule bundle hypothesis rather than an exact official-recipe replay.
    $t\in\{0.1,0.5,0.9\}$, select E-L1 only if its pooled content-token loss is
    at least 2% lower, at least two of the three time bins improve, and no bin is
    more than 2% worse. A complete valid screen that misses a threshold retains
-   E-L0; missing, malformed, or unmatched evidence yields no winner. The code
-   and CPU tests exist, including a strict registry-aware launcher, evidence
-   collector, and independent selector. The exact GPU-count-specific configs
-   and registry are deliberately not materialized yet, however, so the
-   launcher cannot authorize either arm and no GPU screen has run.
-5. **Implemented but not yet registered or authorized conditioning screen:** on
-   E only, seed 17, train 500 updates with the selected scheduler. Both E-A0 and
+   E-L0; missing, malformed, or unmatched evidence yields no winner. The
+   registered W=1 evidence selected E-L1: pooled loss fell from
+   `68513.0489201366 / 40881 = 1.675914212` to
+   `44204.2809926042 / 40881 = 1.081291578`, a `35.4804935858%` reduction,
+   and L1 was lower in all three time bins. The evidence and selection are
+   committed at `experiments/udlm/screens/scheduler_evidence.json` and
+   `experiments/udlm/screens/scheduler_selection.json`. This denoising-screen
+   result contains no generation metric and is not a superiority result.
+5. **Completed registered conditioning screen:** on E only, seed 17, train 500
+   updates with the selected scheduler. Both E-A0 and
    E-A1 start independently from the same verified MDLM-EMA checkpoint; neither
    continues a 100-update scheduler-screen checkpoint. Both reseed the training
    RNG after model construction and warm-start loading so A1's extra parameter
@@ -337,7 +371,17 @@ a schedule bundle hypothesis rather than an exact official-recipe replay.
    (optimizer observation three under either registered schedule, because update
    one uses learning rate zero). A complete valid screen that misses a selection
    condition retains A0; malformed or incomplete evidence yields no winner.
-   This is implemented experimental plumbing, not an executed result.
+   The registered W=1 evidence selected E-A1: pooled loss fell from
+   `114483.5594098568 / 40881 = 2.800409956` to
+   `39984.46089004135 / 40881 = 0.978069541`, a `65.0740585843%` reduction;
+   A1 was lower in every time bin and passed all five registered gates. A0/A1
+   initial logits were byte-identical with shape `[2, 4, 1880]` and SHA-256
+   `3e6ef7368f9a11d061640948ac5955fba81c2acac6546a12adc4efc5e22e15b8`.
+   All 24 FiLM tensors had finite nonzero gradients at observation one and all
+   four timestep-MLP tensors did at observation three. The evidence and
+   selection are committed at `experiments/udlm/screens/conditioning_evidence.json`
+   and `experiments/udlm/screens/conditioning_selection.json`. This is still a
+   fixed denoising-panel result, not a molecular benchmark.
 6. Train matched R/S/E controls for 1,000 updates each with the selected
    scheduler and architecture. Only after each 1,000-update training receipt
    validates, decode 32 requests with generation seed 1100 as an ineligible
@@ -345,12 +389,28 @@ a schedule bundle hypothesis rather than an exact official-recipe replay.
    optimization screen or rank candidates. Candidate eligibility still
    requires the registered 256-request runs for both seeds 1000 and 1001 at
    128 NFE. All smaller or mismatched panels remain disclosed but ineligible;
-   final seeds 0, 1, and 2 are unavailable for tuning or selection. The user
-   chooses one or two GPUs, and immediately before each sequential job the
+   final seeds 0, 1, and 2 are unavailable for tuning or selection. Supported
+   registered world sizes are $W\in\{1,2,3,4\}$. With per-process microbatch
+   two, accumulation $a_W=(8,4,3,2)$ yields effective global batch
+   $(16,16,18,16)$ for $W=(1,2,3,4)$. One registry freezes one world size and
+   identical batch arithmetic for all three arms. The first scale-up rung will
+   freeze W=1: E-A1 has already completed 500 full-size updates at W=1, making
+   1,000 updates a controlled twofold increase without simultaneously adding
+   an untested multi-process topology. Immediately before each sequential job
+   the
    launcher scans the full NVIDIA inventory, dynamically selects GPUs eligible
-   under the user-authorized utilization policy, re-probes their exact UUIDs,
-   and binds the telemetry through
+   only when utilization is strictly below 10%, free memory is at least 30,000
+   MiB, and compute mode is not prohibited; it re-probes their exact UUIDs and
+   binds the telemetry through
    the launch/runtime/summary/receipt evidence chain.
+   Operationally, terminal E must first be validated while HEAD remains the
+   exact clean, pushed R6 revision. The current R4 tree deliberately does not
+   yet expose production candidate-ledger or candidate-lock builders, and the
+   generic generation/evidence publishers have not received the scale
+   launcher's descriptor-bound path hardening. Before seed 1100, publish and
+   review an R6 descendant that closes those path/lease gaps and provides
+   no-clobber schema-2 ledger/lock CLIs; never hand-author either authority or
+   relabel the R6 training source.
    For each completed seed, run `scripts/udlm/write_pilot_evidence.py
    --outcome completed ...` to publish its reference-only envelope after
    independent raw rescoring. If either the small engineering mode or the
@@ -375,7 +435,8 @@ a schedule bundle hypothesis rather than an exact official-recipe replay.
    preparation and cannot satisfy the candidate lock; the later receipt must
    share the locked candidate's matched-panel digest.
 
-The optimization screens use a health revision plus a three-revision firewall.
+The completed optimization screens used a health revision plus a three-revision
+firewall.
 The clean pushed revision $H$ must contain the health implementation but neither
 GPU-count-specific config family. Only after `validate_health_panel.py` accepts
 the deterministic terminal-E receipt for the chosen $W$ may the CPU-only
@@ -394,7 +455,34 @@ contingent on the selected scheduler. This ordering prevents a result from
 changing its health authority, its own registry, or its later conditioning
 comparison.
 
-### What the prospective L1 and A1 arms change
+The selection-bound scale-up uses a second prospective publication firewall.
+R4 contains only the generic 1--4 GPU framework, compatibility changes,
+documentation, notebook material, and CPU tests. Its CPU-only preparer then
+derives the chosen-$W$ R/S/E configurations from the four committed screen
+evidence/selection files, independently recomputes the selected `E-L1` and
+`E-A1` decisions, and binds their raw and canonical hashes. Exactly those three
+configuration files are the sole R4-to-R5 change. Exactly one registry that
+freezes those configs, the R1-to-R3 screen chronology, MDLM checkpoint,
+training order, and output namespaces is the sole R5-to-R6 change. Only a
+clean, pushed R6 may launch. Every member uses seed 17, 1,000 optimizer updates,
+`training.reseed_after_model_initialization=true`, and a fresh verified MDLM
+EMA warm start; optimizer, scheduler, global step, and EMA state restart rather
+than continuing either screen checkpoint. R launches first, S requires R's
+validated receipt, and E requires S's validated receipt. A screen checkpoint or
+partial scale-up run can never be relabeled as a registered scale-up result.
+
+The first published W=1 lineage exposed a preflight-only implementation defect
+after R and S had completed: E's recursive S-to-R rebuild did not forward S's
+otherwise valid `selection_bound_scale_up` authority. No E process, GPU probe,
+output directory, log, or lock was created, and independent byte/stat audits
+found no R/S corruption. Because adding the repair changes the source revision,
+the retained R/S runs cannot be combined with a repaired E under the
+common-source rule. They remain immutable, disclosed standalone engineering
+evidence. Recovery repeats the same prospective R4/R5/R6 firewall from R3 with
+the tested validator repair, new revision-derived namespaces, and fresh R, S,
+and E runs; it does not rerun or reinterpret the frozen optimization screens.
+
+### What the selected L1 and A1 arms change
 
 For optimizer-update index $k\in\{0,\ldots,99\}$, peak learning rate
 $\eta=3\times10^{-4}$, L0 warmup $w_0=2500$, L1 warmup $w_1=50$, L1 horizon
@@ -499,7 +587,8 @@ tensor, or 60,160 raw little-endian float32 bytes, with the identical SHA-256
 The sequential check took 33.55 seconds and about 3,578,044 KiB peak RSS. It is
 a topology diagnostic only: because no GPU-count-specific registry or pushed
 conditioning-authorization revision existed, it cannot substitute for the
-registered audit that gates A0/A1 selection.
+registered audit that gates A0/A1 selection. The later registered W=1 screen
+independently reproduced the same shape and digest before selecting A1.
 
 For example, with $B=2$, $S=4$, $H=24$, and $L=2$, $c$ has shape `[2, 24]`,
 each projection produces `[2, 48]`, each shift and scale has shape `[2, 24]`,

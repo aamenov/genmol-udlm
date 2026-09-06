@@ -1,6 +1,35 @@
-<h1 align="center">GenMol: A Drug Discovery Generalist with Discrete Diffusion</h1>
+<h1 align="center">GenMol-UDLM</h1>
 
-This is the official code repository for the paper titled [GenMol: A Drug Discovery Generalist with Discrete Diffusion](https://arxiv.org/abs/2501.06158) (ICML 2025).
+This repository is an independent research reimplementation and extension of
+[NVIDIA GenMol](https://github.com/NVIDIA-BioNeMo/genmol). It replaces the
+absorbing masked-diffusion path with Uniform Diffusion Language Model (UDLM)
+controls and molecular variants derived from the
+[UDLM paper](https://arxiv.org/abs/2412.10193) and its
+[reference implementation](https://github.com/kuleshov-group/discrete-diffusion-guidance).
+It is not NVIDIA's official repository and is not affiliated with NVIDIA or the
+UDLM authors.
+
+> **Research status.** The frozen one-GPU optimization screens selected the
+> E-L1 learning-rate bundle and E-A1 FiLM time conditioner using matched
+> denoising evidence. Those screens used no generation metrics or final
+> benchmark seeds. They do not establish molecular-quality improvement or a
+> UDLM-over-GenMol superiority claim. An initial scale-up lineage completed R
+> and S but stopped before E launch on a recursive provenance-validator defect;
+> those outputs are preserved but cannot be mixed with repaired-source E. The
+> next step is a corrected, freshly frozen matched R/S/E scale-up followed by
+> the registered generation protocol.
+
+The main educational implementation is
+[`genmol_from_scratch.ipynb`](genmol_from_scratch.ipynb); exact experiment
+state, hashes, caveats, and the next safe action are in
+[`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md). The standalone repository is
+[aamenov/genmol-udlm](https://github.com/aamenov/genmol-udlm).
+
+## Upstream GenMol reference documentation
+
+The remainder of this README is retained from NVIDIA's released GenMol
+documentation for scientific comparison. First-person claims below describe
+the original GenMol work, not this experimental fork.
 
 <p align="center">
     <img width="750" src="assets/concept.png"/>
@@ -40,8 +69,8 @@ We introduce GenMol V2, trained with an extended SAFE syntax, demonstrating impr
 ## 📦 Installation
 Clone this repository:
 ```bash
-git clone https://github.com/NVIDIA-Digital-Bio/genmol.git
-cd genmol
+git clone https://github.com/aamenov/genmol-udlm.git
+cd genmol-udlm
 ```
 
 Run the following command to install the dependencies:
@@ -262,12 +291,20 @@ The source code is made available under Apache-2.0.<br>
 The model weights are made available under the [NVIDIA Open Model License](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/).
 
 ## 📝 Citation
-If you find this repository and our paper useful, we kindly request to cite our work.
+This fork builds on the original GenMol and discrete-diffusion-guidance works;
+please cite those papers when using their ideas or released code.
 ```BibTex
 @article{lee2025genmol,
   title     = {GenMol: A Drug Discovery Generalist with Discrete Diffusion},
   author    = {Lee, Seul and Kreis, Karsten and Veccham, Srimukh Prasad and Liu, Meng and Reidenbach, Danny and Peng, Yuxing and Paliwal, Saee and Nie, Weili and Vahdat, Arash},
   journal   = {International Conference on Machine Learning},
   year      = {2025}
+}
+
+@article{schiff2024discreteguidance,
+  title     = {Simple Guidance Mechanisms for Discrete Diffusion Models},
+  author    = {Schiff, Yair and Sahoo, Subham Sekhar and Phung, Hao and Wang, Guanghan and Boshar, Sam and Dalla-torre, Hugo and de Almeida, Bernardo P and Rush, Alexander and Pierrot, Thomas and Kuleshov, Volodymyr},
+  journal   = {arXiv preprint arXiv:2412.10193},
+  year      = {2024}
 }
 ```

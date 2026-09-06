@@ -534,6 +534,24 @@ def test_categorical_inference_configs_pin_exact_default_metadata_digest(
     )
 
 
+def test_scale_e_inference_config_pins_selected_floor_metadata_digest() -> None:
+    metadata, _, _ = _categorical_checkpoint_parts(
+        "empirical_frequency", mixture_weight=0.0002
+    )
+    path = (
+        benchmark.REPO_ROOT
+        / "scripts/exps/denovo/hparams_udlm_categorical_floor0002.yaml"
+    )
+
+    sampling = benchmark.validate_sampling_config(benchmark.load_yaml_config(path))
+
+    assert sampling["prior_variant"] == "empirical_frequency"
+    assert sampling["exclude_special_tokens"] is False
+    assert sampling["prior_metadata_sha256"] == benchmark._canonical_json_sha256(
+        metadata
+    )
+
+
 def test_checkpoint_metadata_records_step_and_digest(tmp_path: Path) -> None:
     torch = pytest.importorskip("torch")
     checkpoint_path = tmp_path / "tiny.ckpt"

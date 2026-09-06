@@ -1271,9 +1271,10 @@ def _validate_cuda_provenance(
         raise ReportValidationError(
             f"{context} launch policy must use an exclusive utilization threshold"
         )
-    if policy.get("active_compute_processes_allowed") is not False:
+    active_processes_allowed = policy.get("active_compute_processes_allowed")
+    if type(active_processes_allowed) is not bool:
         raise ReportValidationError(
-            f"{context} launch policy must forbid active compute processes"
+            f"{context} launch policy active-process flag must be boolean"
         )
     if selected_inventory_item is not None:
         initial_processes = _validate_compute_processes(
@@ -1285,15 +1286,15 @@ def _validate_cuda_provenance(
             - selected_inventory_item["memory_used_mib"]
         )
         if (
-            initial_processes
+            (initial_processes and not active_processes_allowed)
             or selected_inventory_item["utilization_percent"] >= max_utilization
             or initial_free_memory < min_free_memory
             or selected_inventory_item["compute_mode"].lower() == "prohibited"
         ):
             raise ReportValidationError(
-                f"{context} dynamically selected GPU was not idle in the full inventory"
+                f"{context} dynamically selected GPU was unsafe in the full inventory"
             )
-    if validated_processes:
+    if validated_processes and not active_processes_allowed:
         raise ReportValidationError(
             f"{context} selected a GPU with active compute processes"
         )
@@ -1467,12 +1468,18 @@ def _validate_cuda_provenance(
         "policy": dict(policy),
         "source_revision": dict(source_revision),
         "visibility": (
-            "one dynamically selected idle GPU UUID from the full NVIDIA inventory "
-            "mapped to logical cuda:0; no active compute process was present at the "
-            "final UUID probe"
-            if selection_method == "dynamic_idle_discovery"
-            else "one user-selected physical GPU UUID mapped to logical cuda:0; "
-            "no active compute process was present at the final launch probe"
+            (
+                "one dynamically selected policy-eligible GPU UUID from the full "
+                "NVIDIA inventory mapped to logical cuda:0"
+                if selection_method == "dynamic_idle_discovery"
+                else "one user-selected physical GPU UUID mapped to logical cuda:0"
+            )
+            + (
+                f"; {len(validated_processes)} active compute process(es) were "
+                "fully recorded at the final probe"
+                if validated_processes
+                else "; no active compute process was present at the final probe"
+            )
         ),
     }
     return environment_signature, launch_provenance
@@ -3937,11 +3944,12 @@ def render_pdf(payload: Mapping[str, Any], pdf_path: Path) -> None:
             Spacer(1, 4 * mm),
             callout(
                 "HARDWARE TIMING CAVEAT. Local generation time is measured on "
-                "recorded idle RTX A6000 inference devices, using the released "
+                "recorded policy-eligible RTX A6000 inference devices, using the released "
                 "de_novo_generation timer boundary (model/tokenizer + SAFE repair + "
                 "largest component). Each launch snapshot satisfied an exclusive "
-                "utilization threshold of at most 10%, at least 30,000 MiB free memory, "
-                "and no active compute process. Table 1 used an "
+                "utilization threshold of at most 10% and at least 30,000 MiB free "
+                "memory; active compute processes, when present, were fully recorded "
+                "and allowed only while those resource guards passed. Table 1 used an "
                 "A100 and a different software environment. Hardware can affect runtime, "
                 "so the time delta is descriptive and is not a speed claim.",
                 caution=True,

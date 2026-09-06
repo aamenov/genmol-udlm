@@ -16,9 +16,10 @@ import json
 import math
 import os
 import re
+import secrets
 import stat
 import subprocess
-import tempfile
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -85,6 +86,12 @@ def _finite_json_float(value: str) -> float:
     if not math.isfinite(parsed):
         raise ValueError(f"non-finite JSON number: {value}")
     return parsed
+
+
+def _validated_pilot_world_size(value: int) -> int:
+    if type(value) is not int or value not in range(1, 5):
+        raise ValueError("expected world size must be from 1 through 4")
+    return value
 
 
 def strict_json_loads(payload: bytes, *, label: str = "training summary") -> object:
@@ -155,18 +162,74 @@ def _utc_timestamp(value: object, *, label: str) -> datetime:
 
 
 def _artifact_path(value: Path, *, suffix: str, label: str) -> Path:
-    root = REPOSITORY_ROOT.resolve(strict=True)
+    root = Path(os.path.abspath(os.fspath(REPOSITORY_ROOT)))
     absolute = Path(os.path.abspath(os.fspath(value)))
-    path = absolute.parent.resolve(strict=False) / absolute.name
-    if path == root or root not in path.parents or path.suffix != suffix:
+    if absolute == root or not absolute.is_relative_to(root) or absolute.suffix != suffix:
         raise ValueError(f"{label} must be an in-repository {suffix} file")
+    directory_fd, path, _name = _open_direct_repository_parent(
+        absolute,
+        label=label,
+        create_missing=True,
+    )
+    os.close(directory_fd)
     return path
+
+
+def _open_direct_repository_parent(
+    path: Path, *, label: str, create_missing: bool
+) -> tuple[int, Path, str]:
+    """Open an artifact parent without following any repository symlink."""
+
+    if type(create_missing) is not bool:
+        raise ValueError("create_missing must be boolean")
+    repository = Path(os.path.abspath(os.fspath(REPOSITORY_ROOT)))
+    normalized = Path(os.path.abspath(os.fspath(path)))
+    if normalized == repository or not normalized.is_relative_to(repository):
+        raise ValueError(f"{label} path must be directly below the repository")
+    relative = normalized.relative_to(repository)
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        directory_fd = os.open(repository, flags)
+    except OSError as error:
+        raise ValueError("repository root must be a direct real directory") from error
+    try:
+        for component in relative.parent.parts:
+            try:
+                child_fd = os.open(component, flags, dir_fd=directory_fd)
+            except FileNotFoundError:
+                if not create_missing:
+                    raise ValueError(f"{label} parent is missing") from None
+                try:
+                    os.mkdir(component, mode=0o755, dir_fd=directory_fd)
+                except FileExistsError:
+                    pass
+                try:
+                    child_fd = os.open(component, flags, dir_fd=directory_fd)
+                except OSError as error:
+                    raise ValueError(
+                        f"{label} parent must be a direct real directory"
+                    ) from error
+            except OSError as error:
+                raise ValueError(
+                    f"{label} parent must be a direct real directory"
+                ) from error
+            os.close(directory_fd)
+            directory_fd = child_fd
+        return directory_fd, normalized, relative.name
+    except BaseException:
+        os.close(directory_fd)
+        raise
 
 
 def _training_job_lock_path(value: Path) -> Path:
     path = Path(os.path.abspath(os.fspath(value)))
     expected = (
-        REPOSITORY_ROOT.resolve(strict=True)
+        Path(os.path.abspath(os.fspath(REPOSITORY_ROOT)))
         / "output"
         / "udlm"
         / (".single_training_job.lock")
@@ -195,19 +258,29 @@ def stable_file_snapshot(
 ) -> tuple[dict[str, object], bytes | None]:
     """Read and hash one regular file while rejecting replacement or mutation."""
 
-    before_path = path.stat(follow_symlinks=False)
-    if not stat.S_ISREG(before_path.st_mode):
-        raise ValueError(f"pilot artifact is not a regular file: {path}")
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
-    descriptor = os.open(path, flags)
+    directory_fd, normalized, name = _open_direct_repository_parent(
+        path,
+        label="pilot artifact",
+        create_missing=False,
+    )
+    descriptor: int | None = None
     digest = hashlib.sha256()
     payload = bytearray() if capture_bytes else None
     try:
+        before_path = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if not stat.S_ISREG(before_path.st_mode):
+            raise ValueError(f"pilot artifact is not a regular file: {normalized}")
+        flags = (
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
+        descriptor = os.open(name, flags, dir_fd=directory_fd)
         before_descriptor = os.fstat(descriptor)
         if not stat.S_ISREG(before_descriptor.st_mode) or _stat_identity(
             before_descriptor
         ) != _stat_identity(before_path):
-            raise ValueError(f"pilot artifact changed before open: {path}")
+            raise ValueError(f"pilot artifact changed before open: {normalized}")
         while True:
             chunk = os.read(descriptor, 1024 * 1024)
             if not chunk:
@@ -216,9 +289,11 @@ def stable_file_snapshot(
             if payload is not None:
                 payload.extend(chunk)
         after_descriptor = os.fstat(descriptor)
+        after_path = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
     finally:
-        os.close(descriptor)
-    after_path = path.stat(follow_symlinks=False)
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(directory_fd)
     identities = {
         _stat_identity(value)
         for value in (
@@ -229,10 +304,10 @@ def stable_file_snapshot(
         )
     }
     if len(identities) != 1:
-        raise ValueError(f"pilot artifact changed while being hashed: {path}")
+        raise ValueError(f"pilot artifact changed while being hashed: {normalized}")
     return (
         {
-            "path": str(path),
+            "path": str(normalized),
             "device": int(after_path.st_dev),
             "inode": int(after_path.st_ino),
             "mode": int(after_path.st_mode),
@@ -260,38 +335,70 @@ def release_exact_training_job_lock(
         raise ValueError(
             "expected training-job lock digest must be 64 lowercase hexadecimal digits"
         )
-    current, _payload = stable_file_snapshot(path, capture_bytes=False)
-    _require_snapshot_matches_claim(
-        current,
+    directory_fd, normalized, name = _open_direct_repository_parent(
         path,
-        expected_snapshot,
-        label="training-job lock evidence",
+        label="training-job lock",
+        create_missing=False,
     )
-    _exact_string(
-        current.get("sha256"),
-        expected_sha256,
-        label="training-job lock raw SHA-256",
-    )
-    immediately_before_unlink = path.stat(follow_symlinks=False)
-    if _stat_identity(immediately_before_unlink) != tuple(
-        current[key]
-        for key in (
-            "device",
-            "inode",
-            "mode",
-            "link_count",
-            "size_bytes",
-            "mtime_ns",
-            "ctime_ns",
-        )
-    ):
-        raise RuntimeError("training-job lock changed before exact release")
-    os.unlink(path)
-    directory_descriptor = os.open(path.parent, os.O_RDONLY)
+    descriptor: int | None = None
     try:
-        os.fsync(directory_descriptor)
+        before_path = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if not stat.S_ISREG(before_path.st_mode):
+            raise RuntimeError("training-job lock is not a regular file")
+        descriptor = os.open(
+            name,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=directory_fd,
+        )
+        before_descriptor = os.fstat(descriptor)
+        if _stat_identity(before_descriptor) != _stat_identity(before_path):
+            raise RuntimeError("training-job lock changed before exact release")
+        digest = hashlib.sha256()
+        while True:
+            chunk = os.read(descriptor, 1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+        after_descriptor = os.fstat(descriptor)
+        after_path = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if {
+            _stat_identity(before_path),
+            _stat_identity(before_descriptor),
+            _stat_identity(after_descriptor),
+            _stat_identity(after_path),
+        } != {_stat_identity(before_path)}:
+            raise RuntimeError("training-job lock changed during exact release")
+        current = {
+            "path": str(normalized),
+            "device": int(after_path.st_dev),
+            "inode": int(after_path.st_ino),
+            "mode": int(after_path.st_mode),
+            "link_count": int(after_path.st_nlink),
+            "size_bytes": int(after_path.st_size),
+            "mtime_ns": int(after_path.st_mtime_ns),
+            "ctime_ns": int(after_path.st_ctime_ns),
+            "sha256": digest.hexdigest(),
+            "stable_regular_file_verified": True,
+        }
+        _require_snapshot_matches_claim(
+            current,
+            normalized,
+            expected_snapshot,
+            label="training-job lock evidence",
+        )
+        _exact_string(
+            current.get("sha256"),
+            expected_sha256,
+            label="training-job lock raw SHA-256",
+        )
+        os.unlink(name, dir_fd=directory_fd)
+        os.fsync(directory_fd)
     finally:
-        os.close(directory_descriptor)
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(directory_fd)
 
 
 def _git_output(*arguments: str) -> str:
@@ -495,6 +602,11 @@ def _validate_launch_manifest_content(
         len(expected_selected_gpu_uuids),
         label="launch manifest selected GPU count",
     )
+    if "selection_bound_scale_up" in manifest:
+        _validate_pilot_launch_manifest_keys(
+            manifest, label="selection-bound pilot launch manifest"
+        )
+        _validate_selection_bound_scale_up_manifest(manifest)
     return manifest
 
 
@@ -629,6 +741,92 @@ _PILOT_LAUNCH_MANIFEST_KEYS = {
     "exclude_special_tokens",
     "dry_run",
 }
+_SELECTION_BOUND_SCALE_UP_KEY = "selection_bound_scale_up"
+_OUTPUT_DIRECTORY_BINDING_KEY = "output_directory_binding"
+
+
+def _validate_pilot_launch_manifest_keys(
+    manifest: dict[str, object], *, label: str
+) -> None:
+    expected = set(_PILOT_LAUNCH_MANIFEST_KEYS)
+    has_scale_up = _SELECTION_BOUND_SCALE_UP_KEY in manifest
+    has_output_binding = _OUTPUT_DIRECTORY_BINDING_KEY in manifest
+    if has_scale_up != has_output_binding:
+        raise ValueError(
+            f"{label} must pair selection-bound scale-up and output-directory binding"
+        )
+    if has_scale_up:
+        expected.add(_SELECTION_BOUND_SCALE_UP_KEY)
+        expected.add(_OUTPUT_DIRECTORY_BINDING_KEY)
+    _require_exact_keys(manifest, expected, label=label)
+
+
+def _validate_selection_bound_scale_up_manifest(
+    manifest: dict[str, object],
+) -> dict[str, object] | None:
+    if _SELECTION_BOUND_SCALE_UP_KEY not in manifest:
+        return None
+    value = manifest[_SELECTION_BOUND_SCALE_UP_KEY]
+    try:
+        from scripts.udlm.launch_train_pilot import (
+            validate_output_directory_binding,
+            validate_selection_bound_scale_up,
+        )
+    except ImportError as error:
+        raise ValueError(
+            "selection-bound scale-up validation dependency is unavailable"
+        ) from error
+    validated = validate_selection_bound_scale_up(
+        value,
+        expected_training_variant=manifest.get("training_variant"),
+        expected_position=manifest.get("matched_panel_variant_position"),
+        expected_world_size=manifest.get("user_requested_gpu_count"),
+        expected_resolved_config_sha256=manifest.get("resolved_training_config_sha256"),
+    )
+    if _OUTPUT_DIRECTORY_BINDING_KEY in manifest:
+        summary_path = manifest.get("training_summary_path")
+        log_path = manifest.get("log_path")
+        if not isinstance(summary_path, str) or not isinstance(log_path, str):
+            raise ValueError("scale-up output paths must be strings")
+        validate_output_directory_binding(
+            manifest.get(_OUTPUT_DIRECTORY_BINDING_KEY),
+            run_dir=Path(summary_path).parent,
+            log_path=Path(log_path),
+        )
+    return validated
+
+
+def _validate_selection_bound_scale_up_manifest_link(
+    current_manifest: dict[str, object],
+    predecessor_manifest: dict[str, object] | None,
+) -> None:
+    current_value = current_manifest.get(_SELECTION_BOUND_SCALE_UP_KEY)
+    predecessor_value = (
+        None
+        if predecessor_manifest is None
+        else predecessor_manifest.get(_SELECTION_BOUND_SCALE_UP_KEY)
+    )
+    if current_value is None and predecessor_value is None:
+        return
+    try:
+        from scripts.udlm.launch_train_pilot import (
+            _validate_selection_bound_scale_up_link,
+        )
+    except ImportError as error:
+        raise ValueError(
+            "selection-bound scale-up validation dependency is unavailable"
+        ) from error
+    current_variant = current_manifest.get("training_variant")
+    if current_variant not in _MATCHED_PANEL_VARIANT_ORDER:
+        raise ValueError("scale-up current training variant is invalid")
+    _validate_selection_bound_scale_up_link(
+        current_value,
+        predecessor_value,
+        current_training_variant=current_variant,
+        current_world_size=current_manifest.get("user_requested_gpu_count"),
+    )
+
+
 _PILOT_TRAINING_SUMMARY_KEYS = {
     "schema_version",
     "status",
@@ -943,11 +1141,10 @@ def _validate_predecessor_producer_artifacts(
     if source != expected_source:
         raise ValueError("predecessor receipt source is not the exact producer value")
 
-    _require_exact_keys(
-        predecessor_manifest,
-        _PILOT_LAUNCH_MANIFEST_KEYS,
-        label="predecessor launch manifest",
+    _validate_pilot_launch_manifest_keys(
+        predecessor_manifest, label="predecessor launch manifest"
     )
+    _validate_selection_bound_scale_up_manifest(predecessor_manifest)
     _exact_integer(
         predecessor_manifest.get("launch_manifest_schema_version"),
         LAUNCH_MANIFEST_SCHEMA_VERSION,
@@ -1835,6 +2032,7 @@ def _validated_predecessor_binding_at_receipt(
         or current_position != _MATCHED_PANEL_VARIANT_ORDER.index(current_variant)
     ):
         raise ValueError("launch manifest R/S/E treatment position is invalid")
+    _validate_selection_bound_scale_up_manifest(launch_manifest)
     _exact_string(
         binding.get("current_training_variant"),
         current_variant,
@@ -1880,6 +2078,7 @@ def _validated_predecessor_binding_at_receipt(
         ):
             if binding.get(field) is not None:
                 raise ValueError(f"genesis predecessor binding {field} must be null")
+        _validate_selection_bound_scale_up_manifest_link(launch_manifest, None)
         return json.loads(json.dumps(binding, allow_nan=False))
 
     if binding.get("state") != "validated_successful_predecessor":
@@ -1972,6 +2171,13 @@ def _validated_predecessor_binding_at_receipt(
             label="predecessor launch manifest",
         ),
         label="predecessor launch manifest",
+    )
+    _validate_pilot_launch_manifest_keys(
+        predecessor_manifest, label="predecessor launch manifest"
+    )
+    _validate_selection_bound_scale_up_manifest(predecessor_manifest)
+    _validate_selection_bound_scale_up_manifest_link(
+        launch_manifest, predecessor_manifest
     )
     predecessor_receipt = _required_mapping(
         strict_json_loads(
@@ -2498,7 +2704,7 @@ def _conditioning_configuration(
         raise ValueError("resolved post-initialization reseed flag must be boolean")
     seed = _nonnegative_integer_field(resolved, "seed", label="resolved training seed")
     if variant == "film_adaln" and reseed is not True:
-        raise ValueError("FiLM screen requires post-initialization reseeding")
+        raise ValueError("FiLM pilot requires post-initialization reseeding")
     return variant, reseed, seed
 
 
@@ -2653,6 +2859,12 @@ def _validate_conditioning_gradient_audit(
         if value is not None:
             raise ValueError("non-FiLM summary must have a null gradient audit")
         return None
+    manifest = _required_mapping(launch_manifest, label="launch manifest")
+    screen_value = manifest.get("optimization_screen")
+    if screen_value is None:
+        if value is not None:
+            raise ValueError("non-screen FiLM summary must have a null gradient audit")
+        return None
     report = _required_mapping(value, label="conditioning gradient audit")
     _require_exact_keys(
         report,
@@ -2667,10 +2879,7 @@ def _validate_conditioning_gradient_audit(
         },
         label="conditioning gradient audit",
     )
-    manifest = _required_mapping(launch_manifest, label="launch manifest")
-    screen = _required_mapping(
-        manifest.get("optimization_screen"), label="optimization-screen manifest"
-    )
+    screen = _required_mapping(screen_value, label="optimization-screen manifest")
     contract = _validate_gradient_contract(
         screen.get("conditioning_gradient_contract"),
         screen.get("conditioning_gradient_contract_sha256"),
@@ -3646,13 +3855,11 @@ def validate_training_summary(
         expected_config_sha256=expected_config_sha256,
         launch_manifest=launch_manifest,
     )
-    if conditioning_variant == "film_adaln":
-        screen = _required_mapping(
-            _required_mapping(launch_manifest, label="launch manifest").get(
-                "optimization_screen"
-            ),
-            label="optimization-screen manifest",
-        )
+    screen_value = _required_mapping(launch_manifest, label="launch manifest").get(
+        "optimization_screen"
+    )
+    if conditioning_variant == "film_adaln" and screen_value is not None:
+        screen = _required_mapping(screen_value, label="optimization-screen manifest")
         gradient_contract = _validate_gradient_contract(
             screen.get("conditioning_gradient_contract"),
             screen.get("conditioning_gradient_contract_sha256"),
@@ -3712,41 +3919,140 @@ def _pipeline_component(exit_status: int) -> dict[str, object]:
 
 
 def _atomic_write_json_exclusive(path: Path, value: object) -> None:
-    """Publish one fsynced JSON receipt without replacing an existing path."""
+    """Publish one fsynced receipt without following repository symlink parents."""
 
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if os.path.lexists(path):
-        raise FileExistsError(f"refusing to replace pilot exit receipt: {path}")
     encoded = (
         json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n"
     ).encode("utf-8")
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
+    directory_fd, normalized, name = _open_direct_repository_parent(
+        path,
+        label="pilot exit receipt",
+        create_missing=False,
     )
-    temporary = Path(temporary_name)
+    temporary_name: str | None = None
     try:
+        try:
+            os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            pass
+        else:
+            raise FileExistsError(
+                f"refusing to replace pilot exit receipt: {normalized}"
+            )
+        descriptor: int | None = None
+        for _attempt in range(100):
+            candidate = f".{name}.{secrets.token_hex(16)}.tmp"
+            try:
+                descriptor = os.open(
+                    candidate,
+                    os.O_WRONLY
+                    | os.O_CREAT
+                    | os.O_EXCL
+                    | getattr(os, "O_CLOEXEC", 0)
+                    | getattr(os, "O_NOFOLLOW", 0),
+                    0o644,
+                    dir_fd=directory_fd,
+                )
+            except FileExistsError:
+                continue
+            temporary_name = candidate
+            break
+        if descriptor is None or temporary_name is None:  # pragma: no cover
+            raise RuntimeError("could not reserve temporary exit receipt")
         with os.fdopen(descriptor, "wb") as handle:
             os.fchmod(handle.fileno(), 0o644)
             handle.write(encoded)
             handle.flush()
             os.fsync(handle.fileno())
         try:
-            os.link(temporary, path)
+            os.link(
+                temporary_name,
+                name,
+                src_dir_fd=directory_fd,
+                dst_dir_fd=directory_fd,
+                follow_symlinks=False,
+            )
         except FileExistsError as error:
             raise FileExistsError(
-                f"refusing to replace pilot exit receipt: {path}"
+                f"refusing to replace pilot exit receipt: {normalized}"
             ) from error
-        temporary.unlink()
-        directory_descriptor = os.open(path.parent, os.O_RDONLY)
-        try:
-            os.fsync(directory_descriptor)
-        finally:
-            os.close(directory_descriptor)
+        os.unlink(temporary_name, dir_fd=directory_fd)
+        temporary_name = None
+        os.fsync(directory_fd)
     finally:
-        if temporary.exists():
-            temporary.unlink()
+        if temporary_name is not None:
+            try:
+                os.unlink(temporary_name, dir_fd=directory_fd)
+            except FileNotFoundError:
+                pass
+        os.close(directory_fd)
+
+
+def _safe_tee_log(
+    path: Path, *, expected_device: int, expected_inode: int, expected_mode: int
+) -> int:
+    """Mirror stdin to stdout and append through one no-follow log descriptor."""
+
+    repository = Path(os.path.abspath(os.fspath(REPOSITORY_ROOT)))
+    normalized = Path(os.path.abspath(os.fspath(path)))
+    expected_parent = repository / "output" / "logs"
+    if (
+        normalized.parent != expected_parent
+        or normalized.suffix != ".log"
+        or not RUN_NAME_PATTERN.fullmatch(normalized.stem)
+    ):
+        raise ValueError("safe tee log must be one canonical pilot log path")
+    directory_fd, _normalized, name = _open_direct_repository_parent(
+        normalized,
+        label="pilot log",
+        create_missing=False,
+    )
+    log_fd: int | None = None
+    try:
+        before = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+            raise ValueError("pilot log must be a singly linked regular file")
+        if (
+            type(expected_device) is not int
+            or expected_device < 0
+            or type(expected_inode) is not int
+            or expected_inode <= 0
+            or type(expected_mode) is not int
+            or expected_mode <= 0
+            or (int(before.st_dev), int(before.st_ino), int(before.st_mode))
+            != (expected_device, expected_inode, expected_mode)
+        ):
+            raise RuntimeError("reserved pilot log identity changed before streaming")
+        log_fd = os.open(
+            name,
+            os.O_WRONLY
+            | os.O_APPEND
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=directory_fd,
+        )
+        if _stat_identity(os.fstat(log_fd)) != _stat_identity(before):
+            raise RuntimeError("pilot log changed before safe stream open")
+        while True:
+            chunk = os.read(sys.stdin.fileno(), 1024 * 1024)
+            if not chunk:
+                break
+            for output_fd in (sys.stdout.fileno(), log_fd):
+                remaining = memoryview(chunk)
+                while remaining:
+                    written = os.write(output_fd, remaining)
+                    if written <= 0:  # pragma: no cover - operating-system invariant
+                        raise OSError("safe tee made no write progress")
+                    remaining = remaining[written:]
+        os.fsync(log_fd)
+        after = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if _stat_identity(os.fstat(log_fd)) != _stat_identity(after):
+            raise RuntimeError("pilot log changed during safe streaming")
+    finally:
+        if log_fd is not None:
+            os.close(log_fd)
+        os.close(directory_fd)
+    return 0
 
 
 def build_exit_receipt(args: argparse.Namespace) -> tuple[dict[str, object], int]:
@@ -4198,16 +4504,33 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _parse_safe_tee_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Descriptor-bound pilot log stream")
+    parser.add_argument("--safe-tee-log", type=Path, required=True)
+    parser.add_argument("--expected-log-device", type=_positive_integer, required=True)
+    parser.add_argument("--expected-log-inode", type=_positive_integer, required=True)
+    parser.add_argument("--expected-log-mode", type=_positive_integer, required=True)
+    return parser.parse_args(argv)
+
+
 def main(argv: list[str] | None = None) -> int:
-    args = _parse_args(argv)
+    effective_argv = list(sys.argv[1:] if argv is None else argv)
+    if effective_argv[:1] == ["--safe-tee-log"]:
+        safe_tee_args = _parse_safe_tee_args(effective_argv)
+        return _safe_tee_log(
+            safe_tee_args.safe_tee_log,
+            expected_device=safe_tee_args.expected_log_device,
+            expected_inode=safe_tee_args.expected_log_inode,
+            expected_mode=safe_tee_args.expected_log_mode,
+        )
+    args = _parse_args(effective_argv)
     if args.expected_summary_schema_version != TRAINING_SUMMARY_SCHEMA_VERSION:
         raise ValueError(
             "unsupported training summary schema version "
             f"{args.expected_summary_schema_version!r}; expected "
             f"{TRAINING_SUMMARY_SCHEMA_VERSION}"
         )
-    if args.expected_world_size not in (1, 2):
-        raise ValueError("expected world size must be 1 or 2")
+    _validated_pilot_world_size(args.expected_world_size)
     if len(args.expected_selected_gpu_uuids) != args.expected_world_size:
         raise ValueError(
             "expected selected GPU UUID count must equal expected world size"
