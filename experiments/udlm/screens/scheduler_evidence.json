@@ -1,0 +1,202 @@
+{
+  "attempts": [
+    {
+      "arm_id": "E-L0",
+      "artifacts": {
+        "exit_receipt": {
+          "canonical_sha256": "e6c029a4bf65a9bf5f74d6a460e9962b6d65700fffdfae63b81b14c63dd728f8",
+          "relative_path": "output/udlm/screens/gpu1_scheduler_e_l0/pilot_exit_status.json",
+          "root": "repository",
+          "schema_version": 5,
+          "sha256": "0fb9acfc8270fe4e8399843fef8f334280d01dea339b103f71ac55fba47b917e",
+          "size_bytes": 10727
+        },
+        "launch_manifest": {
+          "canonical_sha256": "8f16af50e3bf2bd1ae273b25dc93bf87a3e1b4c09ee1a53bd4d070d00ec05fee",
+          "relative_path": "output/udlm/screens/gpu1_scheduler_e_l0/launch_manifest.json",
+          "root": "repository",
+          "schema_version": 2,
+          "sha256": "76d7320027e4c955409a7f5e64cb80f7b1fd345532f577d8e292063175d2339f",
+          "size_bytes": 15262
+        },
+        "runtime_config": {
+          "canonical_sha256": "85c628e73df282e80d7936f6e18453c273eaf568782e24b7b1cba8796f966ed6",
+          "relative_path": "output/udlm/screens/gpu1_scheduler_e_l0/runtime_config.json",
+          "root": "repository",
+          "schema_version": 2,
+          "sha256": "a8d96fc7a63fe11784bd0750b52de3f04b5cdbb2eff95c5cb7ff4d7e52643b9d",
+          "size_bytes": 7806
+        },
+        "training_summary": {
+          "canonical_sha256": "3425e7c6d54790f7e0cc12201b08183fab51734e017ce038094f914ea57665b9",
+          "relative_path": "output/udlm/screens/gpu1_scheduler_e_l0/training_summary.json",
+          "root": "repository",
+          "schema_version": 5,
+          "sha256": "5a7ca8b5688e17b617a8aa9d1e0730db00a924ca117ee2512dba3b8bc99344fa",
+          "size_bytes": 9986
+        }
+      },
+      "attempt_id": "scheduler-e-l0-g1",
+      "checkpoint": {
+        "global_step": 100,
+        "relative_path": "output/udlm/screens/gpu1_scheduler_e_l0/checkpoints/100.ckpt",
+        "root": "repository",
+        "sha256": "c9476c9011dc3b89450c0c6416fd99013d9ed376f432b64a243eedf5752a3be8",
+        "size_bytes": 1409664832
+      },
+      "conditioning_gradient_audit": null,
+      "denoising_report": {
+        "canonical_sha256": "3f7e84759eb80261e4e6a5a1273d56298fd36a03536385ff793816755f1b678b",
+        "relative_path": "output/udlm/screens/gpu1_scheduler_e_l0/denoising_binding.json",
+        "root": "repository",
+        "schema_version": 1,
+        "sha256": "d0430428750741fee4dd67066362d5da901136f6dc993a9b8e999297313f422b",
+        "size_bytes": 1316
+      },
+      "failure_reason": null,
+      "gpu_count": 1,
+      "initialization": {
+        "ema_reset": true,
+        "global_step_reset": true,
+        "mode": "fresh_independent_mdlm_ema_warm_start_each_arm",
+        "optimizer_reset": true,
+        "scheduler_reset": true,
+        "source_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+        "state_audit": {
+          "common_backbone_state_sha256": "b7ae1ed650e1c4f7b1d70fd85a531a82d2686cda8625d9ad0315c5969f3029e3",
+          "common_backbone_tensor_count": 204,
+          "conditioning_variant": "additive",
+          "full_initial_state_sha256": "7152c4f41980180d565341c31c79ecd7061c93d5ea9494c524c1439d71f168ee",
+          "full_initial_tensor_count": 208,
+          "phase": "after_verified_mdlm_ema_warm_start_before_training_rng_reseed_and_optimizer_creation",
+          "resolved_training_config_sha256": "3287914acfb052e08e5ad48b4566a0fce9c231dd5d199beb1c73f68d85e08b8c",
+          "schema_version": 1,
+          "source_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+          "training_seed": 17
+        },
+        "weights": "ema"
+      },
+      "optimizer_updates": 100,
+      "output_directory": "output/udlm/screens/gpu1_scheduler_e_l0",
+      "resolved_config": {
+        "canonical_sha256": "3287914acfb052e08e5ad48b4566a0fce9c231dd5d199beb1c73f68d85e08b8c",
+        "relative_path": "experiments/udlm/protocols/optimization_screen_configs_gpu1/scheduler_e_l0.json",
+        "root": "repository",
+        "sha256": "644cca636219011c9567236daf966340fb9231238ec87a223320f79a3a362ef1",
+        "size_bytes": 2638
+      },
+      "source_revision": "2d33e565d19f585f75f0a1c1d849c4311ce9714d",
+      "status": "completed",
+      "training_seed": 17
+    },
+    {
+      "arm_id": "E-L1",
+      "artifacts": {
+        "exit_receipt": {
+          "canonical_sha256": "756444512e128f565c5512543637b4aa7e74c52adcbf1f8aaa64333e073f34a1",
+          "relative_path": "output/udlm/screens/gpu1_scheduler_e_l1/pilot_exit_status.json",
+          "root": "repository",
+          "schema_version": 5,
+          "sha256": "73aad67b4f6e601ca03cf4b179bf4cf6a02f88e696ae9bb343b0b13e7603fbf9",
+          "size_bytes": 10727
+        },
+        "launch_manifest": {
+          "canonical_sha256": "cc7912cf7d6444985c809771a0b8f23d10f3c829195d16d7952dcc3d3c20b026",
+          "relative_path": "output/udlm/screens/gpu1_scheduler_e_l1/launch_manifest.json",
+          "root": "repository",
+          "schema_version": 2,
+          "sha256": "d0d8b01bb5926fdea1a61c567e4d1824c77de5c487f9a934cf5f798f8934cd4d",
+          "size_bytes": 15287
+        },
+        "runtime_config": {
+          "canonical_sha256": "02124c515a0b3788d7c9974d7abee23abc50012d479c558fa1b4a5d745a97306",
+          "relative_path": "output/udlm/screens/gpu1_scheduler_e_l1/runtime_config.json",
+          "root": "repository",
+          "schema_version": 2,
+          "sha256": "f4749a6d9e2554dc64e24b9871d532e66081b87cc5e6f8931b154fb4b2cabbcb",
+          "size_bytes": 7842
+        },
+        "training_summary": {
+          "canonical_sha256": "25e0e9a1c99491ecded6e211dd515be8ea680b43aa8e5bfd6adc463f2c6b0356",
+          "relative_path": "output/udlm/screens/gpu1_scheduler_e_l1/training_summary.json",
+          "root": "repository",
+          "schema_version": 5,
+          "sha256": "29791f9289629fac464e4da1b0d7ee12e67804dead60acdb772db7ebbf29304c",
+          "size_bytes": 9986
+        }
+      },
+      "attempt_id": "scheduler-e-l1-g1",
+      "checkpoint": {
+        "global_step": 100,
+        "relative_path": "output/udlm/screens/gpu1_scheduler_e_l1/checkpoints/100.ckpt",
+        "root": "repository",
+        "sha256": "b96f664152a4a9cd1d86209b0a3bd3c0eb80d4f1fffb8702c934028d63fbbfa3",
+        "size_bytes": 1409664832
+      },
+      "conditioning_gradient_audit": null,
+      "denoising_report": {
+        "canonical_sha256": "ab194244ebd0da54561192616a18955836b7eebca9c1dc487f9722cad65d76ee",
+        "relative_path": "output/udlm/screens/gpu1_scheduler_e_l1/denoising_binding.json",
+        "root": "repository",
+        "schema_version": 1,
+        "sha256": "864ca01579890c26bbbe9417de6f3ec9b7d0ea172749283554cab24e28c9eabf",
+        "size_bytes": 1316
+      },
+      "failure_reason": null,
+      "gpu_count": 1,
+      "initialization": {
+        "ema_reset": true,
+        "global_step_reset": true,
+        "mode": "fresh_independent_mdlm_ema_warm_start_each_arm",
+        "optimizer_reset": true,
+        "scheduler_reset": true,
+        "source_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+        "state_audit": {
+          "common_backbone_state_sha256": "b7ae1ed650e1c4f7b1d70fd85a531a82d2686cda8625d9ad0315c5969f3029e3",
+          "common_backbone_tensor_count": 204,
+          "conditioning_variant": "additive",
+          "full_initial_state_sha256": "7152c4f41980180d565341c31c79ecd7061c93d5ea9494c524c1439d71f168ee",
+          "full_initial_tensor_count": 208,
+          "phase": "after_verified_mdlm_ema_warm_start_before_training_rng_reseed_and_optimizer_creation",
+          "resolved_training_config_sha256": "0307c2e32f83e6d6b623e6496e472392e558900c4f1a2697293fa3835916f1f4",
+          "schema_version": 1,
+          "source_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+          "training_seed": 17
+        },
+        "weights": "ema"
+      },
+      "optimizer_updates": 100,
+      "output_directory": "output/udlm/screens/gpu1_scheduler_e_l1",
+      "resolved_config": {
+        "canonical_sha256": "0307c2e32f83e6d6b623e6496e472392e558900c4f1a2697293fa3835916f1f4",
+        "relative_path": "experiments/udlm/protocols/optimization_screen_configs_gpu1/scheduler_e_l1.json",
+        "root": "repository",
+        "sha256": "c8390799cd3198f61b67de39bdecd5a08f505fac4ec95437c26a483dde78731f",
+        "size_bytes": 2650
+      },
+      "source_revision": "2d33e565d19f585f75f0a1c1d849c4311ce9714d",
+      "status": "completed",
+      "training_seed": 17
+    }
+  ],
+  "final_generation_seeds_included": [],
+  "generation_metrics_included": false,
+  "initialization_audit": null,
+  "producer_source": {
+    "relative_path": "scripts/udlm/collect_optimization_screen_evidence.py",
+    "root": "repository",
+    "sha256": "a696cd3b6ef6220285b245869a0399c4fc180ce8817a3be83c7319b1ec7945d3",
+    "size_bytes": 28471
+  },
+  "registry": {
+    "canonical_sha256": "0ad9f5785ab72b515f8784883d4347b4e8c3820bcfad331269a298f9558c67b9",
+    "relative_path": "experiments/udlm/protocols/optimization_screen_registry_v2.json",
+    "schema_version": 2,
+    "sha256": "c1c3078d3bfb9461f759d4cf36f64e890046d0bd85a860882d0612fbc36cf226"
+  },
+  "run_source_revision": "2d33e565d19f585f75f0a1c1d849c4311ce9714d",
+  "scheduler_dependency": null,
+  "schema_version": 1,
+  "stage_id": "scheduler",
+  "status": "closed_after_registered_attempts"
+}

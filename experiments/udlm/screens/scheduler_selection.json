@@ -1,0 +1,86 @@
+{
+  "complete_threshold_fallback_used": false,
+  "dependency": null,
+  "evidence": {
+    "canonical_sha256": "c8d4f70fec521daab4a45db2bd71881bb4a4291e2e28790ecc52894850fc0afb",
+    "relative_path": "experiments/udlm/screens/scheduler_evidence.json",
+    "schema_version": 1,
+    "sha256": "76a4ec9771dd0e875bf4532beb217da0ed54426427d39d92dbb218c50673c705"
+  },
+  "final_generation_seeds_used": [],
+  "gates": {
+    "all_required_gates_pass": true,
+    "at_least_two_strictly_better_bins": true,
+    "every_bin_candidate_le_102_percent_control": true,
+    "pooled_candidate_le_98_percent_control": true,
+    "strictly_better_bin_count": 3
+  },
+  "generation_metrics_used": false,
+  "metrics": {
+    "E-L0": {
+      "by_time": [
+        {
+          "clean_token_top1_correct": 11717,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "21088.75993273773",
+          "time": "0.1"
+        },
+        {
+          "clean_token_top1_correct": 6084,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "31449.43793713956",
+          "time": "0.5"
+        },
+        {
+          "clean_token_top1_correct": 2747,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "15974.851050259313",
+          "time": "0.9"
+        }
+      ],
+      "clean_token_top1_correct": 20548,
+      "denominator_tokens": 40881,
+      "production_loss_sum_fraction": "68513048920136603/1000000000000"
+    },
+    "E-L1": {
+      "by_time": [
+        {
+          "clean_token_top1_correct": 12551,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "7978.129798994009",
+          "time": "0.1"
+        },
+        {
+          "clean_token_top1_correct": 8141,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "21279.645133074457",
+          "time": "0.5"
+        },
+        {
+          "clean_token_top1_correct": 3157,
+          "denominator_tokens": 13627,
+          "production_loss_sum": "14946.506060535736",
+          "time": "0.9"
+        }
+      ],
+      "clean_token_top1_correct": 23849,
+      "denominator_tokens": 40881,
+      "production_loss_sum_fraction": "22102140496302101/500000000000"
+    }
+  },
+  "reason_codes": [
+    "candidate_satisfied_all_registered_thresholds"
+  ],
+  "registry": {
+    "canonical_sha256": "0ad9f5785ab72b515f8784883d4347b4e8c3820bcfad331269a298f9558c67b9",
+    "relative_path": "experiments/udlm/protocols/optimization_screen_registry_v2.json",
+    "schema_version": 2,
+    "sha256": "c1c3078d3bfb9461f759d4cf36f64e890046d0bd85a860882d0612fbc36cf226"
+  },
+  "run_source_revision": "2d33e565d19f585f75f0a1c1d849c4311ce9714d",
+  "schema_version": 1,
+  "selected_arm_id": "E-L1",
+  "selection_rule_id": "l1_if_pooled_loss_le_98pct_l0_and_two_bins_strictly_better_and_each_bin_le_102pct",
+  "stage_id": "scheduler",
+  "status": "completed"
+}
