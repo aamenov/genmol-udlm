@@ -217,6 +217,16 @@ class Sampler:
     def inference_weights(self):
         """Describe the backbone weights selected before any inference call."""
         return _copy_inference_weights_receipt(self._inference_weights)
+
+    def generate_context_guided(self, token_ids, *, config):
+        """Experimental raw-token UDLM guidance with a separate evidence receipt.
+
+        This API is not accepted by benchmark YAMLs or the PMO adapter. Existing
+        ``generate`` defaults and its UDLM gamma guard remain unchanged.
+        """
+        from genmol.context_guidance import generate_context_guided
+
+        return generate_context_guided(self, token_ids, config=config)
         
     @torch.no_grad()
     def generate(
@@ -244,6 +254,14 @@ class Sampler:
         before LOO conversion and leaves bridge temperature at 1. This opt-in
         hypothesis currently requires top-p 1 and no Gibbs corrector.
         """
+        if 'context_guidance' in kwargs or (
+            isinstance(kwargs.get('method'), str)
+            and kwargs['method'] == 'posterior_context'
+        ):
+            raise ValueError(
+                'Experimental posterior context guidance requires the separate '
+                'generate_context_guided API; it is not an option of generate.'
+            )
         if type(gibbs_corrector) is not bool:
             raise ValueError('gibbs_corrector must be a boolean')
         if gibbs_corrector and self.diffusion_type != 'udlm':
