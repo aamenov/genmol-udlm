@@ -2,6 +2,23 @@
 
 ## Active continuation: V12 complete; temperature-space hypothesis next
 
+V13 implementation, paired reporting, Stage 27 and all four concrete configs
+are merged. The executable protocol is
+`experiments/udlm/protocols/engineering_v13_temperature_space.json`, SHA-256
+`daf8c8108772e0ebcbdd39f15dab07478fe8945ba6b33f4b68858a8536ad7319`.
+Merged focused verification passed 72 tests; the canonical CPU dry-run passed
+with no GPU probes or artifact mutations. The one-shot wrapper is
+`output/logs/engineering-v13-pipeline.py`; use tmux
+`genmol-udlm-v13-temperature`, pipeline log
+`output/logs/engineering-v13-pipeline.log`, generation root
+`output/udlm/engineering_v13`, job logs `output/logs/engineering_v13`, and
+CPU report `output/udlm/engineering_v13_reports/complete`. Check the eventual
+`output/logs/engineering-v13-pipeline-status.json` and live tmux/log state
+before acting. After the clean pushed final dry-run and fresh GPU inventory,
+start once and keep tracked source/HEAD frozen until generation and independent
+rescoring both terminate. No final seeds or additional training are authorized
+by this fixed V13 panel; the overarching research goal remains active.
+
 V12 generation and independent CPU reporting completed at 12:56:25.917740 UTC
 on 2026-09-07; all eight runs and 800 requests passed. Source remained frozen
 at `c61a1ef4b42fd2f8aba817e5e3e3554afc64eaa1`. Report JSON SHA-256 is
