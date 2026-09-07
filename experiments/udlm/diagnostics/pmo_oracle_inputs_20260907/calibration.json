@@ -1,0 +1,79 @@
+{
+  "cases": [
+    {
+      "TPSA": 20.23,
+      "absolute_formula_error": 0.0,
+      "factors": [
+        0.0,
+        2.6890057696530696e-11,
+        1.0
+      ],
+      "label": "ethanol",
+      "logP": -0.0014000000000000123,
+      "manual_formula": 0.0,
+      "similarity": 0.0,
+      "smiles": "CCO",
+      "strict_singleton_list": 0.0,
+      "tdc_scalar": 0.0
+    },
+    {
+      "TPSA": 0.0,
+      "absolute_formula_error": 2.6469779601696886e-22,
+      "factors": [
+        0.04120879120879121,
+        2.576757109154981e-18,
+        1.0
+      ],
+      "label": "benzene",
+      "logP": 1.6866,
+      "manual_formula": 4.735375826223763e-07,
+      "similarity": 0.03296703296703297,
+      "smiles": "c1ccccc1",
+      "strict_singleton_list": 4.735375826223766e-07,
+      "tdc_scalar": 4.735375826223766e-07
+    },
+    {
+      "TPSA": 81.0,
+      "absolute_formula_error": 0.0,
+      "factors": [
+        1.0,
+        0.6669768108584744,
+        0.31956163115609243
+      ],
+      "label": "fixed_reference",
+      "logP": 5.510500000000007,
+      "manual_formula": 0.5973402619117621,
+      "similarity": 1.0,
+      "smiles": "CC(C)(C(=O)O)c1ccc(cc1)C(O)CCCN2CCC(CC2)C(O)(c3ccccc3)c4ccccc4",
+      "strict_singleton_list": 0.5973402619117621,
+      "tdc_scalar": 0.5973402619117621
+    }
+  ],
+  "device": "CPU; CUDA_VISIBLE_DEVICES empty",
+  "elapsed_seconds": 0.13708089396823198,
+  "fixed_input_count": 3,
+  "manifest": {
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/experiments/udlm/diagnostics/pmo_oracle_inputs_20260907/manifest.json",
+    "sha256": "05558145586686a7e6646e0b9e978345c4cd1a6a1f433a34d3234d3027734d8f",
+    "size_bytes": 8027
+  },
+  "manual_descriptor_checks": 3,
+  "maximum_absolute_formula_error": 2.6469779601696886e-22,
+  "online_optimization_calls": 0,
+  "purpose": "fixed-input oracle calibration only; no model or optimization and no tuning feedback",
+  "sampler_adapter": {
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/pmo/udlm_sampling.py",
+    "sha256": "5b08753217293cb380fead9f14e3714db843109974af079e0aea2acc215dfc06",
+    "size_bytes": 14381
+  },
+  "schema_version": 1,
+  "seed": null,
+  "source": {
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/udlm/check_pmo_oracle_calibration.py",
+    "sha256": "f49fce288f4c3dd1f1f3c53a1b19a5e4de7f42451e717662f6d055237f829924",
+    "size_bytes": 4220
+  },
+  "source_commit": "8c7006a37dc34622e9befc3702dd5fabfb0b4082",
+  "status": "passed",
+  "tdc_evaluator_calls": 6
+}
