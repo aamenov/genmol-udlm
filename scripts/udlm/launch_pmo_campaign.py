@@ -7,7 +7,7 @@ Run inside tmux; --dry-run performs CPU metadata preflight without resource prob
 from __future__ import annotations
 
 import argparse
-from contextlib import ExitStack
+from contextlib import ExitStack, redirect_stdout
 from datetime import datetime, timezone
 import json
 import math
@@ -23,11 +23,13 @@ ROOT = Path(__file__).resolve().parents[2]
 for import_root in (ROOT, ROOT / "src"):
     sys.path.insert(0, str(import_root))
 
-from scripts import artifact_io  # noqa: E402
-from scripts.exps.denovo import benchmark, launch_benchmark as resources  # noqa: E402
-from scripts.exps.pmo import run_ablation as runner, udlm_sampling  # noqa: E402
-from scripts.exps.pmo.main.genmol import experiment_io  # noqa: E402
-from scripts.udlm import launch_engineering_training as cleanup  # noqa: E402
+# Third-party SAFE imports may print diagnostics. Keep dry-run stdout JSON-only.
+with redirect_stdout(sys.stderr):
+    from scripts import artifact_io  # noqa: E402
+    from scripts.exps.denovo import benchmark, launch_benchmark as resources  # noqa: E402
+    from scripts.exps.pmo import run_ablation as runner, udlm_sampling  # noqa: E402
+    from scripts.exps.pmo.main.genmol import experiment_io  # noqa: E402
+    from scripts.udlm import launch_engineering_training as cleanup  # noqa: E402
 
 POLICY = {"max_utilization_percent": 10, "min_free_memory_mib": 30000}
 RUNNER_KEYS = {
