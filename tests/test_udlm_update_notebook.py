@@ -111,6 +111,23 @@ def test_update_is_byte_idempotent(tmp_path: Path) -> None:
     assert second.read_bytes() == first.read_bytes()
 
 
+def test_stage23_independent_exact_posterior_example():
+    markdown, cell = updater._denoiser_ce_cells()  # noqa: SLF001
+    for fragment in (
+        "Paper correspondence", "Intuition and motivation", "Mathematics",
+        "Small concrete example", "tensor shapes", "Differences from released",
+        "Comprehension checkpoint", "joint reverse", "39/400",
+    ):
+        assert fragment in markdown["source"]
+    tree = ast.parse(cell["source"])
+    imports = [node for node in ast.walk(tree) if isinstance(node, (ast.Import, ast.ImportFrom))]
+    assert len(imports) == 1 and imports[0].module == "fractions"
+    namespace = {}
+    exec(compile(tree, cell["id"], "exec"), namespace)
+    assert namespace["stage23_bridge"] == namespace["stage23_mixture"]
+    assert float(namespace["stage23_error"]) == 0.0975
+
+
 def test_stage21_executes_independently_as_read_only_protocol_preview(monkeypatch):
     monkeypatch.chdir(REPOSITORY_ROOT)
     markdown, code_cell = updater._engineering_v5_cells()  # noqa: SLF001
@@ -536,8 +553,11 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
     assert ordered_ids.index("stage-22-engineering-v6-note") == (
         ordered_ids.index("stage-21-engineering-v5-code") + 1
     )
-    assert ordered_ids.index("stage19-report-note") == (
+    assert ordered_ids.index("stage-23-denoiser-ce") == (
         ordered_ids.index("stage-22-engineering-v6-code") + 1
+    )
+    assert ordered_ids.index("stage19-report-note") == (
+        ordered_ids.index("stage-23-denoiser-ce-code") + 1
     )
 
 
