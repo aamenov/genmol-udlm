@@ -1,5 +1,13 @@
 # Authorized diagnostic sequence
 
+Execution amendment: the first attempt lacked its local pinned SA input and
+all four launchers stopped before GPU selection or sampling. Original evidence
+is retained. The active protocol is `followthrough_resolution_r1.json`; outputs
+and logs use `followthrough_resolution_r1`. The wrapper performs complete child
+preflights, and the copied SA bytes match SHA-256
+`24a4392f5c673e79c0446af3c4d8e458293b5fecaa244328e76741ead9d21dbf`.
+All scientific settings and unconsumed seeds are unchanged.
+
 The user requested execution of the objective, resolution, adaptation-budget,
 and confirmation sequence in the side conversation on 2026-09-07. This isolated
 checkout preserves the running V9 source and all existing experiment outputs.

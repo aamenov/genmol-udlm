@@ -18,8 +18,8 @@ sys.path.insert(0, str(ROOT))
 from scripts.udlm import report_exploration as reports
 from scripts.udlm.audit_molecular_failures import lexical_flags
 
-PROTOCOL = Path("experiments/udlm/protocols/followthrough_resolution.json")
-OUTPUT = Path("output/udlm/followthrough_resolution")
+PROTOCOL = Path("experiments/udlm/protocols/followthrough_resolution_r1.json")
+OUTPUT = Path("output/udlm/followthrough_resolution_r1")
 
 
 def paired_contrasts(report):
@@ -84,7 +84,7 @@ def main():
         syntax.append({"attempt_id": run["attempt_id"], "seed": run["seed"], **counts})
     report["resolution_contrasts"] = contrasts
     report["lexical_diagnostics"] = syntax
-    directory = ROOT / "output/udlm/followthrough_resolution_reports/complete"
+    directory = ROOT / "output/udlm/followthrough_resolution_r1_reports/complete"
     paths = reports.write_report(report, directory)
     with (directory / "paired_contrasts.csv").open("x", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(contrasts[0]))

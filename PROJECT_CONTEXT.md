@@ -1,5 +1,14 @@
 # Isolated follow-through study — active local scope
 
+The first resolution attempt failed before GPU selection because this new
+checkout lacked `oracle/fpscores.pkl`. Its four failure receipts and source
+commit remain intact. The pinned 9,048,931-byte metric input is now copied and
+hash-verified. `followthrough_resolution_r1.json` preserves all scientific
+settings and uses fresh attempt IDs/output namespaces. The runner now performs
+all four actual child-launcher CPU preflights before creating its tmux session.
+The active session/log/output names have the `r1` suffix. No original seed
+worker started and no original molecule was generated, so seeds are retained.
+
 This checkout owns only the diagnostic sequence authorized in the side conversation
 on 2026-09-07. Read `docs/udlm_diagnostics_followthrough.md`. Do not execute the
 historical canonical-worktree commands below from this checkout.
