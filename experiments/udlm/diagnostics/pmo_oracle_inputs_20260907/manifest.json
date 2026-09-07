@@ -1,0 +1,154 @@
+{
+  "executable": "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+  "files": {
+    "PyTDC_distribution_metadata": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/pytdc-0.4.1.dist-info/METADATA",
+      "sha256": "d7f9be274263c72f246677fc73238a5fb48f1c2e184ea0d4a64442a9af9d1bfa",
+      "size_bytes": 18086
+    },
+    "fexofenadine_vocabulary": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/pmo/vocab/fexofenadine_mpo.csv",
+      "sha256": "e967e70d67c881146028342af31c4fddb4dc065f5f28248bb20f9dc5dd6c3b7f",
+      "size_bytes": 729711
+    },
+    "numpy_distribution_metadata": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/numpy-1.26.4.dist-info/METADATA",
+      "sha256": "b09734a7fed44e84b4c8161934ce532dff1e779ec6822d415644d117f6381070",
+      "size_bytes": 61041
+    },
+    "pandas_distribution_metadata": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/pandas-2.1.0.dist-info/METADATA",
+      "sha256": "1c77ac2ed15d4d0f99a86802b94a561fda11f7f25367973ab8ad28c7c0cf8c5b",
+      "size_bytes": 18882
+    },
+    "rdkit.Chem.Crippen": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/Crippen.py",
+      "sha256": "5a407f44235e566986a3b089cfade456b031c22b478fd3ea257814730b706366",
+      "size_bytes": 6097
+    },
+    "rdkit.Chem.Descriptors": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/Descriptors.py",
+      "sha256": "99ed7fd2839cb1a32d1092564cb7bd7dcbd8ec539dfe35ce8bc724698cf89165",
+      "size_bytes": 8755
+    },
+    "rdkit.Chem.MolSurf": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/MolSurf.py",
+      "sha256": "614b65501d75de8e371cec9244493a68aca83554a5a987076f254f7e76d6e8af",
+      "size_bytes": 14630
+    },
+    "rdkit.Chem.rdMolDescriptors": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/rdMolDescriptors.so",
+      "sha256": "d276583fb4011d98ce12d037bd15cd3524a22df743d3b6f846026ded209f7c43",
+      "size_bytes": 1361057
+    },
+    "rdkit.Chem.rdchem": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/rdchem.so",
+      "sha256": "70dfccec51caf5922c9bcd3a2c1d8b7c3fb89e0472bc5f2e74bf7c74524cb998",
+      "size_bytes": 7229097
+    },
+    "rdkit.Chem.rdmolops": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/rdmolops.so",
+      "sha256": "0ad8f0cccaf0e5155d0f6f4ccc13c56cc507cbac576a6b00155cc727e771250d",
+      "size_bytes": 2236441
+    },
+    "rdkit.DataStructs.cDataStructs": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/DataStructs/cDataStructs.so",
+      "sha256": "77fb44a89529a9bcd7088844ccef9cf57e677ff5fbc02cdb1d5233fce7aa9651",
+      "size_bytes": 2827217
+    },
+    "rdkit.rdBase": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/rdBase.so",
+      "sha256": "af4d88c058ab047fca15a50c07c2ffce1aeb3ad0bace6ace350b764fa7c76aff",
+      "size_bytes": 2774833
+    },
+    "rdkit_distribution_metadata": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit-2023.9.6.dist-info/METADATA",
+      "sha256": "92c6e8142ed18d834349120e56b541e0d0143bde87e5d524171ff5e89a21a07a",
+      "size_bytes": 3928
+    },
+    "safe-mol_distribution_metadata": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/safe_mol-0.1.14.dist-info/METADATA",
+      "sha256": "88be9fe57e54a8b55f20ac6ea0972bafced3042fe92deda7387bdd3f609c656b",
+      "size_bytes": 11513
+    },
+    "scikit-learn_distribution_metadata": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/scikit_learn-1.7.2.dist-info/METADATA",
+      "sha256": "a301770d816e5ef5e2a262886115f1e6002637324f3bfe73f92378897dea8c63",
+      "size_bytes": 11784
+    },
+    "scipy.stats._mstats_basic": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/scipy/stats/_mstats_basic.py",
+      "sha256": "197142b19b5b2a0ea426ebd7482191c61b667be75fcc12ef976afe8365161863",
+      "size_bytes": 122939
+    },
+    "scipy.stats._stats_py": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/scipy/stats/_stats_py.py",
+      "sha256": "01b665feba503fd53684d00ca6f322550fa41d414e09da482ab97f48d64b8a5b",
+      "size_bytes": 417517
+    },
+    "scipy_distribution_metadata": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/scipy-1.15.3.dist-info/METADATA",
+      "sha256": "c75caf32b67a13a9fc16aacf993a8bb883b7a69744ffe77cbbd4f3bfbad28f3d",
+      "size_bytes": 61956
+    },
+    "tdc.chem_utils.oracle.oracle": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/tdc/chem_utils/oracle/oracle.py",
+      "sha256": "d266c89b5ea5f67135d0fa04f3348c4e67e3b8946c4ffe13ee8d6b96a5335e4f",
+      "size_bytes": 59584
+    },
+    "tdc.oracles": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/tdc/oracles.py",
+      "sha256": "03b52abdc8a1446f903238009fd9682842e04479eac8e989ed2395147938de2b",
+      "size_bytes": 25879
+    },
+    "tokenizers_distribution_metadata": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/tokenizers-0.21.4.dist-info/METADATA",
+      "sha256": "ef1cc38a5ceceb768e2963515069bc1a6f539408fb0262443765caa8773e7123",
+      "size_bytes": 6728
+    },
+    "torch_distribution_metadata": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/torch-2.6.0+cu124.dist-info/METADATA",
+      "sha256": "76581c0d424f2d45de443327dfe1d5e115fd5e090b553deca3c3e23fc31c8da0",
+      "size_bytes": 28224
+    },
+    "transformers_distribution_metadata": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/transformers-4.52.4.dist-info/METADATA",
+      "sha256": "65b2198f18538c895f9e240c80b7ef74355bfe95432cba9123991e5607bcf946",
+      "size_bytes": 38349
+    },
+    "v14_prospective_design": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/experiments/udlm/designs/engineering_v14_pmo_pilot.md",
+      "sha256": "2da4cbde2d7e6f65b79bbc7c1f89691bf7f7e523a4570c01f5a89276774ac012",
+      "size_bytes": 8042
+    }
+  },
+  "future_scoring": "require strict singleton-list TDC evaluator path in every explicit-sampling arm; retain finite legitimate zeros, propagate failures",
+  "gsk3b_deferred": {
+    "checkpoint_sha256": "d3a20701b80e5179c88c3ad4dc3483dd7ab35c50dc055c6773a7f5b63e89b6d5",
+    "reason": "static pickle sklearn0.23.0 tree fields incompatible with installed1.7.2; no unpickle or oracle score attempted"
+  },
+  "packages": {
+    "PyTDC": "0.4.1",
+    "numpy": "1.26.4",
+    "pandas": "2.1.0",
+    "rdkit": "2023.9.6",
+    "safe-mol": "0.1.14",
+    "scikit-learn": "1.7.2",
+    "scipy": "1.15.3",
+    "tokenizers": "0.21.4",
+    "torch": "2.6.0+cu124",
+    "transformers": "4.52.4"
+  },
+  "python": "3.10.21 (main, Aug 27 2026, 14:42:07) [GCC 14.3.0]",
+  "schema_version": 1,
+  "status": "source-only inspection; no oracle construction/evaluation, unpickling or model execution",
+  "task": "fexofenadine_mpo",
+  "task_definition": {
+    "TPSA": "1 at TPSA>=90; exp(-0.5*((TPSA-90)/10)^2) otherwise",
+    "aggregation": "geometric mean of similarity, TPSA and logP modifiers",
+    "fingerprint": "count atom-pair, maxLength=10",
+    "logP": "1 at logP<=4; exp(-0.5*(logP-4)^2) otherwise",
+    "reference_smiles": "CC(C)(C(=O)O)c1ccc(cc1)C(O)CCCN2CCC(CC2)C(O)(c3ccccc3)c4ccccc4",
+    "similarity": "min(Tanimoto / 0.8, 1)"
+  }
+}

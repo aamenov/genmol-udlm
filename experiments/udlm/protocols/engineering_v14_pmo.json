@@ -1,0 +1,195 @@
+{
+  "campaign_id": "engineering-v14-fexofenadine-pmo",
+  "capacity_wait_seconds": 21600,
+  "child_timeout_seconds": 3600,
+  "entries": [
+    {
+      "checkpoint": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+      "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "id": "v14-mdlm-2300",
+      "max_oracle_calls": 2000,
+      "sampling_config": "experiments/udlm/protocols/engineering_v14_pmo_configs/mdlm.yaml",
+      "sampling_config_sha256": "68718ba14d68c0f1da869f7869dd13129b6012c4472854f1b08cfb1a76841744",
+      "seed": 2300,
+      "vocabulary": "scripts/exps/pmo/vocab/fexofenadine_mpo.csv",
+      "vocabulary_sha256": "e967e70d67c881146028342af31c4fddb4dc065f5f28248bb20f9dc5dd6c3b7f"
+    },
+    {
+      "checkpoint": "output/udlm/scaleup-w1-s-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72",
+      "id": "v14-s-ct-2300",
+      "max_oracle_calls": 2000,
+      "sampling_config": "experiments/udlm/protocols/engineering_v14_pmo_configs/s_ct.yaml",
+      "sampling_config_sha256": "ce7f03370c9d684af84e85d0f5f0a0e3ab6cf799eee57d4621727e26fa628dd4",
+      "seed": 2300,
+      "vocabulary": "scripts/exps/pmo/vocab/fexofenadine_mpo.csv",
+      "vocabulary_sha256": "e967e70d67c881146028342af31c4fddb4dc065f5f28248bb20f9dc5dd6c3b7f"
+    },
+    {
+      "checkpoint": "output/udlm/engineering_v11b/mask_ce_1000_b128_w2/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "62299de99d8c003e3776215efce9643cca196091a6284f351de2b404a22c2e8d",
+      "id": "v14-mask-ce-2300",
+      "max_oracle_calls": 2000,
+      "sampling_config": "experiments/udlm/protocols/engineering_v14_pmo_configs/mask_ce.yaml",
+      "sampling_config_sha256": "fa488b4993f34153633d62213d2b3b19fa06ca49e6562c215fcd706d1dce8dc6",
+      "seed": 2300,
+      "vocabulary": "scripts/exps/pmo/vocab/fexofenadine_mpo.csv",
+      "vocabulary_sha256": "e967e70d67c881146028342af31c4fddb4dc065f5f28248bb20f9dc5dd6c3b7f"
+    },
+    {
+      "checkpoint": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+      "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "id": "v14-mdlm-2301",
+      "max_oracle_calls": 2000,
+      "sampling_config": "experiments/udlm/protocols/engineering_v14_pmo_configs/mdlm.yaml",
+      "sampling_config_sha256": "68718ba14d68c0f1da869f7869dd13129b6012c4472854f1b08cfb1a76841744",
+      "seed": 2301,
+      "vocabulary": "scripts/exps/pmo/vocab/fexofenadine_mpo.csv",
+      "vocabulary_sha256": "e967e70d67c881146028342af31c4fddb4dc065f5f28248bb20f9dc5dd6c3b7f"
+    },
+    {
+      "checkpoint": "output/udlm/scaleup-w1-s-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72",
+      "id": "v14-s-ct-2301",
+      "max_oracle_calls": 2000,
+      "sampling_config": "experiments/udlm/protocols/engineering_v14_pmo_configs/s_ct.yaml",
+      "sampling_config_sha256": "ce7f03370c9d684af84e85d0f5f0a0e3ab6cf799eee57d4621727e26fa628dd4",
+      "seed": 2301,
+      "vocabulary": "scripts/exps/pmo/vocab/fexofenadine_mpo.csv",
+      "vocabulary_sha256": "e967e70d67c881146028342af31c4fddb4dc065f5f28248bb20f9dc5dd6c3b7f"
+    },
+    {
+      "checkpoint": "output/udlm/engineering_v11b/mask_ce_1000_b128_w2/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "62299de99d8c003e3776215efce9643cca196091a6284f351de2b404a22c2e8d",
+      "id": "v14-mask-ce-2301",
+      "max_oracle_calls": 2000,
+      "sampling_config": "experiments/udlm/protocols/engineering_v14_pmo_configs/mask_ce.yaml",
+      "sampling_config_sha256": "fa488b4993f34153633d62213d2b3b19fa06ca49e6562c215fcd706d1dce8dc6",
+      "seed": 2301,
+      "vocabulary": "scripts/exps/pmo/vocab/fexofenadine_mpo.csv",
+      "vocabulary_sha256": "e967e70d67c881146028342af31c4fddb4dc065f5f28248bb20f9dc5dd6c3b7f"
+    }
+  ],
+  "input_files": [
+    {
+      "path": "experiments/udlm/diagnostics/pmo_oracle_inputs_20260907/manifest.json",
+      "sha256": "05558145586686a7e6646e0b9e978345c4cd1a6a1f433a34d3234d3027734d8f"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/pytdc-0.4.1.dist-info/METADATA",
+      "sha256": "d7f9be274263c72f246677fc73238a5fb48f1c2e184ea0d4a64442a9af9d1bfa"
+    },
+    {
+      "path": "scripts/exps/pmo/vocab/fexofenadine_mpo.csv",
+      "sha256": "e967e70d67c881146028342af31c4fddb4dc065f5f28248bb20f9dc5dd6c3b7f"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/numpy-1.26.4.dist-info/METADATA",
+      "sha256": "b09734a7fed44e84b4c8161934ce532dff1e779ec6822d415644d117f6381070"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/pandas-2.1.0.dist-info/METADATA",
+      "sha256": "1c77ac2ed15d4d0f99a86802b94a561fda11f7f25367973ab8ad28c7c0cf8c5b"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/Crippen.py",
+      "sha256": "5a407f44235e566986a3b089cfade456b031c22b478fd3ea257814730b706366"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/Descriptors.py",
+      "sha256": "99ed7fd2839cb1a32d1092564cb7bd7dcbd8ec539dfe35ce8bc724698cf89165"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/MolSurf.py",
+      "sha256": "614b65501d75de8e371cec9244493a68aca83554a5a987076f254f7e76d6e8af"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/rdMolDescriptors.so",
+      "sha256": "d276583fb4011d98ce12d037bd15cd3524a22df743d3b6f846026ded209f7c43"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/rdchem.so",
+      "sha256": "70dfccec51caf5922c9bcd3a2c1d8b7c3fb89e0472bc5f2e74bf7c74524cb998"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/Chem/rdmolops.so",
+      "sha256": "0ad8f0cccaf0e5155d0f6f4ccc13c56cc507cbac576a6b00155cc727e771250d"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/DataStructs/cDataStructs.so",
+      "sha256": "77fb44a89529a9bcd7088844ccef9cf57e677ff5fbc02cdb1d5233fce7aa9651"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit/rdBase.so",
+      "sha256": "af4d88c058ab047fca15a50c07c2ffce1aeb3ad0bace6ace350b764fa7c76aff"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/rdkit-2023.9.6.dist-info/METADATA",
+      "sha256": "92c6e8142ed18d834349120e56b541e0d0143bde87e5d524171ff5e89a21a07a"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/safe_mol-0.1.14.dist-info/METADATA",
+      "sha256": "88be9fe57e54a8b55f20ac6ea0972bafced3042fe92deda7387bdd3f609c656b"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/scikit_learn-1.7.2.dist-info/METADATA",
+      "sha256": "a301770d816e5ef5e2a262886115f1e6002637324f3bfe73f92378897dea8c63"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/scipy/stats/_mstats_basic.py",
+      "sha256": "197142b19b5b2a0ea426ebd7482191c61b667be75fcc12ef976afe8365161863"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/scipy/stats/_stats_py.py",
+      "sha256": "01b665feba503fd53684d00ca6f322550fa41d414e09da482ab97f48d64b8a5b"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/scipy-1.15.3.dist-info/METADATA",
+      "sha256": "c75caf32b67a13a9fc16aacf993a8bb883b7a69744ffe77cbbd4f3bfbad28f3d"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/tdc/chem_utils/oracle/oracle.py",
+      "sha256": "d266c89b5ea5f67135d0fa04f3348c4e67e3b8946c4ffe13ee8d6b96a5335e4f"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/tdc/oracles.py",
+      "sha256": "03b52abdc8a1446f903238009fd9682842e04479eac8e989ed2395147938de2b"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/tokenizers-0.21.4.dist-info/METADATA",
+      "sha256": "ef1cc38a5ceceb768e2963515069bc1a6f539408fb0262443765caa8773e7123"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/torch-2.6.0+cu124.dist-info/METADATA",
+      "sha256": "76581c0d424f2d45de443327dfe1d5e115fd5e090b553deca3c3e23fc31c8da0"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/transformers-4.52.4.dist-info/METADATA",
+      "sha256": "65b2198f18538c895f9e240c80b7ef74355bfe95432cba9123991e5607bcf946"
+    },
+    {
+      "path": "experiments/udlm/designs/engineering_v14_pmo_pilot.md",
+      "sha256": "2da4cbde2d7e6f65b79bbc7c1f89691bf7f7e523a4570c01f5a89276774ac012"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/tdc/utils/load.py",
+      "sha256": "915c3a186ea08b3ef592f94c1dc06f1689d4b185fd2bfc88a4f64b8737611984"
+    }
+  ],
+  "log_root": "output/logs/engineering_v14_pmo",
+  "oracle": "fexofenadine_mpo",
+  "output_root": "output/udlm/engineering_v14_pmo",
+  "runner": {
+    "checkpoint_every": 100,
+    "guidance_scale": 2.0,
+    "legacy_warmup_off_by_one": true,
+    "max_iterations": 5000,
+    "max_mol_size": 40,
+    "min_mol_size": 20,
+    "population_size": 100,
+    "reporting_frequency": 100,
+    "warmup": 1000
+  },
+  "schema_version": 1,
+  "scientific_status": "prospective adaptive engineering pilot; 1 task x 2 seeds x 2000 calls per arm; unequal training and NFE; no GenMol superiority claim"
+}

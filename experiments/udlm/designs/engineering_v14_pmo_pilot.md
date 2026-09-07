@@ -101,9 +101,11 @@ all raw event/score/population records and independently replay call indices,
 canonical cache accounting, curves, terminal metrics and contrast calculations.
 For each seed, the attaching-only warmup's selected fragments, molecules,
 scores and population evolution must match across arms (ignore timestamps,
-checkpoint metadata and explicit sampler fields). Require positive observed
-remasking and backbone evaluations before interpreting a run as a diffusion
-comparison; warmup-only completion or failed verification withholds that claim.
+checkpoint metadata and explicit sampler fields). Require at least one accepted,
+charged post-warmup remasking event with observed backbone evaluations before
+interpreting a run as a diffusion comparison; report this event count and its
+fraction of charged post-warmup events. NFE spent only on rejected proposals is
+insufficient. Warmup-only completion or failed verification withholds that claim.
 
 An arm is a candidate for a later, separately declared replication only if
 both paired AUC differences are positive and its mean terminal top-10 score is
