@@ -1,0 +1,6 @@
+# Prospective V14 PMO pilot; same released fragment policy, new sampler law.
+checkpoint_sha256: 8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6
+diffusion_type: mdlm
+softmax_temp: 1.2
+randomness: 2.0
+min_add_len: 18
