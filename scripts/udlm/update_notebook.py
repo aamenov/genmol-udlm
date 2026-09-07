@@ -5303,6 +5303,180 @@ print("Synthetic P(MASK at t=0.5 | clean B):", float(stage26_forward[2][0]))
     ]
 
 
+def _denoiser_temperature_cells():
+    """Teach temperature ordering with an independent, exact CPU example."""
+    return [
+        _cell(
+            "markdown",
+            r"""
+# Stage 27 — Where should temperature act on a clean denoiser?
+
+**Paper correspondence.** GenMol adapts an MDLM that predicts clean tokens
+from a masked sequence. Released UDLM uses leave-one-out predictions in a
+categorical reverse process and applies sampling temperature to those logits.
+Stage 23 introduced our local cross-entropy (CE) clean-denoiser alternative and
+its conversion to the existing reverse bridge. This stage asks whether to
+temper the clean prediction before conversion. It is a new inference
+hypothesis, not a bug fix or a result claimed by either paper. See also
+`docs/udlm_denoiser_temperature_hypothesis.md`.
+
+**Intuition and motivation.** Temperature below one sharpens a distribution,
+but the distribution being sharpened matters. Conversion divides by the local
+likelihood of observing the noisy token. Sharpening after that division also
+sharpens the likelihood correction. A model may strongly predict that a rare
+visible token was clean while the converted prediction assigns substantial
+weight elsewhere. Sharpening the clean prediction instead tests a different
+preference. Either preference can retain incorrect tokens or reduce diversity.
+
+**Mathematics, with every symbol defined.** At one editable sequence position,
+let $A$ be the active vocabulary size, $j$ a candidate clean token, $k$ the
+observed noisy token, and $i$ a candidate token at an earlier time. Let
+$\pi_j>0$ be the stationary probability of token $j$, with $\sum_j\pi_j=1$.
+For current time $t\in(0,1]$, earlier time $s\in[0,t)$, and residual-clean
+parameter $\nu\in(0,1)$, define $\alpha_u=1-(1-\nu)u$ for any time $u$.
+The indicator $\mathbf1[j=k]$ is one when the IDs agree and zero otherwise.
+The local likelihood is
+
+$$L_j=q_t(k\mid j)=\alpha_t\mathbf1[j=k]+(1-\alpha_t)\pi_k.$$
+
+Let $D_j$ be the model's predicted clean-token probability conditioned on the
+whole current noisy sequence. Define normalization of positive weights $v$ by
+$N(v)_j=v_j/\sum_hv_h$, where $h$ also ranges over active tokens. Products,
+quotients and powers below act coordinate by coordinate. The converted
+leave-one-out weights are $R=N(D/L)$. For temperature $T>0$, the current rule
+and its implied clean prediction are
+
+$$R_{\rm old}=N((D/L)^{1/T}),\qquad
+D_{\rm old}=N(R_{\rm old}L)=N(D^{1/T}L^{1-1/T}).$$
+
+The proposed order instead uses
+
+$$D_{\rm new}=N(D^{1/T}),\qquad R_{\rm new}=N(D_{\rm new}/L).$$
+
+The bridge must consume $R_{\rm new}$ at temperature one: another temperature
+operation would change this declared rule. At $T=1$ both rules agree exactly.
+At $T=0.5$, $D_{\rm old}=N(D^2/L)$ while $D_{\rm new}=N(D^2)$. The
+inverse-likelihood factor can counteract confidence in the current token.
+For an observed MASK, $L_j$ is equal among non-MASK candidates, so their
+relative clean weights agree between rules; the MASK candidate still differs.
+
+To distinguish a clean prediction from one reverse transition, let $U$ be
+either $D_{\rm old}$ or $D_{\rm new}$ and set $r=\alpha_t/\alpha_s$.
+The mixture of normalized forward bridges is
+
+$$P_U(i)=\sum_j U_j
+\frac{[\alpha_s\mathbf1[i=j]+(1-\alpha_s)\pi_i]
+      [r\mathbf1[i=k]+(1-r)\pi_k]}{L_j}.$$
+
+Here $P_U(i)$ is the next, partly noisy token probability; it is not $U_i$.
+All denominators are positive, and $\sum_iP_U(i)=1$. With the true clean
+posterior and $T=1$, this is the coordinate reverse marginal. Learned
+predictions, coordinate factorization of a joint sequence distribution,
+initialization from the stationary prior instead of the exact time-one law,
+and a positive final diffusion time remain approximations. Neither ordering
+removes final MASK tokens or imposes a chemistry constraint.
+
+**Small concrete example.** Use the invented alphabet `[MASK, A, B]`,
+$\pi=(0.9,0.0999,0.0001)$, observed $k=2$, $t=0.5$, $s=0.4$,
+$\nu=0.001$ and $D=(0.001,0.009,0.99)$. At $T=0.5$, the implied clean B
+weight is **54.3949%** under the current rule and **99.9916%** under the new
+rule. The actual reverse-step B probability is **84.8083%** versus
+**99.9959%**. These are chosen three-state probabilities, not measured
+molecular frequencies, and greater retention alone does not imply correctness.
+
+**Code below, shapes, and invariants.** The standalone CPU cell imports only
+`Fraction`. Its distributions and likelihoods have shape `[A]` with $A=3$;
+the explicit bridge sums over the clean index for each earlier-state index.
+It checks normalization, positivity, the two conversion identities and
+temperature-one equivalence with rational arithmetic. Integer `power` is
+$1/T$ in this tiny demonstration, restricted to positive integers for exact
+powers; production temperatures can be any supported positive real value.
+In the model, integer tokens and Boolean editable masks have shape `[B,L]`,
+and logits have shape `[B,L,K]`, where $B$ is batch size, $L$ here denotes
+sequence length (distinct from the indexed likelihood $L_j$), and $K$ is the
+full model output vocabulary size. The active support has size $A\leq K$.
+No production import, checkpoint, dataset, GPU or filesystem is used here.
+
+**Differences from released implementations.** The proposed opt-in
+`temperature_space: x0_denoiser` applies to CE-parameterized UDLM only;
+absent/default `raw_loo` retains the released temperature convention and
+historical configuration identities. Initially use top-p one and no Gibbs
+corrector, with the new bridge temperature fixed to one. This is an inference
+choice on a fixed checkpoint with its original trained prior, unlike the new
+prior training in Stage 26. Saved configurations and independent rescoring
+must bind the selected order. A molecular test needs the same checkpoint,
+prior, temperature, NFE and fresh paired engineering seeds for both rules,
+all declared outcomes and final editable control-token counts. V12 remains
+unchanged; final seeds 0/1/2 remain reserved. No benchmark improvement is
+established by this cell, and no experiment is launched.
+
+**Comprehension checkpoint.** Why do the rules coincide at $T=1$? Expected
+reasoning: the likelihood exponent in $D_{\rm old}$ is zero and both recover
+$D$. Why is applying temperature twice wrong for the new rule? Expected
+reasoning: its defined clean posterior is already $N(D^{1/T})$; another power
+after conversion reintroduces temperature-dependent likelihood weighting.
+Why is 54.3949% different from 84.8083%? Expected reasoning: the first is
+an implied clean weight, while the second includes the normalized transition
+to a still-noisy earlier time. Does an observed MASK make the rules identical?
+Expected reasoning: only the ratios among non-MASK clean candidates coincide;
+the MASK candidate has a different likelihood. Why is this not a benchmark
+win? Expected reasoning: the example supplies probabilities by hand, and
+greater retention can preserve errors or reduce molecular diversity.
+""",
+            "stage-27-denoiser-temperature",
+        ),
+        _cell(
+            "code",
+            """
+from fractions import Fraction as Stage27Fraction
+
+def stage27_normalize(weights):
+    assert weights and min(weights) > 0
+    return tuple(value / sum(weights) for value in weights)
+
+def stage27_rules(denoiser, likelihood, power):
+    assert type(power) is int and power > 0
+    assert len(denoiser) == len(likelihood) and sum(denoiser) == 1
+    raw = stage27_normalize(tuple(d / l for d, l in zip(denoiser, likelihood)))
+    old_raw = stage27_normalize(tuple(value ** power for value in raw))
+    old_clean = stage27_normalize(tuple(r * l for r, l in zip(old_raw, likelihood)))
+    assert old_clean == stage27_normalize(tuple(
+        d ** power * l ** (1 - power) for d, l in zip(denoiser, likelihood)))
+    new_clean = stage27_normalize(tuple(d ** power for d in denoiser))
+    new_raw = stage27_normalize(tuple(d / l for d, l in zip(new_clean, likelihood)))
+    assert new_clean == stage27_normalize(tuple(r * l for r, l in zip(new_raw, likelihood)))
+    return old_clean, new_clean
+
+def stage27_bridge(clean_weights, prior, current, alpha_t, alpha_s):
+    ratio = alpha_t / alpha_s
+    return tuple(sum(clean_weights[j]
+        * (alpha_s * (i == j) + (1 - alpha_s) * prior[i])
+        * (ratio * (i == current) + (1 - ratio) * prior[current])
+        / (alpha_t * (j == current) + (1 - alpha_t) * prior[current])
+        for j in range(len(prior))) for i in range(len(prior)))
+
+stage27_prior = (Stage27Fraction(9, 10), Stage27Fraction(999, 10000), Stage27Fraction(1, 10000))
+stage27_denoiser = (Stage27Fraction(1, 1000), Stage27Fraction(9, 1000), Stage27Fraction(99, 100))
+stage27_current = 2
+stage27_t, stage27_s, stage27_nu = Stage27Fraction(1, 2), Stage27Fraction(2, 5), Stage27Fraction(1, 1000)
+stage27_alpha_t = 1 - (1 - stage27_nu) * stage27_t
+stage27_alpha_s = 1 - (1 - stage27_nu) * stage27_s
+stage27_likelihood = tuple(stage27_alpha_t * (j == stage27_current)
+    + (1 - stage27_alpha_t) * stage27_prior[stage27_current] for j in range(3))
+stage27_old, stage27_new = stage27_rules(stage27_denoiser, stage27_likelihood, 2)
+assert stage27_rules(stage27_denoiser, stage27_likelihood, 1) == (stage27_denoiser,) * 2
+stage27_old_step, stage27_new_step = tuple(stage27_bridge(weights, stage27_prior,
+    stage27_current, stage27_alpha_t, stage27_alpha_s) for weights in (stage27_old, stage27_new))
+assert all(sum(values) == 1 and min(values) > 0 for values in
+           (stage27_old, stage27_new, stage27_old_step, stage27_new_step))
+print("Synthetic implied clean B weights (old, new):", float(stage27_old[2]), float(stage27_new[2]))
+print("Synthetic reverse-step B probabilities (old, new):", float(stage27_old_step[2]), float(stage27_new_step[2]))
+""",
+            "stage-27-denoiser-temperature-code",
+        ),
+    ]
+
+
 def _replace_required(text: str, old: str, new: str, *, label: str) -> str:
     """Apply one migration exactly once while remaining idempotent."""
     if new in text:
@@ -6508,6 +6682,7 @@ def update_notebook(source: Path, destination: Path):
         *_objective_comparison_cells(),
         *_objective_evaluation_cells(),
         *_mask_rich_prior_cells(),
+        *_denoiser_temperature_cells(),
     ]
     engineering_ids = {cell["id"] for cell in engineering_cells}
     notebook["cells"] = [
