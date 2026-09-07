@@ -12,7 +12,9 @@ Does clean-token cross-entropy (CE), converted to the leave-one-out
 parameterization used by the UDLM reverse bridge, improve molecular generation
 over the continuous-time (CT) objective under the matched V8 training setup?
 
-Both checkpoints must pass the complete V8 campaign at source
+The original design required both checkpoints to pass the complete V8
+campaign. The disclosed infrastructure amendment below replaces that
+controller-success condition; its original training source remains
 `c8434dda105c5fb2a15bb784d24e0387062c733e`, with protocol SHA-256
 `a27875752d25a4a7928401434f9bd90ee6e9d01539586bab70ce3ba75499026e`.
 Each arm starts from MDLM 50k EMA, receives 1,000 batch-128 updates, and uses
@@ -77,3 +79,29 @@ and study purposes differ. This small continuation study can diagnose an
 objective effect, but cannot establish superiority over either comparator.
 Final UDLM seeds 0/1/2 remain reserved. No automatic candidate promotion or
 further training follows from this design.
+
+
+## Infrastructure amendment before CE training or molecular evaluation
+
+V8 CT reached step 1,000 and returned zero, but the controller failed its
+immediate process-group cleanup check. CE did not start. A separate CPU audit
+subsequently accepted the saved CT checkpoint and released its exact retained
+leases after verifying that its controller and training group were absent.
+The original failed campaign and terminal receipts remain unchanged. See
+[the incident record](../results/engineering_v8_ct_exit_incident.md).
+
+The comparison will therefore use **separately audited V8 CT plus a new V8b
+CE run**. CT checkpoint SHA-256 is
+`48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99`;
+the separate post-exit audit SHA-256 is
+`959151c37072431be23b1f5696d7215da5291e0bace40d6f307864a7262f93c2`.
+V8b must preserve the original CE initialization, seed, W2 grouping, resolved
+training configuration (apart from output path) and training implementation
+hashes. It starts fresh from MDLM EMA and has its own launch/completion
+receipts. A bounded process-exit grace repairs the controller independently
+of the molecular model.
+
+The primary/secondary temperature comparisons, 128 predictor evaluations,
+seeds 1600/1601 and all sample counts are unchanged. No molecular output from
+either new checkpoint informed this amendment. A failed V8b arm would remain
+disclosed and would not authorize automatic substitution or evaluation.
