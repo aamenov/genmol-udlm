@@ -2680,6 +2680,14 @@ def _validate_temperature_space(
 
 
 def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
+    if "context_guidance" in config or (
+        isinstance(config.get("method"), str)
+        and config["method"] == "posterior_context"
+    ):
+        raise BenchmarkConfigurationError(
+            "Experimental posterior context guidance requires the separate "
+            "sampler API and is not supported by benchmark YAMLs"
+        )
     missing = [
         key
         for key in ("softmax_temp", "randomness", "min_add_len")
