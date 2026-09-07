@@ -440,9 +440,16 @@ def build_report(
         result["caveats"] = [
             CAVEATS[0],
             _objective_training_description(protocol),
-            "CT and clean CE share the training settings recorded in this protocol. "
-            "Equal updates and examples do not imply equal compute or independently "
-            "optimized objectives; training losses have different scales and targets.",
+            (
+                "Both prior arms use clean-token CE and the training settings recorded "
+                "in this protocol. Changing the corruption prior changes reconstruction "
+                "difficulty; equal updates and examples do not imply equal compute, "
+                "and lower training loss does not establish better molecular generation."
+                if _has_prior_design(result)
+                else "CT and clean CE share the training settings recorded in this protocol. "
+                "Equal updates and examples do not imply equal compute or independently "
+                "optimized objectives; training losses have different scales and targets."
+            ),
             *CAVEATS[3:],
         ]
     contrasts = _paired_contrasts(protocol, runs)
@@ -450,8 +457,13 @@ def build_report(
         result["paired_contrasts"] = contrasts
         result["caveats"] = [
             *result["caveats"],
-            "Predeclared contrasts subtract CT from CE within the same seed and "
-            "decoding branch. Every declared contrast is retained, including negative "
+            (
+                "Predeclared contrasts subtract empirical CE from MASK-rich CE "
+                if _has_prior_design(result)
+                else "Predeclared contrasts subtract CT from CE "
+            )
+            + "within the same seed and decoding branch. Every declared contrast "
+            "is retained, including negative "
             "outcomes. Paired mean and sample SD are withheld unless all declared "
             "seed pairs define that metric; unavailable pairs remain visible. "
             "Sample SD describes seed spread, not a confidence interval. Pairing "
@@ -461,10 +473,15 @@ def build_report(
 
 
 def _paired_contrasts(protocol: dict[str, Any], runs: list[dict]) -> list[dict]:
-    """Resolve declared objective contrasts, never subtract unpaired seed means."""
-    comparison = protocol.get("design", {}).get("objective_comparison", {})
+    """Resolve the two supported comparisons without subtracting unpaired means."""
+    design = protocol.get("design", {})
+    prior = "prior_comparison" in design
+    if prior and "objective_comparison" in design:
+        raise ValueError("declare either prior_comparison or objective_comparison")
+    key = "prior_comparison" if prior else "objective_comparison"
+    comparison = design.get(key, {})
     if not isinstance(comparison, dict):
-        raise ValueError("objective_comparison must be an object")
+        raise ValueError(f"{key} must be an object")
     declarations = [
         (name, value)
         for name, value in comparison.items()
@@ -472,6 +489,8 @@ def _paired_contrasts(protocol: dict[str, Any], runs: list[dict]) -> list[dict]:
         or isinstance(value, dict)
         and ("control_config" in value or "treatment_config" in value)
     ]
+    if prior and not declarations:
+        raise ValueError("prior_comparison must declare at least one paired contrast")
     results = []
     for name, declaration in declarations:
         if (
@@ -489,7 +508,7 @@ def _paired_contrasts(protocol: dict[str, Any], runs: list[dict]) -> list[dict]:
             raise ValueError("paired contrast temperature must be finite and positive")
         entries = []
         for role, parameterization in (
-            ("control", "raw_loo"),
+            ("control", "x0_denoiser" if prior else "raw_loo"),
             ("treatment", "x0_denoiser"),
         ):
             selected = [
@@ -504,8 +523,26 @@ def _paired_contrasts(protocol: dict[str, Any], runs: list[dict]) -> list[dict]:
             entry = selected[0]
             if entry.get("parameterization", "raw_loo") != parameterization:
                 raise ValueError(
-                    "paired contrast must compare CE treatment minus CT control"
+                    "prior contrast requires clean CE for both arms"
+                    if prior
+                    else "paired contrast must compare CE treatment minus CT control"
                 )
+            if prior:
+                variant = (
+                    "empirical_frequency"
+                    if role == "control"
+                    else "mask_rich_empirical"
+                )
+                digest = entry.get("prior_metadata_sha256")
+                if (
+                    entry.get("prior_variant") != variant
+                    or not isinstance(digest, str)
+                    or len(digest) != 64
+                    or any(char not in "0123456789abcdef" for char in digest)
+                ):
+                    raise ValueError(
+                        "prior contrast requires empirical control and MASK-rich treatment identities"
+                    )
             entries.append(entry)
         if entries[0]["attempt_id"] == entries[1]["attempt_id"]:
             raise ValueError("paired contrast requires distinct treatment and control")
@@ -525,11 +562,18 @@ def _paired_contrasts(protocol: dict[str, Any], runs: list[dict]) -> list[dict]:
                         raise ValueError(
                             "observed paired config differs from declared contrast"
                         )
+                    if prior and any(
+                        sampling.get(field) != entry[field]
+                        for field in ("prior_variant", "prior_metadata_sha256")
+                    ):
+                        raise ValueError(
+                            "observed prior identity differs from declared contrast"
+                        )
                 by_seed[run["seed"]] = run
             selected_runs.append(by_seed)
         contrast = {
             "contrast_id": name,
-            "direction": "CE_minus_CT",
+            "direction": "MASK_minus_empirical" if prior else "CE_minus_CT",
             **{
                 key: declaration[key]
                 for key in ("control_config", "treatment_config", "temperature")
@@ -650,10 +694,15 @@ def _has_gibbs_design(report: dict[str, Any]) -> bool:
     )
 
 
+def _has_prior_design(report: dict[str, Any]) -> bool:
+    return "prior_comparison" in report["protocol"]["configuration"].get("design", {})
+
+
 def _has_denoiser_design(report: dict[str, Any]) -> bool:
     protocol = report["protocol"]["configuration"]
     return (
         "objective_comparison" in protocol.get("design", {})
+        or "prior_comparison" in protocol.get("design", {})
         or any(
             entry.get("parameterization") == "x0_denoiser"
             for entry in protocol.get("entries", [])
@@ -840,6 +889,8 @@ def _paired_csv_bytes(report: dict[str, Any]) -> bytes:
         "mean_difference",
         "sample_sd",
     ]
+    if _has_prior_design(report):
+        fields.insert(1, "direction")
     stream = io.StringIO(newline="")
     writer = csv.DictWriter(stream, fields, lineterminator="\n")
     writer.writeheader()
@@ -853,6 +904,8 @@ def _paired_csv_bytes(report: dict[str, Any]) -> bytes:
                 "temperature",
             )
         }
+        if _has_prior_design(report):
+            identity["direction"] = contrast["direction"]
         for branch in BRANCHES:
             for metric in METRICS:
                 result = contrast["metrics"][branch][metric]
@@ -921,16 +974,35 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
         for caveat in protocol.get("limitations", []):
             story.append(Paragraph(escape(caveat), styles["BodyText"]))
     if include_denoiser:
-        story.append(Paragraph("Objective comparison", styles["Heading2"]))
         story.append(
             Paragraph(
-                "CT / raw-LOO predicts clean leave-one-out probabilities. Clean CE "
-                "predicts clean denoiser probabilities, converted to LOO logits at "
-                "the current noisy state and time before temperature or top-p. "
-                "The conversion adds no backbone evaluation. Shared sampling "
-                "settings do not imply independently optimized objectives. "
-                "Objective labels and checkpoint evidence below describe completed "
-                "runs only; the prospective design also covers pending runs.",
+                (
+                    "Prior comparison"
+                    if _has_prior_design(report)
+                    else "Objective comparison"
+                ),
+                styles["Heading2"],
+            )
+        )
+        story.append(
+            Paragraph(
+                (
+                    "Both arms predict clean-denoiser probabilities using CE training, "
+                    "with empirical versus MASK-rich empirical stationary priors. "
+                    "Both convert to LOO logits at the current noisy state and time "
+                    "before temperature or top-p, with no extra backbone evaluation. "
+                    "Changing the prior changes the training corruption and reverse law. "
+                    "Checkpoint evidence below describes completed runs only; the "
+                    "prospective design also covers pending runs."
+                    if _has_prior_design(report)
+                    else "CT / raw-LOO predicts clean leave-one-out probabilities. Clean CE "
+                    "predicts clean denoiser probabilities, converted to LOO logits at "
+                    "the current noisy state and time before temperature or top-p. "
+                    "The conversion adds no backbone evaluation. Shared sampling "
+                    "settings do not imply independently optimized objectives. "
+                    "Objective labels and checkpoint evidence below describe completed "
+                    "runs only; the prospective design also covers pending runs."
+                ),
                 styles["BodyText"],
             )
         )
@@ -1032,7 +1104,14 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
         add_table(rows)
     if report.get("paired_contrasts"):
         story.append(
-            Paragraph("Predeclared paired CE minus CT contrasts", styles["Heading2"])
+            Paragraph(
+                (
+                    "Predeclared paired MASK minus empirical contrasts"
+                    if _has_prior_design(report)
+                    else "Predeclared paired CE minus CT contrasts"
+                ),
+                styles["Heading2"],
+            )
         )
         story.append(
             Paragraph(
@@ -1045,6 +1124,11 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
             )
         )
         for contrast in report["paired_contrasts"]:
+            control_label, treatment_label, difference_label = (
+                ("Empirical CE", "MASK CE", "MASK minus empirical")
+                if contrast["direction"] == "MASK_minus_empirical"
+                else ("CT", "CE", "CE minus CT")
+            )
             story.append(
                 Paragraph(
                     escape(
@@ -1056,9 +1140,18 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
             )
             for branch in BRANCHES:
                 story.append(Paragraph(escape(branch), styles["Heading3"]))
-                rows = [["Metric", "Seed", "CT", "CE", "CE minus CT", "Pair status"]]
+                rows = [
+                    [
+                        "Metric",
+                        "Seed",
+                        control_label,
+                        treatment_label,
+                        difference_label,
+                        "Pair status",
+                    ]
+                ]
                 summaries = [
-                    ["Metric", "Pairs defined", "Mean CE minus CT", "Sample SD"]
+                    ["Metric", "Pairs defined", f"Mean {difference_label}", "Sample SD"]
                 ]
                 for metric in METRICS:
                     result = contrast["metrics"][branch][metric]
@@ -1073,7 +1166,10 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
                         ]
                         status = pair["status"]
                         if status == "unavailable":
-                            status += f" (CT {pair['control_status']}; CE {pair['treatment_status']})"
+                            status += (
+                                f" ({control_label} {pair['control_status']}; "
+                                f"{treatment_label} {pair['treatment_status']})"
+                            )
                         rows.append([metric, pair["seed"], *values, status])
                     summaries.append(
                         [

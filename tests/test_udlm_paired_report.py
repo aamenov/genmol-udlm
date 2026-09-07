@@ -15,7 +15,7 @@ import pytest
 from scripts.udlm import report_exploration as report
 
 
-def synthetic_screen(root: Path):
+def synthetic_screen(root: Path, *, prior=False):
     """Exercise the real report pipeline with explicitly synthetic rescore values."""
     protocol_path = root / "protocol.json"
     output = root / "output/engineering"
@@ -46,20 +46,49 @@ def synthetic_screen(root: Path):
         "ce_t050": ([8, 8], [6, 5]),
     }
 
+    if prior:
+        comparison = protocol["design"].pop("objective_comparison")
+        for declaration in comparison.values():
+            declaration["control_config"] = declaration["control_config"].replace(
+                "ct_", "empirical_"
+            )
+            declaration["treatment_config"] = declaration["treatment_config"].replace(
+                "ce_", "mask_"
+            )
+        protocol["design"]["prior_comparison"] = comparison
+        quality_counts = {
+            key.replace("ct_", "empirical_").replace("ce_", "mask_"): value
+            for key, value in quality_counts.items()
+        }
+
     def write(path, value):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(value))
 
     for index, config_id in enumerate(quality_counts):
-        ce = config_id.startswith("ce")
+        treatment = config_id.startswith(("ce", "mask"))
+        ce = treatment or prior
+        prior_fields = (
+            {
+                "prior_variant": (
+                    "mask_rich_empirical" if treatment else "empirical_frequency"
+                ),
+                "prior_metadata_sha256": ("d" if treatment else "e") * 64,
+            }
+            if prior
+            else {}
+        )
         entry = {
             "attempt_id": f"synthetic-{config_id}",
             "candidate_id": config_id,
-            "arm_id": "CE" if ce else "CT",
+            "arm_id": (
+                ("MASK_CE" if treatment else "E_CE") if prior else "CE" if ce else "CT"
+            ),
             "config_id": config_id,
-            "checkpoint_sha256": ("a" if ce else "b") * 64,
+            "checkpoint_sha256": ("a" if treatment else "b") * 64,
             "config_sha256": str(index) * 64,
             "parameterization": "x0_denoiser" if ce else "raw_loo",
+            **prior_fields,
         }
         protocol["entries"].append(entry)
         for seed in protocol["seeds"]:
@@ -73,6 +102,7 @@ def synthetic_screen(root: Path):
                     "sampling": {
                         "softmax_temp": 1.0 if config_id.endswith("100") else 0.5,
                         **({"parameterization": "x0_denoiser"} if ce else {}),
+                        **prior_fields,
                     },
                 },
                 "run": {
@@ -314,3 +344,102 @@ def test_legacy_objective_metadata_does_not_invent_contrasts(paired):
     protocol = paired["protocol"]["configuration"]
     protocol["design"]["objective_comparison"] = {"primary_temperature": 1.0}
     assert _recompute(paired) == []
+
+
+@pytest.fixture
+def prior_paired(tmp_path):
+    return synthetic_screen(tmp_path, prior=True)
+
+
+def test_prior_screen_pipeline_has_correct_signed_pairs_and_caveats(prior_paired):
+    assert prior_paired["status"] == "complete"
+    primary, secondary = prior_paired["paired_contrasts"]
+    assert {p["direction"] for p in [primary, secondary]} == {"MASK_minus_empirical"}
+    assert primary["control_config"] == "empirical_t100"
+    assert primary["treatment_config"] == "mask_t100"
+    repaired = primary["metrics"]["released_comparable"]["quality"]
+    strict = primary["metrics"]["strict"]["quality"]
+    assert [p["difference"] for p in repaired["per_seed"]] == [0.1, -0.1]
+    assert repaired["mean_difference"] == 0.0
+    assert strict["mean_difference"] == -0.15
+    assert (
+        secondary["metrics"]["released_comparable"]["quality"]["mean_difference"]
+        == 0.25
+    )
+    caveats = " ".join(prior_paired["caveats"])
+    assert "subtract empirical CE from MASK-rich CE" in caveats
+    assert "Both prior arms use clean-token CE" in caveats
+    assert "CT and clean CE share" not in caveats
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "objective_also",
+        "wrong_prior",
+        "missing_hash",
+        "raw_loo",
+        "observed_prior",
+        "observed_hash",
+        "empty_prior",
+        "metadata_only_prior",
+    ],
+)
+def test_prior_identity_and_comparison_mislabeling_rejected(prior_paired, case):
+    changed = copy.deepcopy(prior_paired)
+    protocol = changed["protocol"]["configuration"]
+    if case == "empty_prior":
+        protocol["design"]["prior_comparison"] = {}
+    elif case == "metadata_only_prior":
+        protocol["design"]["prior_comparison"] = {"note": "No declaration"}
+    elif case == "objective_also":
+        protocol["design"]["objective_comparison"] = {}
+    elif case == "wrong_prior":
+        protocol["entries"][0]["prior_variant"] = "mask_rich_empirical"
+    elif case == "missing_hash":
+        del protocol["entries"][0]["prior_metadata_sha256"]
+    elif case == "raw_loo":
+        protocol["entries"][0]["parameterization"] = "raw_loo"
+    elif case == "observed_prior":
+        changed["runs"][0]["config"]["sampling"]["prior_variant"] = "uniform"
+    elif case == "observed_hash":
+        changed["runs"][0]["config"]["sampling"]["prior_metadata_sha256"] = "f" * 64
+    with pytest.raises(ValueError):
+        _recompute(changed)
+
+
+def test_prior_missing_seed_withholds_summary_and_keeps_negative_result(prior_paired):
+    changed = copy.deepcopy(prior_paired)
+    changed["runs"] = [
+        r
+        for r in changed["runs"]
+        if not (r["attempt_id"] == "synthetic-mask_t100" and r["seed"] == 1600)
+    ]
+    metric = _recompute(changed)[0]["metrics"]["released_comparable"]["quality"]
+    assert metric["per_seed"][0]["status"] == "unavailable"
+    assert metric["per_seed"][1]["difference"] == -0.1
+    assert metric["mean_difference"] is None
+    assert metric["sample_sd"] is None
+
+
+def test_prior_pdf_csv_keep_actual_prior_labels(prior_paired):
+    from pypdf import PdfReader
+
+    payload = report._pdf_bytes(prior_paired)
+    text = " ".join(
+        page.extract_text() for page in PdfReader(io.BytesIO(payload)).pages
+    )
+    assert "Prior comparison" in text
+    assert "Predeclared paired MASK minus empirical contrasts" in text
+    assert "Empirical CE" in text and "MASK CE" in text
+    assert "Objective comparison" not in text
+    assert "CT / raw-LOO predicts" not in text
+    assert "CE minus CT" not in text
+    rows = list(
+        csv.DictReader(io.StringIO(report._paired_csv_bytes(prior_paired).decode()))
+    )
+    assert len(rows) == 48
+    assert sum(row["row_type"] == "seed" for row in rows) == 32
+    assert sum(row["row_type"] == "summary" for row in rows) == 16
+    assert {row["direction"] for row in rows} == {"MASK_minus_empirical"}
+    assert {row["contrast_id"] for row in rows} == {"primary", "secondary"}
