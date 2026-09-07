@@ -1859,7 +1859,11 @@ def _build_expected_run_identity(
                 "immutable prior record"
             )
     implementation_inputs = (
-        benchmark_runner.implementation_input_provenance()
+        (
+            benchmark_runner.implementation_input_provenance(gibbs_corrector=True)
+            if sampling_config.get("gibbs_corrector", False)
+            else benchmark_runner.implementation_input_provenance()
+        )
         if implementation_inputs is None
         else dict(implementation_inputs)
     )
@@ -2212,6 +2216,27 @@ def _completed(
         errors.append("run.generation_protocol.nfe must be a positive integer")
     elif sampling["diffusion_type"] == "udlm" and nfe != sampling["num_steps"]:
         errors.append("run.generation_protocol.nfe must equal UDLM num_steps")
+    if sampling.get("gibbs_corrector", False):
+        expect("schema_version for Gibbs correction", summary_schema_version, 8)
+        for key, wanted in {
+            "gibbs_corrector": True,
+            "predictor_transitions_per_molecule": sampling["num_steps"] // 2,
+            "corrector_steps_per_molecule": sampling["num_steps"] // 2,
+            "num_steps_source": benchmark_runner.GIBBS_CORRECTOR_NUM_STEPS_SOURCE,
+            "nfe_definition": benchmark_runner.GIBBS_CORRECTOR_NFE_DEFINITION,
+        }.items():
+            expect(f"run.generation_protocol.{key}", protocol.get(key), wanted)
+            if type(protocol.get(key)) is not type(wanted):
+                errors.append(f"run.generation_protocol.{key} has an invalid type")
+    elif any(
+        key in protocol
+        for key in (
+            "gibbs_corrector",
+            "predictor_transitions_per_molecule",
+            "corrector_steps_per_molecule",
+        )
+    ):
+        errors.append("run.generation_protocol declares an unconfigured Gibbs corrector")
 
     checkpoint = _mapping(summary.get("checkpoint"))
     expect(

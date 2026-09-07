@@ -177,6 +177,13 @@ GENERATION_PROTOCOL_FIELDS = frozenset(
 HISTORICAL_MDLM_GENERATION_PROTOCOL_FIELDS = GENERATION_PROTOCOL_FIELDS - {
     "raw_loo_top_p"
 }
+GIBBS_CORRECTOR_PROTOCOL_FIELDS = frozenset(
+    {
+        "gibbs_corrector",
+        "predictor_transitions_per_molecule",
+        "corrector_steps_per_molecule",
+    }
+)
 HISTORICAL_MDLM_IMPLEMENTATION_INPUT_NAMES = frozenset(
     benchmark.IMPLEMENTATION_INPUT_PATHS
 ) - {"artifact_io_source"}
@@ -962,6 +969,13 @@ def _validate_summary_identity(
             ) from error
         if dict(sampling) != normalized_sampling:
             raise RescoreValidationError("sampling config is not canonical")
+    gibbs_corrector = sampling.get("gibbs_corrector", False)
+    source_gibbs_corrector = source_config.get("gibbs_corrector", False)
+    if (
+        type(source_gibbs_corrector) is not bool
+        or source_gibbs_corrector is not gibbs_corrector
+    ):
+        raise RescoreValidationError("source/sampling gibbs_corrector setting differs")
     expected_effective = dict(source_config)
     if not historical_mdlm:
         expected_effective["raw_loo_top_p"] = sampling["raw_loo_top_p"]
@@ -984,6 +998,7 @@ def _validate_summary_identity(
             HISTORICAL_MDLM_GENERATION_PROTOCOL_FIELDS
             if historical_mdlm
             else GENERATION_PROTOCOL_FIELDS
+            | (GIBBS_CORRECTOR_PROTOCOL_FIELDS if gibbs_corrector else frozenset())
         ),
         "run.generation_protocol",
     )
@@ -1043,7 +1058,9 @@ def _validate_summary_identity(
     if sampling["diffusion_type"] == "udlm" and nfe != sampling["num_steps"]:
         raise RescoreValidationError("UDLM NFE differs from sampling num_steps")
     expected_num_steps_source = (
-        "explicit UDLM reverse-transition count"
+        benchmark.GIBBS_CORRECTOR_NUM_STEPS_SOURCE
+        if gibbs_corrector
+        else "explicit UDLM reverse-transition count"
         if diffusion_type == "udlm"
         else "MDLM.get_num_steps_confidence on the single padded generation batch"
     )
@@ -1069,7 +1086,11 @@ def _validate_summary_identity(
                 "generation_protocol.raw_loo_top_p differs from config"
             )
     expected_common_protocol = {
-        "nfe_definition": "one full backbone forward evaluation per reverse step",
+        "nfe_definition": (
+            benchmark.GIBBS_CORRECTOR_NFE_DEFINITION
+            if gibbs_corrector
+            else "one full backbone forward evaluation per reverse step"
+        ),
         "model_use_bracket_safe": False,
         "single_generation_batch": True,
         "released_safe_fix": True,
@@ -1080,6 +1101,17 @@ def _validate_summary_identity(
     for key, expected in expected_common_protocol.items():
         if protocol.get(key) != expected:
             raise RescoreValidationError(f"generation_protocol.{key} differs")
+    if gibbs_corrector:
+        if protocol.get("gibbs_corrector") is not True:
+            raise RescoreValidationError(
+                "generation_protocol.gibbs_corrector must be true"
+            )
+        for key in ("predictor_transitions_per_molecule", "corrector_steps_per_molecule"):
+            count = _integer(protocol.get(key), f"generation_protocol.{key}", minimum=1)
+            if count != nfe // 2:
+                raise RescoreValidationError(
+                    f"generation_protocol.{key} differs from NFE budget"
+                )
     try:
         inference_weights = benchmark.validate_inference_weights(
             protocol.get("inference_weights"), require_ema=True
@@ -1164,6 +1196,8 @@ def _validate_summary_identity(
         if historical_mdlm
         else IMPLEMENTATION_INPUT_NAMES
     )
+    if gibbs_corrector:
+        expected_implementation_names |= {"corrector_source"}
     if set(implementation_inputs) != expected_implementation_names:
         raise RescoreValidationError("implementation input map is incomplete")
     source_hashes: dict[str, str] = {}
@@ -1181,6 +1215,16 @@ def _validate_summary_identity(
             f"implementation_inputs.{name}.size_bytes",
             minimum=1,
         )
+    if gibbs_corrector:
+        expected_corrector_path = (
+            Path(str(git.get("repo_root"))) / "src/genmol/corrector.py"
+        )
+        if implementation_inputs["corrector_source"]["path"] != str(
+            expected_corrector_path
+        ):
+            raise RescoreValidationError(
+                "implementation_inputs.corrector_source.path differs"
+            )
     _assert_expected(
         source_hashes["sampler_source"],
         expected_sampler_source_sha256,
@@ -1296,12 +1340,22 @@ def _validate_summary_identity(
             "metric_branches": ["released_comparable", "strict"],
             "inference_weights": inference_weights,
             "raw_loo_top_p": protocol.get("raw_loo_top_p"),
+            **(
+                {key: protocol[key] for key in GIBBS_CORRECTOR_PROTOCOL_FIELDS}
+                if gibbs_corrector
+                else {}
+            ),
         },
         "source": {
             "revision": source_revision,
             "runner_sha256": runner_sha256,
             "sampler_source_sha256": source_hashes["sampler_source"],
             "ema_source_sha256": source_hashes["ema_source"],
+            **(
+                {"corrector_source_sha256": source_hashes["corrector_source"]}
+                if gibbs_corrector
+                else {}
+            ),
             "implementation_inputs_sha256": implementation_inputs_sha256,
             "metric_inputs_sha256": metric_inputs_sha256,
         },
