@@ -1,0 +1,16 @@
+# Inference settings for the selection-bound scale-up E treatment. This keeps
+# the full vocabulary and binds the empirical prior constructed with the
+# audited 0.0002 uniform floor. The older 0.01 treatment remains a distinct,
+# preserved config and is not compatible with this checkpoint metadata.
+model_path: model.ckpt
+num_samples: 1000
+diffusion_type: udlm
+softmax_temp: 1.0
+raw_loo_top_p: 0.98
+randomness: 0.0
+min_add_len: 40
+num_steps: 128
+inference_eps: 1.0e-5
+exclude_special_tokens: false
+prior_variant: empirical_frequency
+prior_metadata_sha256: f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612
