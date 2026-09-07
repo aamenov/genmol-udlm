@@ -1,0 +1,6 @@
+defaults:
+  - udlm_mask_objective_ce
+  - _self_
+
+# V11b preserves the exact V11 training configuration after its prelaunch failure.
+# Only the controller output namespace and bounded capacity-wait policy change.
