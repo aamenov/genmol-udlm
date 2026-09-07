@@ -1,0 +1,170 @@
+{
+  "candidate_table": [
+    {
+      "arm": "CT",
+      "nfe": 128,
+      "repaired_quality": 0.5,
+      "requests": 400,
+      "seeds": [
+        1600,
+        1601,
+        1700,
+        1701
+      ],
+      "strict_quality": 0.3975,
+      "strict_quality_sample_sd": 0.08539125638299665,
+      "temperature": 0.5
+    },
+    {
+      "arm": "CE",
+      "nfe": 512,
+      "repaired_quality": 0.48,
+      "requests": 200,
+      "seeds": [
+        1700,
+        1701
+      ],
+      "strict_quality": 0.385,
+      "strict_quality_sample_sd": 0.03535533905932737,
+      "temperature": 0.5
+    },
+    {
+      "arm": "CE",
+      "nfe": 128,
+      "repaired_quality": 0.495,
+      "requests": 400,
+      "seeds": [
+        1600,
+        1601,
+        1700,
+        1701
+      ],
+      "strict_quality": 0.3775,
+      "strict_quality_sample_sd": 0.02872281323269014,
+      "temperature": 0.5
+    },
+    {
+      "arm": "CT",
+      "nfe": 512,
+      "repaired_quality": 0.44999999999999996,
+      "requests": 200,
+      "seeds": [
+        1700,
+        1701
+      ],
+      "strict_quality": 0.32499999999999996,
+      "strict_quality_sample_sd": 0.03535533905932737,
+      "temperature": 0.5
+    },
+    {
+      "arm": "CE",
+      "nfe": 512,
+      "repaired_quality": 0.44,
+      "requests": 200,
+      "seeds": [
+        17300,
+        17301
+      ],
+      "strict_quality": 0.3,
+      "strict_quality_sample_sd": 0.014142135623730963,
+      "temperature": 1.0
+    },
+    {
+      "arm": "CE",
+      "nfe": 128,
+      "repaired_quality": 0.4075,
+      "requests": 400,
+      "seeds": [
+        1600,
+        1601,
+        17300,
+        17301
+      ],
+      "strict_quality": 0.27,
+      "strict_quality_sample_sd": 0.045460605656619524,
+      "temperature": 1.0
+    },
+    {
+      "arm": "CT",
+      "nfe": 512,
+      "repaired_quality": 0.43,
+      "requests": 200,
+      "seeds": [
+        17300,
+        17301
+      ],
+      "strict_quality": 0.255,
+      "strict_quality_sample_sd": 0.021213203435596444,
+      "temperature": 1.0
+    },
+    {
+      "arm": "CT",
+      "nfe": 128,
+      "repaired_quality": 0.4525,
+      "requests": 400,
+      "seeds": [
+        1600,
+        1601,
+        17300,
+        17301
+      ],
+      "strict_quality": 0.2475,
+      "strict_quality_sample_sd": 0.048562674281111544,
+      "temperature": 1.0
+    }
+  ],
+  "caveats": [
+    "128-step settings have four seeds; 512-step settings have two. This is exploratory selection from multiple small pilots, not proof that CT is intrinsically better.",
+    "All objectives use one pretrained initialization and one adaptation training seed; generation seeds do not measure training variability.",
+    "MDLM control retains baseline native sampling: temperature0.5, randomness0.5, min_add_len40. Report actual NFE and runtime; do not claim equal inference compute."
+  ],
+  "evaluation_checkpoints": [
+    1000,
+    2000,
+    4000
+  ],
+  "evaluation_requests_per_seed": 100,
+  "evaluation_seeds": [
+    17500,
+    17501
+  ],
+  "inputs": [
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v9_reports/complete/report.json",
+      "requests": 800,
+      "sha256": "b880c8bbad2e5e1d5f3639ba8f6848da934c87c2ec44d7e9c466f46a941c7fb6"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v10_reports/complete/report.json",
+      "requests": 800,
+      "sha256": "8d9b7df5797338b6a768cfd3489af6abdadabe0cf48a8cec212086cfc7714d16"
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1_reports/complete/report.json",
+      "requests": 800,
+      "sha256": "a73f38f8ecba4c2145261a64e64f937500733720817d3e7128404ce060d94cd0"
+    }
+  ],
+  "purpose": "Disclosed engineering selection before the fresh 4k training curve",
+  "rule": "Average equal-size generation seeds within each fixed arm/temperature/NFE setting. Select highest strict quality, then repaired quality, then lower NFE; lexical arm tie-break.",
+  "selected": {
+    "arm": "CT",
+    "nfe": 128,
+    "repaired_quality": 0.5,
+    "requests": 400,
+    "seeds": [
+      1600,
+      1601,
+      1700,
+      1701
+    ],
+    "strict_quality": 0.3975,
+    "strict_quality_sample_sd": 0.08539125638299665,
+    "temperature": 0.5
+  },
+  "training_arms": [
+    "ct",
+    "mdlm"
+  ],
+  "training_seed": 17400
+}
