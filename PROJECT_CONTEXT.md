@@ -1,3 +1,20 @@
+# Completed resolution diagnostic
+
+All eight r1 runs completed and all800 requested samples were independently
+rescored. Reports are in `output/udlm/followthrough_resolution_r1_reports/complete`.
+At temperature1.0, strict quality changed from28.5% to25.5% for CT and from28.0%
+to30.0% for CE when increasing predictor calls from128 to512. Repaired quality
+changed44.0% to43.0% for CT and40.5% to44.0% for CE. Two generation seeds per
+configuration are insufficient to establish superiority; four times the calls
+did not consistently improve quality. See `experiments/udlm/results/followthrough_resolution.md`.
+
+Do not relaunch this completed study. The subsequent CT/MDLM learning curve is
+owned by `../udlm_followthrough_learning` (r2); its evaluation is owned by
+`../udlm_followthrough_evaluation`. Read their live logs for progress. Historical
+prepared/active statements below are superseded by this completion record.
+
+---
+
 # Isolated follow-through study — active local scope
 
 The first resolution attempt failed before GPU selection because this new

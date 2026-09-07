@@ -1,0 +1,67 @@
+{
+  "artifacts": {
+    "output/udlm/followthrough_resolution_r1/followthrough-ct-n128-r1/seed_17300/raw_samples.csv": "628686b16e83886a7922f6a9e8983cfdaaa45bb2ec33cd113461121c8245506f",
+    "output/udlm/followthrough_resolution_r1/followthrough-ct-n128-r1/seed_17300/summary.json": "25a9da133d49ab9f86924acc1490a3d77a3143c40e2ad6c4ddd235cdc607cbff",
+    "output/udlm/followthrough_resolution_r1/followthrough-ct-n128-r1/seed_17301/raw_samples.csv": "efaeff45f89b0d17bfd9049b0e5c46e1923b530d122d92a48bc6193520c58d27",
+    "output/udlm/followthrough_resolution_r1/followthrough-ct-n128-r1/seed_17301/summary.json": "ad5c0dbb244b90d4496542e69d23e6cf35575e98ee862cedbcd9dee3b6d8c928"
+  },
+  "command": [
+    "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/scripts/exps/denovo/launch_benchmark.py",
+    "--checkpoint",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+    "--config",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/experiments/udlm/protocols/followthrough_resolution_configs/ct_n128.yaml",
+    "--pilot",
+    "--attempt-id",
+    "followthrough-ct-n128-r1",
+    "--candidate-id",
+    "v8-ct-e-w2-1000u-48986899c401",
+    "--num-samples",
+    "100",
+    "--seeds",
+    "17300",
+    "17301",
+    "--gpu-count",
+    "2",
+    "--max-utilization-percent",
+    "10",
+    "--min-free-memory-mib",
+    "30000",
+    "--poll-seconds",
+    "10",
+    "--output-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1",
+    "--log-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/logs/followthrough_resolution_r1"
+  ],
+  "completed_at_utc": "2026-09-07T11:36:13.740553+00:00",
+  "identity": {
+    "entry": {
+      "arm_id": "CT",
+      "attempt_id": "followthrough-ct-n128-r1",
+      "candidate_id": "v8-ct-e-w2-1000u-48986899c401",
+      "checkpoint": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+      "config": "experiments/udlm/protocols/followthrough_resolution_configs/ct_n128.yaml",
+      "config_id": "ct_n128",
+      "config_sha256": "f27ac38c3fd1a031fe68278b94240e96bb5e48100f5f17b51b477be3989c304c",
+      "nfe": 128,
+      "parameterization": "raw_loo"
+    },
+    "num_samples": 100,
+    "protocol_sha256": "6976a1e299674bfb82fb8528c8832608379de18619fbda41aa3d12a19ae717cf",
+    "seeds": [
+      17300,
+      17301
+    ],
+    "source": {
+      "head": "6984cf8143eadc4a93b2366a7153a0b1fae67fcb",
+      "upstream": "6984cf8143eadc4a93b2366a7153a0b1fae67fcb"
+    }
+  },
+  "process_return_code": 0,
+  "return_code": 0,
+  "started_at_utc": "2026-09-07T11:33:19.239031+00:00",
+  "validation_error": null
+}

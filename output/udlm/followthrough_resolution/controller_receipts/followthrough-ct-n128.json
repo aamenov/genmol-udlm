@@ -1,0 +1,62 @@
+{
+  "artifacts": {},
+  "command": [
+    "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/scripts/exps/denovo/launch_benchmark.py",
+    "--checkpoint",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+    "--config",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/experiments/udlm/protocols/followthrough_resolution_configs/ct_n128.yaml",
+    "--pilot",
+    "--attempt-id",
+    "followthrough-ct-n128",
+    "--candidate-id",
+    "v8-ct-e-w2-1000u-48986899c401",
+    "--num-samples",
+    "100",
+    "--seeds",
+    "17300",
+    "17301",
+    "--gpu-count",
+    "2",
+    "--max-utilization-percent",
+    "10",
+    "--min-free-memory-mib",
+    "30000",
+    "--poll-seconds",
+    "10",
+    "--output-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution",
+    "--log-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/logs/followthrough_resolution"
+  ],
+  "completed_at_utc": "2026-09-07T11:26:49.390185+00:00",
+  "identity": {
+    "entry": {
+      "arm_id": "CT",
+      "attempt_id": "followthrough-ct-n128",
+      "candidate_id": "v8-ct-e-w2-1000u-48986899c401",
+      "checkpoint": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+      "config": "experiments/udlm/protocols/followthrough_resolution_configs/ct_n128.yaml",
+      "config_id": "ct_n128",
+      "config_sha256": "f27ac38c3fd1a031fe68278b94240e96bb5e48100f5f17b51b477be3989c304c",
+      "nfe": 128,
+      "parameterization": "raw_loo"
+    },
+    "num_samples": 100,
+    "protocol_sha256": "48c4beea9cd3fc3261194a50a492702c2a3a52a30a7c2f2079ef74e0621d04b7",
+    "seeds": [
+      17300,
+      17301
+    ],
+    "source": {
+      "head": "7b466d44b25da8acd87e32d39bf8b9d97cbec4d1",
+      "upstream": "7b466d44b25da8acd87e32d39bf8b9d97cbec4d1"
+    }
+  },
+  "process_return_code": 1,
+  "return_code": 1,
+  "started_at_utc": "2026-09-07T11:26:49.111991+00:00",
+  "validation_error": null
+}

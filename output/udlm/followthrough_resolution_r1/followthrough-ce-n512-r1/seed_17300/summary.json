@@ -1,0 +1,641 @@
+{
+  "artifacts": {
+    "bundle": {
+      "completion_linked_last": true,
+      "completion_member": "summary.json",
+      "exclusive_no_clobber": true,
+      "ordinary_members": [
+        "raw_samples.csv"
+      ],
+      "precompletion_failure_rollback": "exact_owned_members_only",
+      "publication_api": "scripts.artifact_io.publish_bundle_exclusive"
+    },
+    "raw_samples_csv": {
+      "fields": [
+        "sample_index",
+        "raw_model_text",
+        "raw_safe",
+        "raw_safe_error",
+        "strict_smiles",
+        "strict_decode_error",
+        "strict_qed",
+        "strict_sa",
+        "strict_is_first_unique",
+        "strict_quality_pass",
+        "strict_quality_counted",
+        "released_repaired_smiles",
+        "released_smiles",
+        "released_decode_error",
+        "released_qed",
+        "released_sa",
+        "released_is_first_unique",
+        "released_quality_pass",
+        "released_quality_counted",
+        "released_was_recovered",
+        "released_largest_component_applied"
+      ],
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300/raw_samples.csv",
+      "row_count": 100,
+      "sha256": "4cf561463c1dfd1ccbc69c7e493936f103dcb8356f26e17ab7f2421e37a6bee3"
+    },
+    "summary_json": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300/summary.json"
+    }
+  },
+  "checkpoint": {
+    "byte_identity_verified_before_and_after_load": true,
+    "diffusion_type": "udlm",
+    "epoch": 0,
+    "global_step": 1000,
+    "mtime_utc": "2026-09-07T11:23:57.220988+00:00",
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+    "sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+    "size_bytes": 1636492999,
+    "udlm_denoiser_metadata": {
+      "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
+      "objective": "clean_token_cross_entropy",
+      "parameterization": "x0_denoiser",
+      "schema_version": 1
+    },
+    "udlm_exclude_special_tokens": false,
+    "udlm_inference_eps": 1e-05,
+    "udlm_prior_metadata": {
+      "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+      "active_vocab_size": 1880,
+      "antithetic_sampling": true,
+      "comparison_role": "empirical_prior_treatment",
+      "excluded_token_ids": [],
+      "frequency_active_token_count": 517090,
+      "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+      "frequency_artifact_schema_version": 1,
+      "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+      "frequency_content_token_count": 517090,
+      "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+      "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+      "frequency_dataset_selection": "first 10000 streaming rows",
+      "frequency_dataset_split": "train",
+      "frequency_example_count": 10000,
+      "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+      "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+      "full_vocab_size": 1880,
+      "noise_eps": 0.001,
+      "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+      "prior_source": "pinned_frequency_artifact_uniform_mixture",
+      "process_family": "rank_one_continuous_categorical",
+      "sampling_eps": 0.001,
+      "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+      "schema_version": 1,
+      "stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+      "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+      "tokenizer_repo_id": "datamol-io/safe-gpt",
+      "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+      "uniform_mixture_weight": 0.0002,
+      "variant": "empirical_frequency"
+    },
+    "udlm_prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+    "udlm_prior_variant": "empirical_frequency"
+  },
+  "config": {
+    "effective": {
+      "device": "cuda:0",
+      "diffusion_type": "udlm",
+      "exclude_special_tokens": false,
+      "inference_eps": 1e-05,
+      "min_add_len": 40,
+      "model_path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+      "num_samples": 100,
+      "num_steps": 512,
+      "parameterization": "x0_denoiser",
+      "prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+      "prior_variant": "empirical_frequency",
+      "randomness": 0.0,
+      "raw_loo_top_p": 1.0,
+      "softmax_temp": 1.0
+    },
+    "effective_sha256": "ad4ac9a96244705e6de60c04c5b4a6b7c38ac0c765121e8238947e36c6bfd1a3",
+    "git_tracking": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/experiments/udlm/protocols/followthrough_resolution_configs/ce_n512.yaml",
+      "relative_path": "experiments/udlm/protocols/followthrough_resolution_configs/ce_n512.yaml",
+      "sha256": "470e5383d8719ab32306948afed3ce57caaae956feec17e605dc03d329423666",
+      "source_revision": "6984cf8143eadc4a93b2366a7153a0b1fae67fcb",
+      "tracked_at_source_revision": true
+    },
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/experiments/udlm/protocols/followthrough_resolution_configs/ce_n512.yaml",
+    "sampling": {
+      "diffusion_type": "udlm",
+      "exclude_special_tokens": false,
+      "inference_eps": 1e-05,
+      "min_add_len": 40,
+      "num_steps": 512,
+      "parameterization": "x0_denoiser",
+      "prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+      "prior_variant": "empirical_frequency",
+      "randomness": 0.0,
+      "raw_loo_top_p": 1.0,
+      "softmax_temp": 1.0
+    },
+    "sampling_sha256": "299c7128dba6e1424f57ae9a93be876db9859888ac165ce96915d91342a43922",
+    "sha256": "470e5383d8719ab32306948afed3ce57caaae956feec17e605dc03d329423666",
+    "source": {
+      "diffusion_type": "udlm",
+      "exclude_special_tokens": false,
+      "inference_eps": 1e-05,
+      "min_add_len": 40,
+      "model_path": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+      "num_samples": 100,
+      "num_steps": 512,
+      "parameterization": "x0_denoiser",
+      "prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+      "prior_variant": "empirical_frequency",
+      "randomness": 0.0,
+      "raw_loo_top_p": 1.0,
+      "softmax_temp": 1.0
+    }
+  },
+  "environment": {
+    "cuda_device": {
+      "compute_capability": [
+        8,
+        6
+      ],
+      "logical_index": 0,
+      "name": "NVIDIA RTX A6000",
+      "total_memory_bytes": 50897289216
+    },
+    "cudnn_version": 90100,
+    "executable": "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "launch_environment": {
+      "CUDA_VISIBLE_DEVICES": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece",
+      "GENMOL_BENCHMARK_EXPECTED_GENERATION_LEASE_SHA256": "944a8092a76a892dfef8c69551f61d64b9679deac8fb1b5df82b71635f25de88",
+      "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN": "72188e92bcf99e6dbc512c3fd960d5e6dc834ee04f7a672a025340ddd7c30e03",
+      "GENMOL_BENCHMARK_GENERATION_LEASE_PATH": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/.single_generation_job.lock",
+      "GENMOL_BENCHMARK_GPU_PHYSICAL_INDEX": "2",
+      "GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT": "{\"command\":[\"/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/scripts/exps/denovo/benchmark.py\",\"--checkpoint\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt\",\"--expected-checkpoint-sha256\",\"b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1\",\"--expected-source-revision\",\"6984cf8143eadc4a93b2366a7153a0b1fae67fcb\",\"--config\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/experiments/udlm/protocols/followthrough_resolution_configs/ce_n512.yaml\",\"--expected-config-sha256\",\"470e5383d8719ab32306948afed3ce57caaae956feec17e605dc03d329423666\",\"--num-samples\",\"100\",\"--seed\",\"17300\",\"--device\",\"cuda:0\",\"--output-dir\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300\",\"--expected-output-directory-device\",\"48\",\"--expected-output-directory-inode\",\"2630443939\"],\"event\":\"launch\",\"final_uuid_probe_completed_at_utc\":\"2026-09-07T11:39:55.401720+00:00\",\"gpu_inventory_at_selection\":[{\"compute_mode\":\"Default\",\"compute_processes\":[{\"pid\":1508100,\"process_name\":\"/home/aidar.alimbayev/Documents/genmol-official-v1/.conda/bin/python\",\"used_memory_mib\":11274},{\"pid\":4064079,\"process_name\":\"/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python\",\"used_memory_mib\":20782}],\"index\":0,\"memory_total_mib\":49140,\"memory_used_mib\":32085,\"name\":\"NVIDIA RTX A6000\",\"utilization_percent\":99,\"uuid\":\"GPU-7257c09c-f877-fb4d-b4f8-22d18c96b4bc\"},{\"compute_mode\":\"Default\",\"compute_processes\":[{\"pid\":1508101,\"process_name\":\"/home/aidar.alimbayev/Documents/genmol-official-v1/.conda/bin/python\",\"used_memory_mib\":11274},{\"pid\":4012616,\"process_name\":\"/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python\",\"used_memory_mib\":20782}],\"index\":1,\"memory_total_mib\":49140,\"memory_used_mib\":32085,\"name\":\"NVIDIA RTX A6000\",\"utilization_percent\":99,\"uuid\":\"GPU-c5d2a8f7-905b-ec0b-af03-5dd28f0b53e8\"},{\"compute_mode\":\"Default\",\"compute_processes\":[{\"pid\":340770,\"process_name\":\"/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python\",\"used_memory_mib\":1284}],\"index\":2,\"memory_total_mib\":49140,\"memory_used_mib\":1307,\"name\":\"NVIDIA RTX A6000\",\"utilization_percent\":8,\"uuid\":\"GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece\"},{\"compute_mode\":\"Default\",\"compute_processes\":[{\"pid\":227850,\"process_name\":\"/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python\",\"used_memory_mib\":1564}],\"index\":3,\"memory_total_mib\":49140,\"memory_used_mib\":1587,\"name\":\"NVIDIA RTX A6000\",\"utilization_percent\":8,\"uuid\":\"GPU-2cd1aa5b-616e-e6d3-b54d-49241cc8f959\"},{\"compute_mode\":\"Default\",\"compute_processes\":[{\"pid\":225825,\"process_name\":\"/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python\",\"used_memory_mib\":20504},{\"pid\":496289,\"process_name\":\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/running_mean_repair/.venv/bin/python\",\"used_memory_mib\":2168}],\"index\":4,\"memory_total_mib\":49140,\"memory_used_mib\":22701,\"name\":\"NVIDIA RTX A6000\",\"utilization_percent\":69,\"uuid\":\"GPU-d32809ef-c445-c02a-9ec0-9ac9cf201181\"},{\"compute_mode\":\"Default\",\"compute_processes\":[{\"pid\":275418,\"process_name\":\"/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python\",\"used_memory_mib\":1286},{\"pid\":516841,\"process_name\":\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/running_mean_repair/.venv/bin/python\",\"used_memory_mib\":2168}],\"index\":5,\"memory_total_mib\":49140,\"memory_used_mib\":3483,\"name\":\"NVIDIA RTX A6000\",\"utilization_percent\":73,\"uuid\":\"GPU-134e9a1b-cf80-5c0e-b0c4-048fff8e6d3c\"},{\"compute_mode\":\"Default\",\"compute_processes\":[{\"pid\":343481,\"process_name\":\"/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python\",\"used_memory_mib\":1256},{\"pid\":512565,\"process_name\":\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/running_mean_repair/.venv/bin/python\",\"used_memory_mib\":2154}],\"index\":6,\"memory_total_mib\":49140,\"memory_used_mib\":3439,\"name\":\"NVIDIA RTX A6000\",\"utilization_percent\":0,\"uuid\":\"GPU-d7e40ce5-9260-a208-16a0-3372e3f204de\"},{\"compute_mode\":\"Default\",\"compute_processes\":[{\"pid\":395138,\"process_name\":\"/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python\",\"used_memory_mib\":1236},{\"pid\":515053,\"process_name\":\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/running_mean_repair/.venv/bin/python\",\"used_memory_mib\":2164}],\"index\":7,\"memory_total_mib\":49140,\"memory_used_mib\":3429,\"name\":\"NVIDIA RTX A6000\",\"utilization_percent\":6,\"uuid\":\"GPU-7ae42da2-3c8d-efa0-99ec-845b7f85399a\"}],\"gpu_selection_schema_version\":3,\"inventory_snapshot_completed_at_utc\":\"2026-09-07T11:39:55.180040+00:00\",\"launch_authority\":{\"artifact_io_source\":{\"device\":48,\"inode\":2629720222,\"path\":\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/scripts/artifact_io.py\",\"sha256\":\"bc3ba06dfc709de3d15acf822a6ecaef46501a1c9db6a5beee404426b3c14507\"},\"command\":[\"/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/scripts/exps/denovo/benchmark.py\",\"--checkpoint\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt\",\"--expected-checkpoint-sha256\",\"b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1\",\"--expected-source-revision\",\"6984cf8143eadc4a93b2366a7153a0b1fae67fcb\",\"--config\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/experiments/udlm/protocols/followthrough_resolution_configs/ce_n512.yaml\",\"--expected-config-sha256\",\"470e5383d8719ab32306948afed3ce57caaae956feec17e605dc03d329423666\",\"--num-samples\",\"100\",\"--seed\",\"17300\",\"--device\",\"cuda:0\",\"--output-dir\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300\",\"--expected-output-directory-device\",\"48\",\"--expected-output-directory-inode\",\"2630443939\"],\"command_sha256\":\"3f845d36198ebc7c95218038b355b77c0048fe3d1fab5f7f4b89657276ffde41\",\"generation_lease\":{\"device\":48,\"inode\":2630439118,\"owner_token\":\"72188e92bcf99e6dbc512c3fd960d5e6dc834ee04f7a672a025340ddd7c30e03\",\"path\":\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/.single_generation_job.lock\",\"relative_path\":\"output/.single_generation_job.lock\",\"sha256\":\"944a8092a76a892dfef8c69551f61d64b9679deac8fb1b5df82b71635f25de88\"},\"output_directory\":{\"device\":48,\"inode\":2630443939,\"path\":\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300\",\"relative_path\":\"output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300\"},\"schema_version\":1},\"physical_gpu_at_final_uuid_probe\":{\"compute_mode\":\"Default\",\"compute_processes\":[{\"pid\":340770,\"process_name\":\"/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python\",\"used_memory_mib\":1284}],\"index\":2,\"memory_total_mib\":49140,\"memory_used_mib\":1307,\"name\":\"NVIDIA RTX A6000\",\"utilization_percent\":8,\"uuid\":\"GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece\"},\"policy\":{\"active_compute_processes_allowed\":true,\"inventory_scope\":\"all_nvidia_gpus\",\"max_utilization_percent\":10,\"min_free_memory_mib\":30000,\"requested_gpu_count\":2,\"selection_method\":\"dynamic_idle_discovery\",\"utilization_comparison\":\"strictly_less_than\"},\"running_gpu_uuids_at_selection\":[],\"source_revision\":{\"head\":\"6984cf8143eadc4a93b2366a7153a0b1fae67fcb\",\"upstream\":\"6984cf8143eadc4a93b2366a7153a0b1fae67fcb\"},\"timestamp_utc\":\"2026-09-07T11:39:55.401720+00:00\"}",
+      "GENMOL_BENCHMARK_GPU_UUID": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece",
+      "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON": "{\"artifact_io_source\":{\"device\":48,\"inode\":2629720222,\"path\":\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/scripts/artifact_io.py\",\"sha256\":\"bc3ba06dfc709de3d15acf822a6ecaef46501a1c9db6a5beee404426b3c14507\"},\"command\":[\"/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/scripts/exps/denovo/benchmark.py\",\"--checkpoint\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt\",\"--expected-checkpoint-sha256\",\"b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1\",\"--expected-source-revision\",\"6984cf8143eadc4a93b2366a7153a0b1fae67fcb\",\"--config\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/experiments/udlm/protocols/followthrough_resolution_configs/ce_n512.yaml\",\"--expected-config-sha256\",\"470e5383d8719ab32306948afed3ce57caaae956feec17e605dc03d329423666\",\"--num-samples\",\"100\",\"--seed\",\"17300\",\"--device\",\"cuda:0\",\"--output-dir\",\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300\",\"--expected-output-directory-device\",\"48\",\"--expected-output-directory-inode\",\"2630443939\"],\"command_sha256\":\"3f845d36198ebc7c95218038b355b77c0048fe3d1fab5f7f4b89657276ffde41\",\"generation_lease\":{\"device\":48,\"inode\":2630439118,\"owner_token\":\"72188e92bcf99e6dbc512c3fd960d5e6dc834ee04f7a672a025340ddd7c30e03\",\"path\":\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/.single_generation_job.lock\",\"relative_path\":\"output/.single_generation_job.lock\",\"sha256\":\"944a8092a76a892dfef8c69551f61d64b9679deac8fb1b5df82b71635f25de88\"},\"output_directory\":{\"device\":48,\"inode\":2630443939,\"path\":\"/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300\",\"relative_path\":\"output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300\"},\"schema_version\":1}",
+      "GENMOL_BENCHMARK_RUN_LABEL": "denovo_step1000_b7d674ed5bdd_seed17300",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONIOENCODING": "utf-8",
+      "PYTHONNOUSERSITE": "1",
+      "PYTHONOPTIMIZE": "0",
+      "PYTHONPATH": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src:/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough",
+      "PYTHONUTF8": "1"
+    },
+    "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+    "python": "3.10.21 (main, Aug 27 2026, 14:42:07) [GCC 14.3.0]",
+    "requested_device": "cuda:0",
+    "resolved_model_device": "cuda:0",
+    "torch_cuda_available": true,
+    "torch_cuda_version": "12.4",
+    "versions": {
+      "bionemo_moco": "0.0.2.1",
+      "lightning": "2.5.1",
+      "numpy": "1.26.4",
+      "pandas": "2.1.0",
+      "pyyaml": "6.0.3",
+      "rdkit": "2023.9.6",
+      "safe": "0.1.14",
+      "tdc": "0.4.1",
+      "torch": "2.6.0+cu124",
+      "transformers": "4.52.4"
+    },
+    "working_directory": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough"
+  },
+  "failure_counts": {
+    "raw_safe_conversion_failed": 0,
+    "released_decode_failed": 3,
+    "released_duplicates": 0,
+    "released_largest_component_applied": 22,
+    "released_recovered_strict_failure": 36,
+    "strict_decode_failed": 39,
+    "strict_duplicates": 0,
+    "strict_valid_but_released_failed": 0
+  },
+  "git": {
+    "branch": "codex/udlm-diagnostics-followthrough",
+    "clean_pushed_source_verified_before_and_after_run": true,
+    "commit": "6984cf8143eadc4a93b2366a7153a0b1fae67fcb",
+    "dirty": false,
+    "expected_source_revision": "6984cf8143eadc4a93b2366a7153a0b1fae67fcb",
+    "remote_origin": "https://github.com/aamenov/genmol-udlm.git",
+    "repo_root": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough",
+    "runner_sha256": "88712c085b790b26533c7bc1b9e880c0442bc9a3fe8ba37d3436a828bb4f8519",
+    "status_porcelain": [],
+    "upstream": "6984cf8143eadc4a93b2366a7153a0b1fae67fcb"
+  },
+  "implementation_inputs": {
+    "artifact_io_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/scripts/artifact_io.py",
+      "sha256": "bc3ba06dfc709de3d15acf822a6ecaef46501a1c9db6a5beee404426b3c14507",
+      "size_bytes": 56235
+    },
+    "backbone_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/backbone.py",
+      "sha256": "0961363a10717b8d4aa82bdb1ff150853f00fb34087d11f8fff7af6bd209b618",
+      "size_bytes": 18764
+    },
+    "bracket_safe_converter_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/utils/bracket_safe_converter.py",
+      "sha256": "d3dca11fc12d7f4f0f439c03fc7d497f4efc6d87091388b7031c9d856279a618",
+      "size_bytes": 6009
+    },
+    "checkpoint_io_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/utils/checkpoint_io.py",
+      "sha256": "80e22e83d4b6838697d06ab6f08880011f49cdc3f3384f7ed4392400abbf155a",
+      "size_bytes": 6626
+    },
+    "chemistry_utils_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/utils/utils_chem.py",
+      "sha256": "0c7de4c7225f80e9a8cbbdb99018e5e8555c114ce6deea7dfcd593fc5e0f3867",
+      "size_bytes": 5046
+    },
+    "data_utils_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/utils/utils_data.py",
+      "sha256": "981bdc9c3b10b80ab113bcba0bc6709febcb2b9f3d4447a5c5291d6f9daaaee7",
+      "size_bytes": 6613
+    },
+    "denoiser_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/denoiser.py",
+      "sha256": "344bf1801678a5cf9bd3e34894755afe4df0826f7f0475c03bcde6dd6a014f75",
+      "size_bytes": 4959
+    },
+    "diffusion_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/diffusion.py",
+      "sha256": "07e7cc4f0a65b21224196341a1cd2460f146e3356e3c902f3dbca6cb2fc21a17",
+      "size_bytes": 41847
+    },
+    "ema_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/utils/ema.py",
+      "sha256": "9b3fda01fe5f68d8e265a33423341d6bef460c480316ca8ee459151958efed49",
+      "size_bytes": 4213
+    },
+    "genmol_package_init_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/__init__.py",
+      "sha256": "0b41b4aa0fac95e6062b8f171e1533612ed9c049959feef9207adf81935d4321",
+      "size_bytes": 1371
+    },
+    "genmol_utils_package_init_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/utils/__init__.py",
+      "sha256": "0b41b4aa0fac95e6062b8f171e1533612ed9c049959feef9207adf81935d4321",
+      "size_bytes": 1371
+    },
+    "length_distribution": {
+      "count": 249455,
+      "loading_policy": "verified_bytes_retained_in_memory_for_generation",
+      "maximum": 87,
+      "median": 49.0,
+      "minimum": 10,
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/data/len.pk",
+      "sha256": "9795cde72c60e9e58cd6dc99551801bdf47d00de6e060cbafb5f30584b19cf27",
+      "size_bytes": 499487
+    },
+    "moco_utils_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/utils/utils_moco.py",
+      "sha256": "5af0f47805f028463aa44e88e0ed25e8d6f852f727608edd38d5c9353ddd24c1",
+      "size_bytes": 3617
+    },
+    "model_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/model.py",
+      "sha256": "fb2b9f95ddedc583dc6cd0b12f476db4e934651a8771b19c4a6ad6afb6be5fd2",
+      "size_bytes": 65755
+    },
+    "sampler_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/sampler.py",
+      "sha256": "6b9a89df059ac949771b0a4f25b58f07a2fcf58ced5e35de88801a0a038a5f32",
+      "size_bytes": 21608
+    },
+    "save_utils_source": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/src/genmol/utils/utils_save.py",
+      "sha256": "f092d274a40406feb2df7caabd4ac36a96b15fec08d403547c9c4357a5b3b8f5",
+      "size_bytes": 2172
+    }
+  },
+  "metric_inputs": {
+    "affected_outputs": [
+      "raw_samples_csv.strict_sa",
+      "raw_samples_csv.released_sa",
+      "metrics.strict.quality",
+      "metrics.released_comparable.quality"
+    ],
+    "sa_fragment_scores": {
+      "duplicate_fingerprint_count": 0,
+      "fingerprint_score_count": 705292,
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/oracle/fpscores.pkl",
+      "relative_path": "oracle/fpscores.pkl",
+      "serialization": "python_pickle_verified_before_deserialization",
+      "sha256": "24a4392f5c673e79c0446af3c4d8e458293b5fecaa244328e76741ead9d21dbf",
+      "size_bytes": 9048931,
+      "top_level_row_count": 3549
+    },
+    "sa_loading_policy": {
+      "artifact_mutation_after_resident_load_affects_current_run": false,
+      "network_download_allowed": false,
+      "oracle_class": "tdc.oracles.Oracle",
+      "requested_oracle": "sa",
+      "resident_scores_loaded_from_verified_bytes": true,
+      "sa_callable": "tdc.chem_utils.oracle.oracle.SA",
+      "tdc_oracle_load_invoked": false
+    },
+    "schema_version": 1,
+    "tdc_metric_implementation": {
+      "distribution": "PyTDC",
+      "implementation_files": {
+        "diversity_scoring": {
+          "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/tdc/chem_utils/evaluator.py",
+          "sha256": "eb61d9c258be6ad1a8a2297395f6519ff89d7651013fc8a2c72831e572d574e3",
+          "size_bytes": 13620
+        },
+        "evaluator_dispatch": {
+          "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/tdc/evaluator.py",
+          "sha256": "3531d60f2b128417429f2e510d994c1c72a2e441124ea43505224f4120819549",
+          "size_bytes": 15901
+        },
+        "oracle_dispatch": {
+          "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/tdc/oracles.py",
+          "sha256": "03b52abdc8a1446f903238009fd9682842e04479eac8e989ed2395147938de2b",
+          "size_bytes": 25879
+        },
+        "sa_qed_scoring": {
+          "path": "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/tdc/chem_utils/oracle/oracle.py",
+          "sha256": "d266c89b5ea5f67135d0fa04f3348c4e67e3b8946c4ffe13ee8d6b96a5335e4f",
+          "size_bytes": 59584
+        }
+      },
+      "version": "0.4.1"
+    }
+  },
+  "metrics": {
+    "released_comparable": {
+      "definition": "Released GenMol path: SAFE fragment repair with fix=True, canonical decode, largest disconnected component, deduplicate before diversity and quality; validity and quality divide by requested samples, while uniqueness divides by released-valid samples.",
+      "diversity": 0.9001067161626976,
+      "diversity_input_count": 97,
+      "diversity_undefined_reason": null,
+      "quality": 0.43,
+      "quality_count": 43,
+      "quality_denominator": 100,
+      "quality_thresholds": {
+        "qed_min_inclusive": 0.6,
+        "sa_max_inclusive": 4.0
+      },
+      "unique_count": 97,
+      "uniqueness": 1.0,
+      "uniqueness_denominator": 97,
+      "valid_count": 97,
+      "validity": 0.97,
+      "validity_denominator": 100
+    },
+    "strict": {
+      "definition": "Direct canonical sf.decode(raw_safe, fix=False, ignore_errors=True), followed by explicit RDKit parsing, sanitization, and canonicalization, without fragment repair or largest-component selection; other metric denominators mirror the released path.",
+      "diversity": 0.8874416297007751,
+      "diversity_input_count": 61,
+      "diversity_undefined_reason": null,
+      "quality": 0.31,
+      "quality_count": 31,
+      "quality_denominator": 100,
+      "quality_thresholds": {
+        "qed_min_inclusive": 0.6,
+        "sa_max_inclusive": 4.0
+      },
+      "unique_count": 61,
+      "uniqueness": 1.0,
+      "uniqueness_denominator": 61,
+      "valid_count": 61,
+      "validity": 0.61,
+      "validity_denominator": 100
+    }
+  },
+  "num_samples": 100,
+  "run": {
+    "command": [
+      "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+      "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/scripts/exps/denovo/benchmark.py",
+      "--checkpoint",
+      "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+      "--expected-checkpoint-sha256",
+      "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+      "--expected-source-revision",
+      "6984cf8143eadc4a93b2366a7153a0b1fae67fcb",
+      "--config",
+      "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/experiments/udlm/protocols/followthrough_resolution_configs/ce_n512.yaml",
+      "--expected-config-sha256",
+      "470e5383d8719ab32306948afed3ce57caaae956feec17e605dc03d329423666",
+      "--num-samples",
+      "100",
+      "--seed",
+      "17300",
+      "--device",
+      "cuda:0",
+      "--output-dir",
+      "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300",
+      "--expected-output-directory-device",
+      "48",
+      "--expected-output-directory-inode",
+      "2630443939"
+    ],
+    "completed_at_utc": "2026-09-07T11:41:26.922997+00:00",
+    "evaluation_tier": "pilot",
+    "execution_authority": {
+      "launch_authority": {
+        "artifact_io_source": {
+          "device": 48,
+          "inode": 2629720222,
+          "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/scripts/artifact_io.py",
+          "sha256": "bc3ba06dfc709de3d15acf822a6ecaef46501a1c9db6a5beee404426b3c14507"
+        },
+        "command": [
+          "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+          "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/scripts/exps/denovo/benchmark.py",
+          "--checkpoint",
+          "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+          "--expected-checkpoint-sha256",
+          "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+          "--expected-source-revision",
+          "6984cf8143eadc4a93b2366a7153a0b1fae67fcb",
+          "--config",
+          "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/experiments/udlm/protocols/followthrough_resolution_configs/ce_n512.yaml",
+          "--expected-config-sha256",
+          "470e5383d8719ab32306948afed3ce57caaae956feec17e605dc03d329423666",
+          "--num-samples",
+          "100",
+          "--seed",
+          "17300",
+          "--device",
+          "cuda:0",
+          "--output-dir",
+          "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300",
+          "--expected-output-directory-device",
+          "48",
+          "--expected-output-directory-inode",
+          "2630443939"
+        ],
+        "command_sha256": "3f845d36198ebc7c95218038b355b77c0048fe3d1fab5f7f4b89657276ffde41",
+        "generation_lease": {
+          "device": 48,
+          "inode": 2630439118,
+          "owner_token": "72188e92bcf99e6dbc512c3fd960d5e6dc834ee04f7a672a025340ddd7c30e03",
+          "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/.single_generation_job.lock",
+          "relative_path": "output/.single_generation_job.lock",
+          "sha256": "944a8092a76a892dfef8c69551f61d64b9679deac8fb1b5df82b71635f25de88"
+        },
+        "output_directory": {
+          "device": 48,
+          "inode": 2630443939,
+          "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_diagnostics_followthrough/output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300",
+          "relative_path": "output/udlm/followthrough_resolution_r1/followthrough-ce-n512-r1/seed_17300"
+        },
+        "schema_version": 1
+      },
+      "launch_authority_canonical_sha256": "6beaec71dae1dfaf89889692d0dd13e5fce60bc98375fcb2f559ea7b1f2835c7",
+      "output_directory_descriptor_retained_until_after_bundle_publication": true,
+      "revalidated_immediately_before_publication": true,
+      "schema_version": 1,
+      "validated_before_model_import": true
+    },
+    "final_protocol_eligible": false,
+    "generation_protocol": {
+      "diffusion_type": "udlm",
+      "exclude_special_tokens": false,
+      "inference_eps": 1e-05,
+      "inference_weights": {
+        "ema": {
+          "decay": 0.9999,
+          "num_updates": 1000,
+          "shadow_parameter_count": 230
+        },
+        "ema_applied": true,
+        "source": "ema"
+      },
+      "model_use_bracket_safe": false,
+      "nfe": 512,
+      "nfe_definition": "one full backbone forward evaluation per reverse step",
+      "num_steps": 512,
+      "num_steps_source": "explicit UDLM reverse-transition count",
+      "prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+      "prior_variant": "empirical_frequency",
+      "randomness": 0.0,
+      "randomness_used_by_sampler": false,
+      "raw_loo_top_p": 1.0,
+      "released_largest_component": "maximum SMILES string length",
+      "released_safe_fix": true,
+      "single_generation_batch": true,
+      "strict_safe_fix": false,
+      "temperature": 1.0
+    },
+    "one_seed_per_invocation": true,
+    "requested_sample_count": 100,
+    "seed": 17300,
+    "seed_configuration": {
+      "numpy": true,
+      "python_hash_seed": "17300",
+      "python_random": true,
+      "seed": 17300,
+      "seed_applied_immediately_before_generation": true,
+      "torch_cpu": true,
+      "torch_cuda_all": true
+    },
+    "single_generation_batch": true,
+    "started_at_utc": "2026-09-07T11:39:55.741673+00:00"
+  },
+  "runtime_seconds": {
+    "decode_and_metrics": 1.192571323015727,
+    "generation": 54.76076745399041,
+    "model_load_and_device_move": 13.202947215992026,
+    "model_sampling_and_tokenizer": 54.36585101101082,
+    "released_postprocessing": 0.39491644297959283,
+    "sampled_token_control_audit": 0.008389593043830246,
+    "total_before_summary_write": 91.18125202698866
+  },
+  "sampled_token_control_audit": {
+    "columns": 70,
+    "control_token_counts": {
+      "final_sampled_all_positions": {
+        "bos": 100,
+        "eos": 100,
+        "mask": 0,
+        "pad": 1966,
+        "unk": 0
+      },
+      "final_sampled_editable_positions": {
+        "bos": 0,
+        "eos": 0,
+        "mask": 0,
+        "pad": 0,
+        "unk": 0
+      },
+      "sampler_input_all_positions": {
+        "bos": 100,
+        "eos": 100,
+        "mask": 4834,
+        "pad": 1966,
+        "unk": 0
+      }
+    },
+    "control_token_ids": {
+      "bos": 1,
+      "eos": 2,
+      "mask": 4,
+      "pad": 3,
+      "unk": 0
+    },
+    "editable_mask": {
+      "array_order": "C",
+      "bit_order": "msb0",
+      "compression": "none",
+      "data_base64": "f///////4AAB////////AAAH///////4AAAf//////gAAAB//////4AAAAH///////+AAAf/////+AAAAB////////wAAH//////wAAAAf////////wAB////////8AAH/////////4Af//////////B////////AAAH///////8AAAf/////+AAAAB//////8AAAAH////////wAAf///////+AAB////////8AAH///////+AAAf//////AAAAB///////gAAAH//////gAAAAf////////gAB/////////wAH//////////gf//////wAAAB//////4AAAAH///////gAAAf/////+AAAAB/////////4AH///////8AAAf//////wAAAB///////AAAAH//////4AAAAf////////gAB//////4AAAAH//////gAAAAf/////+AAAAB/////////+AH//////+AAAAf//////AAAAB///////8AAAH//////4AAAAf///////gAAB//////8AAAAH///////wAAAf/////+AAAAB////////+AAH//////gAAAAf//////AAAAB////////+AAH//////gAAAAf/////////AB///////gAAAH//////+AAAAf/////+AAAAB///////4AAAH/////////AAf////////8AB///////wAAAH//////////Af///////gAAB/////////+AH/////////AAf//////////x/////////wAH//////////+f///////4AAB//////4AAAAH////////wAAf/////+AAAAB/////////wAH///////wAAAf/////+AAAAB//////4AAAAH////////4AAf/////+AAAAB////////wAAH//////gAAAAf/////////AB//////4AAAAH//////gAAAAf///////4AAB/////////4AH/////////+Af/////+AAAAB////////gAAH//////gAAAAf///////8AAB///////8AAAH///////8AAAf/////+AAAAB///////AAAAH/////////wAf////////AAB//////+AAAAH//////4AAAAf////////8AA=",
+      "decoded_byte_count": 875,
+      "decoded_sha256": "977d8596fd47e2ed3bab911322d5e1d53a723cf59b89fc29a9587a4f7d87489c",
+      "encoding": "rfc4648_base64",
+      "logical_bit_count": 7000,
+      "packing": "one_bit_per_position",
+      "unused_tail_bit_count": 0
+    },
+    "final_sampled_ids": {
+      "array_order": "C",
+      "byte_order": "little",
+      "compression": "none",
+      "data_base64": "AQAbADYADgA2ADYANgASADYANgAOABsACwBiAA4AEwASABsANgAPADYANgAHACUAFwBjABcAbgAIAEAABwAbAAgANgAPABsADgALACYAEwARAAsAGwARAAcAGwAIAAcAGwAIABsAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAJgARAAsANgAOABEANgA2ADYAFAA2ADYADgALABsAFQAUAAsAJQATABUACwAbABMAEgAXACYACwA2AA4AEgA2ADYABwAmAAgANgAPADYANgA2ADYANgAPAGYANgAOACYAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbAA8ABwAbAAgAGwALACUAEAAPABEACwAbABAABwAXACYACAAlACUANgAOADYANgA2ADYABwAlACUAFwAmAAgAQAAOAAsANgAOABEANgA2ADYANgAHAB4ACAA2AA4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbACYAEwALADYADgATADYANgA2AAcAVgAIADYANgAOABEACwAlAA8AEQALABsADwAbABAACwAlAA4AEAAbABsAGwAbABsAGwAOABIACwAbABIAXwACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwAHACYACAAXACUATwAQABsABwAmAAgAFwAlABsAEQALACYAEAAbAAsANgAOABEANgA2ADYADwA2ADYADgALABsADwAHABcAJgAIACYAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbAA4AFwAlACUABwAbAAcAJgAIABcAJQAbABEAGwASABcAJgAIABsAGwAOAAsAJQAOABIAGwAbABsADwAHABsADwAbABsADwAIABsADgALADYADgARADYANgBAADYANgAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAeADYADgA2ADYANgAUADYANgAOAAsAGwAUABsAGwAbABMACwAlABMAEQALABsAEQAbABAACwAmABAAEgALADYADgASADYANgA2ADYANgAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABACYAFwAbABIAXgALADYADgASADYANgAPAEAANgA2AAcAJQAXABsABwAmAAgAGwATADYANgAPAEAANgAOABEACwAlAA4AEwAbABsAJgAbABsADgALADYADgARADYANgA2ADYANgAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbABIAEQALACUAEgAbABsACwA2AA4AEQA2ADYANgAPAFkANgA2AAcAXwAIADYADwA2AA4AGwALADYADgAQADYANgA2AAcAHgAIADYANgAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbACYAFQALADYADgAVADYANgA2ABIANgA2AA4ACwAbABMAEgAXACYACwAlABMAFAALABsAFAAbAAcAJgAIABcAJQAbABsAEQAXACYACwAlAA4AEQAbAFAADwAbABsAGwAbAE8ADwAbAAgAGwAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwAlABcAGwAHACYACAAlABsABwAbAAgAGwAbABsAEAALACUAEAASAA8ACwAbABIAGwAHABsACAAXACYACwApAA8ABwAXACYACAAHABcAJgAIADYADgA2ADYANgAHAF8ACAA2ADYADgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAJgAXAGMABwBeAAgAGwAbABAACwA2AA4AEAA2ADYANgAHAGMABwAXACYACABeAAgANgA2AA4ACwAbABQAEwAXACYACwAlAA4AFAAbABsAJQASABsAGwAOAAsAGwASABEAFwAmAAsANgAOABEANgA2ADYAQAA2AA4AAgADAAMAAwADAAMAAwADAAMAAQAbABsAEQAVAAsAJgAQABEACwAbABAABwAXACYACAAbAAcAJgAIABsAFAALACUAFAAPAAsAGwAPABsAEwAXACYACwA2AA4AEwA2ADYANgA2AAcAJgAIADYADgALABsAEgAHABsACAAHABsACAAbAAsANgAOABUANgA2ADYANgA2AA4AAgADAAMAAwABACYAFwAbABIAEAALACkADwATAAsANgAOABMAQAA2ADYARAAOAAsAJQAOABIAGwAbABcAGwAbABsADgARAAsAGwARAAcAFwAmAAgAGwAQAAsANgAOABAANgA2ADYANgBAAA4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwA2AA4AQAA2ABEARAA2AA4AEgALABsAEQAbAFUAFwAbAAcAJgAIACUADgAbABsAJQAHABsACAAbABAAGwAOAAsAGwAQAAcAFwAmAAgAJgALACUAEgATAAsAGwATABsAHgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsAFAALACUAFAAQAAsANgAOABAANgA2ADYAEgA2ABEANgAOAAsAGwARABsAGwAbABMACwA2AA4AEwA2ADYANgA2ADYADgALABsAEgAbAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABACYAFwAbABIAGwAbABEACwAmABIAEAALADYADgAQADYANgA2AA8ANgA2ADYANgA2AA8ANgAOAAsANgAOABEANgA2ADYABwBWAAgANgA2AA4AVgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAJgAXACkAEgAHABcAJgAIADYADgA2ADYANgA2ADYADgALACUAFAASAAsAGwAUABsABwAXACYACAAmAAsAGwAOABMAGwAbACUAFQAbAA4ACwAbABUAEQARAAsANgAOABEANgA2ADYAQQAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsABwAbAAgAGwAOACYAGwAbADYADwBZADYAFABAADYADwAOAAsANgAOABQANgA2ADYANgASADYADgALACUAEgAbAAcAFwApAAgAJQATAAsANgAOABMAQAA2ADYABwBWAAgARAAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwATAAsAJgATABEACwA2AA4AEQA2ADYANgAHABsACABAADYADgASAAsAJQASABUACwA2AA4AFQA2ADYANgAUADYANgAOAAsAGwAQABQACwAlABAAFAALABsAFAAbAAcAFwAlAAgAJgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbABsAEgALADYADgASADYANgA2ABEANgA2AA4ACwAmABEAJQAXABsANgAOADYANgAHACkAEwAHABcAJgAIABcAJgAIADYANgA2AA4AVgALACUADgATABsAGwAmABsAGwAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsAUAAHACYACAAbABIACwAlAA4AEgAbABsAJQAQABsADgALABsAEAAbABEACwAmABEAEwALADYADgATADYANgAHAFYACAA2ADYANgAOAFYAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwATAAsAJgATABEACwAbABEAGwAbABcACwAbAA4AFwAlABsAGwAHABcAJgAIACUAEAAbAA4AFwAmAAsAGwAQABIACwA2AA4AEgA2ADYANgA2ADYADgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbABsAGwASAAsAJgASABMACwAbABMAGwARAAsAJQARABAACwAbABAAFAALADYADgAUADYARAA2AA8ANgA2AAcAXwAIADYANgA2AA4ADwACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAmABsABwAXACUAGwAbABsAGwAbACUAFwAbAAcAJgAIABsAEgALACYAEQASAAsAGwARABAAFwAmAAsANgAOABAANgA2ADYANgAPADYANgA2ADYANgAOAA8ACwA2AA4AEwA2ADYANgA2AEAADgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAJgASAAsAGwASABEAFwAmAAsAGwAOABEAGwAOABAACwAmABAAFQALADYADgAVADYANgA2ABQANgA2AA4AVgALABsAFAAHABcAJgAIADYADgBAAEAANgATAEQADgALADYADgATADYANgA2ADYANgAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbABsABwAbACYACAAbABsAFAALADYADgAUADYANgA2ABMANgA2AA4ACwAbABIAEwALACUADgASABsAFwAbAAcAJQAPABcAGwAlABsAFwAlACUADwAbABsAGwAbABsADwAIABsAGwAbAA4AJQALABsADgAUABsAGwAlABsADgACAAMAAwADAAMAAQAmABcAGwAQABsAJQAXABsABwAmAAgANgAOADYANgA2ADYANgAOAF8ACwAlABAAEQAbAAsAGwARABIACwA2AA4AEgBAAEAANgAPAEAADgAbABsAGwAPAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAQAAOADYAEQBZADYABwAXACUAKQAHABcAJgAIAAcAFwAmAAgANgAPADYANgAHAFYACABEADYADwAOAAsAJQAOABEAGwAbACYAGwAbAA4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbAA8ACwBAAA4ADwA2AAcAGwAIADYABwAbAAgANgAHAF8ACAA2AA4AEAALABsAEAARABcAJgALACYAEQASAAsAGwASABMACwA2AA4AEwA2ADYANgA2ADYADgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsAEQAHABsACAAbACYACwA2AA4AEQA2ADYABwAlAAgANgAQADYANgAOAF8ACwBPAA4AEAAbABcAGwBPAAcAHgAIAE8ABwAmAAgAGwAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwATAAsANgAOABMAQABAADYADwBAAA4AJQAQABsAGwAOABsAGwAPABsAGwAbAA4AGwAHABsADgAIABsADwALABsAEAAHABcAJgAIABsAEgALACkAEgARAAsANgAOABEANgA2ADYABwBWAAgANgA2AA4AAgADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbABEAEAALADYADgAQADYANgA2ADYANgAOAA8ACwA2AA4ADwA2ADYANgA2ADYADgBfAAsAJQARABIACwApABIABwAXACYACAAHABcAJgAIADYADgBEADYANgA2AA4AHgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbADYADgA2ADYAEgBAAEEADgALACUAFAASAAsAGwARABQAFwAmAAsAJQAOABEAGwAbAAcAGwAIACYAGwAHABsACAAbAA4AEwALABsADgATABsAGwAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABACYAFwAbABEAJQAXADYADgBZADYADwA2ADYANgA2ADYADwBZAA4ACwA2AA4AEQA2ADYANgA2AA8ANgAOACYAGwAbABsAGwAPABsAGwAHABcAJgAIACYAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAlABcAGwAHACYACAA2AA4ANgA2ADYABwAlABcAGwAHACYACAAbABEANgA2AA4ACwBPABEAEAAbAAsANgAOABAANgA2ADYABwAbAAgANgA2AA4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQBWAAsAGwAXABsAKQAHABcAJgAIAAcAFwAmAAgAGwAbABEACwA2AA4AEQA2ADYANgAHAFYACAA2ABIANgAOAAsAGwAOABIAGwAPABsAFwAlABsAFwAbABsADgAPAAsAGwBjAAcAFwAmAAgAXgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwAHABsAEQAbABsABwAbAAgAGwALADYADgARAEAANgAQADYABwAXACUAFwAbAAcAGwAIACUACABZAA4ACwA2AA4AEAA2ADYANgBEAA4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAlAA8ACwAbAA4ADwAbABsAGwAbABMAGwAOAAsAGwAQABMAGwAHABcAJgAIACYACwAbABIAEAALACYAEQASAAsAGwARAAcAGwAIABcAJgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbADYADgA2ADYANgAQADYABwAeAAgANgAOAAsAJQARABIAEAALABsAEQAbACYACwApABIABwAXACYACAAHABcAJgAIABsADgAbABsAGwAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAJQASABsACwAbABIAFQALADYADgAVADYANgA2ADYABwApABAABwAXACYACAAXACYACAA2AA4ACwAlABEAEAALABsAEQAbABQACwAlAA4AFAAbABsAJQATABsADgALADYADgATADYANgA2AAcAVgAIADYANgAOAAIAAwADAAMAAwADAAMAAwADAAEAGwBAAA4AQAA2ADYADgASAAsAJQASABsABwApAAgAFwAlABsAGwARAAsANgAOABEAQAA2ABAANgBEAA4ACwAbABAAEwALADYADgATADYANgA2ADYANgAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsABwAbAAgABwAbAAgAGwAbAAcAJgAIABsAGwAHACYACAAXACUAGwAHACYACAAXACUAGwAbAA8AGwAmAAsANgAOAA8ANgA2AEAANgA2AA4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwAHABsACAAbACUAFwAbAAcAJgAIACUAFwAbAAcAJgAIABsAGwAQAAsAJgAQABEACwA2AA4AEQA2ADYANgAPADYANgAOAB4ACwAbAA8ABwAeAAgABwAeAAgAHgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbAAcAGwAIABsAEAALACUAEAAPABsACwApAA8ABwAXACYACAAHABcAJgAIABsAEQALADYADgARADYANgAHAB4ACAA2ADYABwBWAAgANgAOAB4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsABwAXACYACAAbABIACwAlABIAGwAHACYACAAXACUAGwATAAsAGwAOABMAEQAbABsAJQAbAA4ACwA2AA4AEQA2ADYANgA2ADYADgALACUADgAQABsAGwAbABsADgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsANgAOADYANgA2ADYABwBWAAgANgAOAA8ACwAbABEADwALACUADgARABsAGwAbAGEAEAAHACYACAAbAA4ACwAbABAABwAeAAgABwAeAAgAHgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAJgBPAAcAGwARABsAEgALADYADgASADYANgA2ADYABwBfAAgANgAOAB4ACwAlAA4AEQAbABsAGwBQABAAGwAOAAsANgAOABAAQAA2AA8ANgA2ADYANgA2AA8AWQAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsAGwAbABsAEAALABsAEAAbAAcAFwAmAAgAKQARAAsAGwARABsAEgALACYAEgAPAAsAGwAPAHUADgA2ADYABwBWAAgANgA2ADYADgAbAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAJQARABsABwAmAAgAFwAlABsAGwAQAAsAJgAQAA8ACwAbAA4ADwAbABsAGwAHABsACAAHABsACAAbAA4ACwAbABEAEgAHAFYACABWAAsANgAOABIAQAA2ABMAQQA2AA4AJQALABsAEwBWAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbAA4AEQAlABsAGwAbACUAGwAOAAsAGwAUABEAFwAmAAsAJQAUABMACwA2AA4AEwA2ADYANgAQABAANgAOAAsAJQASABAACwAbABIAGwACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsAGwAHABsACAAbAA8ACwAmAA8AEQALABsAEQAbAAcAJgAIABcAJQAlABcAGwASACYACwA2AA4AEgA2ADYANgA2ADYADgAQAAsAJgAQABsAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsANgAOAEAANgATAEAAQQAOAAsANgAOABMANgA2ADYAFQA2ADYADgALABsAFQAHABcAJgAIABsAEQALADYADgARADYANgAUADYAEgA2ADYADgAbAAsAGwAUAAcAFwAmAAgAJgALACYAEgAbAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbAA4ABwAbAAgAGwAlABAAGwAHACYACAAbAA4AFwAlABsABwAbAAgABwAbAAgAGwALABsAEAARAAsANgAOABEANgA2ADYANgA2AA4AJQACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbADYADgA2ADYAEAA2ADYANgAOABQACwApABAABwAXACYACAAHABcAJgAIADYADgA2ADYANgA2ADYADgALACUAFAATABEACwAbABMAEgALADYADgASADYANgA2ADYANgAOAAsANgAOABEANgA2ADYANgA2AA4AAgADAAMAAwADAAMAAwADAAMAAwABABsAJgASAAsAGwASAAcAFwAmAAgAGwAbABsAJQAXABsABwAmAAgANgAOADYARAA2ABAAQAAOAAsAGwAOABAAGwAmADYADwA2AAcAHgAIADYANgA2AA8ADgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbAA4AGwAbAAcAFwAmAAgAJQAHABsACAAbABsAGwAOABEACwAlABEAFwAbAAcAJgAIABsADgAXABsABwA2AA8ANgA2ADYANgA2AA8AXwAIABsAGwAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbADYADgBAAEAANgARAEEADgALABsAEAARAAsAJgAQACkABwAXACYACAAHABcAJgAIABsAEgALADYADgASADYABwAbAAgAQABBADYADgAbAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwASAAsAJQASABEAGwALAE8ADgARABsAGwAbAE8ABwAbAAcAJgAIABcAJQAbAA8AGwAbACUAEAAbABsADwAIABsADgALABsAEAAbAAcAGwAIAAcAGwAIACYAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAmABEACwA2AA4AEQA2ADYAEwA2ADYANgAOAB4ACwAbABMABwAXACYACAAbABIAFwAmAAsAJQASAA8AGwALABsADgAPABsAUAAQABsAUAAHABsAGwAHABsAGwAHAF8ACAAHAF8ACAAbAA4ACAAbABAAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbADYADgA2ADYABwAXACYACAA2AA8ANgA2ADYANgA2AA8AQAAOABIACwAbABIAGwAbABUAFwAmAAsAJQAVABMAFAALABsAEwAbACYACwA2AA4AFAA2ADYANgAPADYABwA2AA4ACAAmABsAGwAbACYADwACAAMAAwADAAMAAwADAAMAAwADAAMAAwABACYADAAbABcAGwAMADYADgA2ADYANgA2ABQANgAOAAsAJgATABQACwAbABMAGwAbABsAEgALACYAEgARAAsANgAOABEAQAA2AA8ANgA2ADYANgA2AA8ARAAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbAAcAGwAIABsAEwALACUADgATABsAGwBhAA8ABwAbABAAGwAbABsAGwAbABAACAAbAGEADwAOABsABwAXACYACAAbABIAFwAbAA4AJgALADYADgASADYANgA2ABEANgA2AA4AVgALACYAEQAbAAcAHgAIAAcAHgAIAB4AAgADAAMAAwADAAMAAQAbABsAEQAbACUAFwAbAAcAJgAIADYADgA2ADYANgAPADYAEAA2AA4AVgALABsADwAHAB4ACAAHAB4ACAAeAAsAGwAQAAcAHgAIAAcAHgAIAB4ACwAbAA4AEQAbABsADgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAJgAUAAsANgAOABQANgA2ADYAEQA2ADYADgALABsAEQBQAAcAGwAbAAcAGwAIABsACAAbABIAFwAmAAsAJQAOABIAUAATABsABwAXACYACAA2AA8ANgA2AAcAJgAIADYANgA2AA8ADgALABsAEwAHABsACAAbAAIAAwADAAMAAwADAAMAAwADAAEAGwAmABUACwAbABUAEAAXACYACwA2AA4AEAA2ADYANgASADYANgAOAAsAJQAWABIACwAbABYAGwAFABsANgAOADYANgA2ABMANgA2AA4ACwAlABEAEwALABsAEQAUAAsAJQAOABQAGwAbACYAGwAbAA4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbAFAADgAbABsAGwAlAA4AUgALADYADgBSADYANgA2AAcAGwAXABIANgA2AA4ACwA2AA4AEgA2ADYAFAA2ABMAQQAOAAsAGwAUABsAFgAXACYACwAlABYATgALABsATgAVAAsANgAOABUANgA2ADYABwBjAAcAFwAmAAgAXgAIADYANgAOAAIAAwABABsAGwAXABQAGwAOABsAGwAXABsABwAbAAgAGwAOABcAJgALABsAFwAUABsAEwAHABsACAAbAAsAJgATABEACwA2AA4AEQA2ADYANgAQADYABwAeAAgANgAOAAsAJgASABAACwAbABIABwAbAAgAFwAmAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAEAJgAXABsAEQASAAsAJQAVABMACwA2AA4AEwA2AAcAJgAIADYANgAPADYANgA2ADYABwBjAAcAFwAmAAgAXgAIADYADwA2AA4AJgALADYADgASADYANgA2ABQANgA2AA4ACwAlAA4AFAAbABsAJgAbABsADgALACUADgARABsAGwAmABsAGwAOAAIAAQAlABcAGwAHACYACAA2AA4ANgA2ADYANgASADYADgALACUADgASABsAGwAbABsAEQAbAA4AFwAmAAsAQAAOABEAQAA2AAcAJgAIAEAANgAPADYANgA2AAcAHgAIADYANgAPAA4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAFwAbACkADwALADYADgAPADYANgA2ADYANgAOABEACwAbABAAYwAHABcAJgAIAF4ACwAbABEAJQAXABsABwAmAAgAJgAlABcAYwAXAG4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwA2AA4AQAA2AAcAGwAHACYACAAXACUAJQAbABIAFwAmAAgAGwAHABcAJgAIADYANgA2AA4AJQALACUAEgARABMACwA2AA4AEwA2ADYANgAHAB4ACAA2ADYADgALABsADgARABsAGwAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsADwALACYADwAQAAsAGwAQABEACwA2AA4AEQA2ADYAQQBAAA4ACwAlABIAEwALABsADgASABsAGwAHABsACAAbACUABwAbAAgAGwAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwASAAsAJgAUABIACwAbABQABwAXACYACAAbABMACwAlABMAEQAVAAsANgAOABUANgA2ADYADwBAAFkANgAHABcAWwAIAEAANgA2AAcAFwAmAAgANgAKAA8ANgAOAAsAGwAOABEAGwAbABsAGwAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwApABUACwA2AA4AFQA2ADYANgA2ABMANgAOAAsAJQAOABMAGwAbABsAFAAbABsADgALABsAEQAUABsACwAlABEAEgALADYADgASAEAANgA2AAcAXwAIADYAQAAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbADYADgA2ADYABwBfAAgANgA2AAcAJQAXABsABwAmAAgAGwAPABcAGwAbABsAEAAbABEAGwAbAAcAGwARAAgAYgAPABAAJgAIADYADgAmAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwARAAsAQAAOABEANgBAADYANgAOABsABwAmAAgAFwAlADYADgA2ADYANgA2ABAANgAOAAsAJQAQAA8ACwAbAA4ADwAbABsAGwAbAA4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbABEACwAlABUAEQAPAAsAGwAPABsAEgAQAAsAJgASABsACwAbABUAEwAXACYACwA2AA4AEwA2ADYANgAHAF8ACABEAA4ACwAbABAAJQAXABsABwAmAAgAGwAOABsAGwAOAAcAGwAIABsAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABcAGwAbAA8ACwAlABEADwAQAAsAGwAQAAcAGwAIAAcAGwAIABsACwApABEABwAXACYACAAHABcAJgAIADYADgA2ADYANgA2ADYADgBWAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwASAAsAJQASABQAFQALABsAFAAbAAsANgAOABUANgA2ABEAQAA2AA8ANgAHABsACABAAEEANgAOAA8ACwAbABEAEwALADYADgATADYANgA2ADYADwA2ADYANgA2ADYADgAPAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbABsAEQAbAAcAFwAmAAgAJgALACUADwARABsACwAbAA8AEAAXACYACwA2AA4AEAA2ADYAEgBAAEAADgAbAAsAGwASAAcAFwAmAAgAJgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbAFAADgAbABsAGwAbAFAADgAQAAsAGwAVABAACwAmABMAFQALABsAEwAHABcAJgAIAE8AFAARAAsANgAOABEANgA2ADYANgBAAA4ACwAlAA4AFAAbABsAJQASABsAGwAOAAsANgAOABIANgA2ADYANgA2AA4AAgADAAMAAwADAAMAAwADAAMAAwABABsANgAOADYABwApABAABwAXACYACAAXACYACAA2ADYANgAHAFYACAA2AA4AHgALACUADgAQABsAGwAHABsACAAHABsACAAbAAcAGwAIACYAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbAA4AGwAlABIAGwAbAA4AHgALABsAEgAbABEACwBAAA4AEQBAADYADwBAADYANgATADYADwBAAA4ACwA2AA4AEwA2ADYANgA2ADYADgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsAGwASAAsAJQAOABIAGwAHABcAJgAIABsABwAXACYACAAlABEAGwAOABsACwAbABEAGwAHACYACAAXACUAJQAXABsANgAOADYANgAHABsACAA2ABAAQQAOAAsAJgAQABsAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwAUABsAEgAXACYACwAlABQADwALABsADwAbABsAGwAbAAcAGwAIAAcAGwAIABsACwAlABIAEAALADYADgAQADYANgA2AA8ANgA2AA4ACwAmABEADwALABsAEQATAAsAGwAOABMAGwAbABsAGwAlAA4AAgADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbAA4ABwAbAAgAGwAQAAcAJgAIABsAGwAbACUADgBWAAsAGwAQACUAFwAbAAcAJgAIACUAEQALABsAEQAbABMACwAmABMAEgALADYADgASADYANgA2AAcAVgAIADYANgAOACUAFwAbAAcAJgAIABsADgAbABsAGwAOAAIAAwADAAMAAwADAAMAAQAmABcAGwASABAACwA2AA4AEAA2ADYAEwBAAEEADgALABsADgATABsAGwAOAAsAJQASABEACwA2AA4AEQA2ADYABwBfAAgANgA2ADYADgBWAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwAVAAsAJgATABUACwAbABMAEAAXACYACwAlAA4AEAAbAFAAEgBQAA4AFgALABsAFgARABcAJgALADYADgARADYANgA2ADYANgAOAAsAGwAUABIACwAbAA4AFAAbABsADgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwA2AA4ANgA2ADYANgA2AA4AEQALABsADwARAAsAJQAOAA8AGwAbACUAFwAbAAcAJgAIABsAEAAbAA4ACwAbABAABwAbAAgABwAbAAgAGwACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsATwAHABsACABQAAcAJQAXABsABwAmAAgANgAOADYARAA2AEAADgAIACUAFwAbAAcAJgAIABsAJQAQABsABwAmAAgAFwAlAA4ACwA2AA4AEAA2ADYABwBWAAgANgA2ADYADgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAFwAbABsAEgALADYADgASADYARAA2ABEAQAAOABsACwAbABEAJQAXABsABwAmAAgAJQAOABsAGwAmAE8AEwAbAA4ACwA2AA4AEwA2ADYANgAHAB4ACAA2ADYADgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAJQAXADYADgBAADYANgA2AA8AQAA2ABIANgBAAA4ADwALACUAEAASAAsAGwARABMAGwAlABcANgAOAFkANgA2AAcAXwAIADYAWQAOAAsANgAOABMANgA2ADYANgA2AA4AHgACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbABsAGwARABsABQAlAAsAJgARABAACwAbABAAGwAHACYACAAbABIACwA2AA4AEgA2ADYAEwBAAFkADgALADYADgATADYANgA2ADYAQAAOAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsANgAOADYANgA2ABQANgA2AA4ACwAbABAAFAALACUAEAASAAsAGwASABEAEwALADYADgATADYANgA2AEAANgAOAAsAGwAOABEAGwAbABsAJQAbAA4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAJgAXADYADgA2ADYAFAA2AA8AQABAABIAQABAADYAEQBAAA4ACwAbABQAEwAXACYACwA2AA4AEwBZADYADwA2ADYANgA2ADYADwA2AA8ANgA2AAcAHgAIADYANgA2AA4ADwALADYADgASADYANgA2ADYANgAOAAIAAwADAAMAAwADAAMAAwADAAMAAQAbABcAGwAbAA4AGwAbAAcAFwAmAAgAGwAHABsACAAHABsACAAbAA4AEgALADYADgASADYANgA2AEAANgARAEAADgALACUADgARABsAGwAlABsAGwAOABsADgAbABsAJgAlABsADgALAFYAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABABsAGwAbACUAFwAbAAcAJgAIAE8AEAAbAAsAJQAOABAAGwAbACUAEQAbABsADgALADYADgARAEAANgAHABsACAA2ABIARAAOAAsAGwASABsABQAlAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEAGwAbABsAGwAbABsAEwALACUAEQATAAsAGwARABIAFwAmAAsANgAOABIANgAPADYANgA2ADYANgAPADYADwBAADYAEABEADYANgA2ABAAQAAPAA4AAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAbACYAEgALADYADgASADYANgATADYANgAHAF8ACAA2AA4ACwAbABMAJQAXABsABwAmAAgAYgAOAAcAGwAHACYACAAXACUAGwBPABEAGwAPAAgAGwAbABsANgAPADYANgA2ADYANgAPAA4ACwAmABEAGwACAAMAAwADAAMAAwADAAMAAwADAAMAAwA=",
+      "decoded_byte_count": 14000,
+      "decoded_sha256": "c49420f9963c5ba3aab7c4d3b47073e1a7a6a881bdffc8dfee9766d361c442d5",
+      "dtype": "uint16",
+      "element_count": 7000,
+      "encoding": "rfc4648_base64"
+    },
+    "model_vocab_size": 1880,
+    "rows": 100,
+    "sampler_input_ids": {
+      "array_order": "C",
+      "byte_order": "little",
+      "compression": "none",
+      "data_base64": "AQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwABAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAIAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAEABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQAAgADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAQAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAACAAMAAwADAAMAAwADAAMAAwADAAMAAwA=",
+      "decoded_byte_count": 14000,
+      "decoded_sha256": "4d53cda6e2c169866d59799d9bda62969e5288fdcd6cdae8631224b9af5473be",
+      "dtype": "uint16",
+      "element_count": 7000,
+      "encoding": "rfc4648_base64"
+    },
+    "schema_version": 1,
+    "tokenizer_effective_size": 1882
+  },
+  "schema_version": 8,
+  "seed": 17300,
+  "status": "completed",
+  "tokenizer": {
+    "added_vocabulary_sha256": "818312ee2fd79eb194e7c1e9677d671c46e8f6e13e0371cc6c01a4df196c241a",
+    "backend_json_sha256": null,
+    "backend_serialization_error": "Exception: Custom PreTokenizer cannot be serialized",
+    "base_vocab_size": 1880,
+    "class": "transformers.tokenization_utils_fast.PreTrainedTokenizerFast",
+    "declared_revision": null,
+    "effective_size": 1882,
+    "name_or_path": null,
+    "requested_identifier": "datamol-io/safe-gpt",
+    "resolved_commit_hash": null,
+    "special_token_ids": {
+      "bos": 1,
+      "eos": 2,
+      "mask": 4,
+      "pad": 3
+    },
+    "vocabulary_sha256": "8fdf74b22e1fa097c83b45022ddd1270adb45873962b0b5b3aba480e0ff8260f"
+  }
+}
