@@ -85,10 +85,18 @@ INFERENCE_WEIGHT_SOURCES = frozenset({"ema", "raw_model"})
 AUDITED_BENCHMARK_REQUIRES_EMA = True
 
 UDLM_PRIOR_CHECKPOINT_KEY = "udlm_prior_metadata"
+UDLM_MASK_RICH_STATE_KEY = "_udlm_mask_rich_mixture_weight_bits"
 UDLM_PRIOR_VARIANTS = frozenset(
-    {"release_uniform", "schedule_uniform", "empirical_frequency"}
+    {
+        "release_uniform",
+        "schedule_uniform",
+        "empirical_frequency",
+        "mask_rich_empirical",
+    }
 )
-UDLM_CATEGORICAL_PRIOR_VARIANTS = frozenset({"schedule_uniform", "empirical_frequency"})
+UDLM_CATEGORICAL_PRIOR_VARIANTS = frozenset(
+    {"schedule_uniform", "empirical_frequency", "mask_rich_empirical"}
+)
 UDLM_PRIOR_VARIANT_IDENTITIES = {
     "release_uniform": {
         "comparison_role": "faithful_release_control",
@@ -115,7 +123,17 @@ UDLM_PRIOR_VARIANT_IDENTITIES = {
         ),
         "prior_source": "pinned_frequency_artifact_uniform_mixture",
     },
+    "mask_rich_empirical": {
+        "comparison_role": "mask_rich_empirical_prior_treatment",
+        "process_family": "rank_one_continuous_categorical",
+        "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+        "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+        "prior_source": "mask_point_mass_mixture_with_pinned_smoothed_frequency",
+    },
 }
+UDLM_MASK_RICH_METADATA_FIELDS = frozenset(
+    {"mask_mixture_weight", "mask_token_id", "base_stationary_probs_sha256"}
+)
 UDLM_PRIOR_METADATA_FIELDS = frozenset(
     {
         "schema_version",
@@ -479,6 +497,15 @@ def _strict_probability(value: Any, name: str) -> float:
     return result
 
 
+def _strict_mask_mixture_weight(value: Any, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise RuntimeError(f"{name} must be a real number")
+    result = float(value)
+    if not math.isfinite(result) or not 0.0 <= result < 1.0:
+        raise RuntimeError(f"{name} must be finite and lie in [0, 1)")
+    return 0.0 if result == 0.0 else result
+
+
 def _load_empirical_frequency_counts() -> tuple[dict[str, Any], list[int]]:
     """Read and validate the exact committed empirical-frequency artifact."""
 
@@ -561,12 +588,13 @@ def validate_udlm_prior_metadata_record(
     expected_noise_eps: float | None = None,
     expected_antithetic_sampling: bool | None = None,
     expected_uniform_mixture_weight: float | None = None,
+    expected_mask_mixture_weight: float | None = None,
     state_dict: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate a categorical UDLM's immutable metadata and optional state.
 
     ``release_uniform`` checkpoints intentionally predate and omit this record.
-    The two categorical variants must carry the complete record, and their
+    Categorical variants must carry their complete record, and their
     state buffers are checked against its compact-alphabet hashes when a
     checkpoint state dictionary is available.
     """
@@ -576,9 +604,14 @@ def validate_udlm_prior_metadata_record(
             "categorical UDLM checkpoint prior metadata must be a mapping"
         )
     metadata = dict(value)
-    if set(metadata) != UDLM_PRIOR_METADATA_FIELDS:
-        missing = sorted(UDLM_PRIOR_METADATA_FIELDS - metadata.keys())
-        extra = sorted(metadata.keys() - UDLM_PRIOR_METADATA_FIELDS)
+    fields = UDLM_PRIOR_METADATA_FIELDS | (
+        UDLM_MASK_RICH_METADATA_FIELDS
+        if metadata.get("variant") == "mask_rich_empirical"
+        else frozenset()
+    )
+    if set(metadata) != fields:
+        missing = sorted(fields - metadata.keys())
+        extra = sorted(metadata.keys() - fields)
         raise RuntimeError(
             "categorical UDLM prior metadata fields are invalid: "
             f"missing={missing}, extra={extra}"
@@ -588,8 +621,8 @@ def validate_udlm_prior_metadata_record(
     variant = metadata["variant"]
     if variant not in UDLM_CATEGORICAL_PRIOR_VARIANTS:
         raise RuntimeError(
-            "checkpoint prior metadata variant must be schedule_uniform or "
-            "empirical_frequency"
+            "checkpoint prior metadata variant must be schedule_uniform, "
+            "empirical_frequency or mask_rich_empirical"
         )
     if expected_variant is not None and variant != expected_variant:
         raise RuntimeError(
@@ -622,7 +655,9 @@ def validate_udlm_prior_metadata_record(
     expected_excluded = (
         list(SAFE_GPT_SPECIAL_TOKEN_IDS)
         if expected_exclude_special_tokens is True
-        else [] if expected_exclude_special_tokens is False else None
+        else []
+        if expected_exclude_special_tokens is False
+        else None
     )
     if expected_excluded is not None and excluded != expected_excluded:
         raise RuntimeError(
@@ -761,6 +796,36 @@ def validate_udlm_prior_metadata_record(
 
     expected_tensor = torch.tensor(expected_probs, dtype=torch.float64)
     expected_tensor /= expected_tensor.sum()
+    if variant == "mask_rich_empirical":
+        mask_weight = _strict_mask_mixture_weight(
+            metadata["mask_mixture_weight"], "prior mask_mixture_weight"
+        )
+        mask_id = _strict_integer(metadata["mask_token_id"], "prior mask_token_id")
+        if mask_id != CONTROL_TOKEN_IDS["mask"] or mask_id not in active_token_ids:
+            raise RuntimeError(
+                "mask-rich prior requires the canonical MASK ID in its active alphabet"
+            )
+        if (
+            expected_mask_mixture_weight is not None
+            and mask_weight != expected_mask_mixture_weight
+        ):
+            raise RuntimeError(
+                "checkpoint prior mask mixture weight disagrees with hyperparameter config"
+            )
+        base_hash = _sha256_identity(
+            metadata["base_stationary_probs_sha256"],
+            "prior base_stationary_probs_sha256",
+        )
+        if base_hash != _canonical_numeric_sequence_sha256(expected_tensor.tolist()):
+            raise RuntimeError(
+                "mask-rich base prior differs from the pinned normalized empirical law"
+            )
+        if mask_weight > 0.0:
+            expected_tensor = (1.0 - mask_weight) * expected_tensor
+            expected_tensor[active_token_ids.index(mask_id)] += mask_weight
+            expected_tensor /= expected_tensor.sum()
+    elif expected_mask_mixture_weight is not None:
+        raise RuntimeError("mask mixture weight requires mask_rich_empirical")
     expected_stationary_hash = _canonical_numeric_sequence_sha256(
         [float(value) for value in expected_tensor.tolist()]
     )
@@ -773,6 +838,25 @@ def validate_udlm_prior_metadata_record(
         if not isinstance(state_dict, Mapping):
             raise RuntimeError(
                 "categorical UDLM checkpoint state_dict must be a mapping"
+            )
+        marker = state_dict.get(UDLM_MASK_RICH_STATE_KEY)
+        if variant == "mask_rich_empirical":
+            expected_bits = (
+                torch.tensor(mask_weight, dtype=torch.float64).view(torch.int64).item()
+            )
+            if (
+                not isinstance(marker, torch.Tensor)
+                or marker.shape != torch.Size([])
+                or marker.dtype != torch.int64
+                or marker.device.type == "meta"
+                or marker.item() != expected_bits
+            ):
+                raise RuntimeError(
+                    "mask-rich checkpoint requires its exact int64 mixture marker"
+                )
+        elif UDLM_MASK_RICH_STATE_KEY in state_dict:
+            raise RuntimeError(
+                "mask-rich mixture marker cannot be loaded as another prior"
             )
         expected_ids = torch.tensor(active_token_ids, dtype=torch.long)
         ids = state_dict.get("mdlm.diffusion_token_ids")
@@ -2831,6 +2915,19 @@ def checkpoint_metadata(
     state_dict = checkpoint.get("state_dict", {})
     if not isinstance(state_dict, Mapping):
         raise RuntimeError("Checkpoint state_dict must be a mapping")
+    configured_variant = checkpoint_udlm.get("prior_variant", "release_uniform")
+    is_mask_rich = (
+        diffusion_type == "udlm"
+        and isinstance(configured_variant, str)
+        and configured_variant.lower() == "mask_rich_empirical"
+    )
+    if not is_mask_rich and (
+        UDLM_MASK_RICH_STATE_KEY in state_dict
+        or checkpoint_udlm.get("mask_mixture_weight") is not None
+    ):
+        raise RuntimeError(
+            "mask-rich mixture state/config cannot be loaded as another prior"
+        )
 
     udlm_inference_eps: float | None = None
     udlm_exclude_special_tokens: bool | None = None
@@ -2897,11 +2994,19 @@ def checkpoint_metadata(
                     "Checkpoint training.antithetic_sampling must be a boolean"
                 )
             expected_mix = None
-            if udlm_prior_variant == "empirical_frequency":
+            if udlm_prior_variant in {"empirical_frequency", "mask_rich_empirical"}:
                 expected_mix = _strict_probability(
                     checkpoint_udlm.get("empirical_uniform_mix"),
                     "Checkpoint training.udlm.empirical_uniform_mix",
                 )
+            expected_mask_mix = (
+                _strict_mask_mixture_weight(
+                    checkpoint_udlm.get("mask_mixture_weight"),
+                    "Checkpoint training.udlm.mask_mixture_weight",
+                )
+                if is_mask_rich
+                else None
+            )
             udlm_prior_metadata = validate_udlm_prior_metadata_record(
                 checkpoint_prior_metadata,
                 expected_variant=udlm_prior_variant,
@@ -2911,6 +3016,7 @@ def checkpoint_metadata(
                 expected_noise_eps=noise_eps,
                 expected_antithetic_sampling=antithetic_sampling,
                 expected_uniform_mixture_weight=expected_mix,
+                expected_mask_mixture_weight=expected_mask_mix,
                 state_dict=state_dict,
             )
             udlm_prior_metadata_sha256 = _canonical_json_sha256(udlm_prior_metadata)

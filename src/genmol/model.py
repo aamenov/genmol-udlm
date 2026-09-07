@@ -71,6 +71,7 @@ UDLM_PRIOR_CHECKPOINT_KEY = "udlm_prior_metadata"
 UDLM_CONDITIONING_CHECKPOINT_KEY = "udlm_conditioning_metadata"
 UDLM_DENOISER_CHECKPOINT_KEY = "udlm_denoiser_metadata"
 UDLM_DENOISER_STATE_KEY = "_udlm_denoiser_ce_version"
+UDLM_MASK_RICH_STATE_KEY = "_udlm_mask_rich_mixture_weight_bits"
 UDLM_DENOISER_METADATA = {
     "schema_version": 1,
     "parameterization": "x0_denoiser",
@@ -80,7 +81,7 @@ UDLM_DENOISER_METADATA = {
 UDLM_CONDITIONING_METADATA_SCHEMA_VERSION = 1
 OFFICIAL_UDLM_REFERENCE_REVISION = "edb0f8c28b7caeb4ea7a06a2fee8d74ab6da1661"
 UDLM_PRIOR_VARIANTS = frozenset(
-    {"release_uniform", "schedule_uniform", "empirical_frequency"}
+    {"release_uniform", "schedule_uniform", "empirical_frequency", "mask_rich_empirical"}
 )
 CONSTANT_WITH_LINEAR_WARMUP = "constant_with_linear_warmup"
 HALF_COSINE_WITH_LINEAR_WARMUP_AND_FLOOR = (
@@ -116,6 +117,15 @@ UDLM_PRIOR_VARIANT_IDENTITIES = {
             "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl"
         ),
         "prior_source": "pinned_frequency_artifact_uniform_mixture",
+    },
+    "mask_rich_empirical": {
+        "comparison_role": "mask_rich_empirical_prior_treatment",
+        "process_family": "rank_one_continuous_categorical",
+        "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+        "objective_scope": (
+            "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl"
+        ),
+        "prior_source": "mask_point_mass_mixture_with_pinned_smoothed_frequency",
     },
 }
 
@@ -450,9 +460,9 @@ def _build_udlm_conditioning_metadata(
 class UDLMPriorMetadata:
     """Immutable identity for one configured UDLM corruption process.
 
-    The two categorical variants deliberately share ``process_family`` and
-    ``schedule_variant``.  This makes the uniform categorical variant the
-    schedule-repair control for the empirical-prior treatment.
+    Categorical variants deliberately share ``process_family`` and
+    ``schedule_variant``. The uniform categorical variant is the
+    schedule-repair control for the empirical-prior treatments.
     """
 
     schema_version: int
@@ -493,6 +503,15 @@ class UDLMPriorMetadata:
         record = asdict(self)
         record["excluded_token_ids"] = list(self.excluded_token_ids)
         return record
+
+
+@dataclass(frozen=True)
+class UDLMMaskRichPriorMetadata(UDLMPriorMetadata):
+    """Additional identity fields only for the explicitly selected MASK mixture."""
+
+    mask_mixture_weight: float
+    mask_token_id: int
+    base_stationary_probs_sha256: str
 
 
 def _canonical_sequence_sha256(values: list[int] | list[float]) -> str:
@@ -694,6 +713,15 @@ def _validate_uniform_mixture_weight(value: object) -> float:
     return weight
 
 
+def _validate_mask_mixture_weight(value: object) -> float:
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise ValueError("training.udlm.mask_mixture_weight must be a real number")
+    weight = float(value)
+    if not math.isfinite(weight) or not 0.0 <= weight < 1.0:
+        raise ValueError("training.udlm.mask_mixture_weight must lie in [0, 1)")
+    return 0.0 if weight == 0.0 else weight
+
+
 def _build_udlm_process(
     *,
     variant: str,
@@ -704,12 +732,23 @@ def _build_udlm_process(
     antithetic_sampling: bool,
     empirical_uniform_mix: object,
     tokenizer,
+    mask_mixture_weight: object = None,
 ) -> tuple[ContinuousUniformDiffusion, UDLMPriorMetadata]:
     """Construct one explicit UDLM prior variant and its immutable identity."""
 
     if variant not in UDLM_PRIOR_VARIANTS:
         allowed = ", ".join(sorted(UDLM_PRIOR_VARIANTS))
         raise ValueError(f"training.udlm.prior_variant must be one of: {allowed}")
+    mask_weight = None
+    mask_token_id = None
+    base_prior_sha256 = None
+    if variant == "mask_rich_empirical":
+        mask_weight = _validate_mask_mixture_weight(mask_mixture_weight)
+        mask_token_id = tokenizer.mask_token_id
+        if type(mask_token_id) is not int:
+            raise ValueError("mask-rich prior requires an integer MASK token ID")
+    elif mask_mixture_weight is not None:
+        raise ValueError("mask_mixture_weight requires prior_variant=mask_rich_empirical")
     excluded = tuple(sorted(set(int(token_id) for token_id in excluded_token_ids)))
     active_token_ids = [
         token_id for token_id in range(model_vocab_size) if token_id not in excluded
@@ -717,6 +756,8 @@ def _build_udlm_process(
     active_size = len(active_token_ids)
     if active_size < 2:
         raise ValueError("the UDLM diffusion alphabet must contain at least 2 tokens")
+    if variant == "mask_rich_empirical" and mask_token_id not in active_token_ids:
+        raise ValueError("mask-rich prior requires MASK in the active diffusion alphabet")
     uniform_probs = [1.0 / active_size] * active_size
 
     artifact = None
@@ -769,6 +810,15 @@ def _build_udlm_process(
                 raise ValueError(
                     "smoothed empirical prior failed active-alphabet normalization"
                 )
+            if variant == "mask_rich_empirical":
+                base_probs = torch.tensor(stationary_probs, dtype=torch.float64)
+                base_probs /= base_probs.sum()
+                base_prior_sha256 = _canonical_sequence_sha256(base_probs.tolist())
+                # At zero weight, use the original empirical constructor path
+                # exactly, avoiding an extra floating-point normalization.
+                if mask_weight > 0.0:
+                    stationary_probs = ((1.0 - mask_weight) * base_probs).tolist()
+                    stationary_probs[active_token_ids.index(mask_token_id)] += mask_weight
 
         process = ContinuousCategoricalDiffusion(
             num_classes=model_vocab_size,
@@ -863,6 +913,13 @@ def _build_udlm_process(
         tokenizer_revision=SAFE_GPT_TOKENIZER_REVISION,
         tokenizer_json_sha256=SAFE_GPT_TOKENIZER_SHA256,
     )
+    if variant == "mask_rich_empirical":
+        metadata = UDLMMaskRichPriorMetadata(
+            **asdict(metadata),
+            mask_mixture_weight=mask_weight,
+            mask_token_id=mask_token_id,
+            base_stationary_probs_sha256=base_prior_sha256,
+        )
     return process, metadata
 
 class GenMol(L.LightningModule):
@@ -891,6 +948,11 @@ class GenMol(L.LightningModule):
         if self.diffusion_type not in {'mdlm', 'udlm'}:
             raise ValueError("training.diffusion must be either 'mdlm' or 'udlm'")
         udlm_config = self.config.training.get('udlm', {})
+        if self.diffusion_type != 'udlm' and (
+            str(udlm_config.get('prior_variant', '')).lower() == 'mask_rich_empirical'
+            or udlm_config.get('mask_mixture_weight') is not None
+        ):
+            raise ValueError("mask-rich prior configuration requires training.diffusion=udlm")
         self.udlm_parameterization = udlm_config.get('parameterization', 'raw_loo')
         if (
             not isinstance(self.udlm_parameterization, str)
@@ -901,7 +963,7 @@ class GenMol(L.LightningModule):
             )
         if self.udlm_parameterization == 'x0_denoiser':
             if self.diffusion_type != 'udlm' or udlm_config.get('prior_variant') not in {
-                'schedule_uniform', 'empirical_frequency'
+                'schedule_uniform', 'empirical_frequency', 'mask_rich_empirical'
             }:
                 raise ValueError(
                     "x0_denoiser requires schedule-consistent categorical UDLM"
@@ -979,7 +1041,18 @@ class GenMol(L.LightningModule):
                     'empirical_uniform_mix', None
                 ),
                 tokenizer=self.tokenizer,
+                mask_mixture_weight=udlm_config.get('mask_mixture_weight', None),
             )
+            if prior_variant == 'mask_rich_empirical':
+                # Integer bits preserve the exact mixture identity under bf16/half
+                # casts. This also distinguishes lambda=0 from an E checkpoint.
+                self.register_buffer(
+                    UDLM_MASK_RICH_STATE_KEY,
+                    torch.tensor(
+                        self._udlm_prior_metadata.mask_mixture_weight,
+                        dtype=torch.float64,
+                    ).view(torch.int64),
+                )
         # set up ema
         if self.config.training.ema > 0:
             self.ema = ExponentialMovingAverage(self.backbone.parameters(), decay=self.config.training.ema)
@@ -1030,6 +1103,20 @@ class GenMol(L.LightningModule):
             return
         if self.diffusion_type != "udlm":
             raise RuntimeError("UDLM prior metadata is attached to a non-UDLM model")
+        if metadata.variant == "mask_rich_empirical":
+            config = self.config.training.get("udlm", {})
+            if (
+                not isinstance(metadata, UDLMMaskRichPriorMetadata)
+                or str(config.get("prior_variant", "")).lower() != metadata.variant
+                or _validate_mask_mixture_weight(config.get("mask_mixture_weight"))
+                != metadata.mask_mixture_weight
+                or self.mask_index != metadata.mask_token_id
+                or self.tokenizer.mask_token_id != metadata.mask_token_id
+                or _validate_uniform_mixture_weight(config.get("empirical_uniform_mix"))
+                != metadata.uniform_mixture_weight
+            ):
+                raise RuntimeError("runtime mask-rich prior configuration changed")
+            self._validate_mask_rich_prior_state(self.state_dict())
         expected_class = (
             ContinuousUniformDiffusion
             if metadata.variant == "release_uniform"
@@ -1105,6 +1192,7 @@ class GenMol(L.LightningModule):
     ) -> None:
         """Reject checkpoint state that would contradict configured provenance."""
 
+        self._validate_mask_rich_prior_state(state_dict)
         metadata = self.udlm_prior_metadata
         prior_key = "mdlm.stationary_probs"
         if metadata is None:
@@ -1153,6 +1241,25 @@ class GenMol(L.LightningModule):
                 "checkpoint stationary prior disagrees with the configured, "
                 "verified UDLM prior"
             )
+
+    def _validate_mask_rich_prior_state(self, state_dict) -> None:
+        metadata = self.udlm_prior_metadata
+        marker = state_dict.get(UDLM_MASK_RICH_STATE_KEY)
+        if metadata is None or metadata.variant != "mask_rich_empirical":
+            if UDLM_MASK_RICH_STATE_KEY in state_dict:
+                raise ValueError("mask-rich prior state cannot be loaded as another variant")
+            return
+        expected = torch.tensor(
+            metadata.mask_mixture_weight, dtype=torch.float64
+        ).view(torch.int64).item()
+        if (
+            not isinstance(marker, torch.Tensor)
+            or marker.shape != torch.Size([])
+            or marker.dtype != torch.int64
+            or marker.device.type == "meta"
+            or marker.item() != expected
+        ):
+            raise ValueError("mask-rich prior checkpoint requires its exact mixture marker")
 
     def _validate_udlm_prior_checkpoint(self, checkpoint: Mapping[str, object]) -> None:
         """Validate categorical checkpoint metadata before tensors are loaded."""
