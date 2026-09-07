@@ -243,7 +243,10 @@ def test_existing_trained_ema_gate_rejects_truthful_zero_update_receipt(
 
 def test_export_does_not_change_existing_model_sampling_or_acceptance_source():
     # The exporter has no authority to weaken historical sampling/checkpoint gates.
-    baseline = "48473d4febbd06d9bc07986ca96ceb93926c91ec"
+    # This integration also includes the independently reviewed opt-in context
+    # prototype. Compare its explicit predecessor bytes; its separate tests keep
+    # checking the old/default sampling law against the original 48473d4 source.
+    baseline = "0caa12397ad4c79b315d971c8de41b4af1d2afe6"
     for relative in (
         "src/genmol/model.py",
         "src/genmol/sampler.py",
