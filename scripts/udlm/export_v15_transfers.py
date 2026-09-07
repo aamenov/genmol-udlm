@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import argparse
 import json
 import os
 from pathlib import Path
@@ -14,7 +15,6 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[2]
 PROJECT = ROOT.parents[1]
-PLAN = ROOT / "experiments/udlm/protocols/engineering_v15_transfer_exports/panel.json"
 
 
 def encode(value):
@@ -98,11 +98,15 @@ def stop(process):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--plan", type=Path, required=True)
+    args = parser.parse_args()
+    plan_path = args.plan.resolve(strict=True)
     if Path(sys.prefix).resolve() != PROJECT / ".venv":
         raise ValueError("use project .venv")
     own_head = source(ROOT)
-    plan_record = record(PLAN)
-    plan = json.loads(PLAN.read_text())
+    plan_record = record(plan_path)
+    plan = json.loads(plan_path.read_text())
     check_inputs(plan, own_head)
     output = Path(plan["output_root"]).resolve()
     if not output.is_relative_to(PROJECT):
@@ -132,7 +136,7 @@ def main():
         backbone_state = None
         for entry in plan["entries"]:
             check_inputs(plan, own_head)
-            if record(PLAN) != plan_record:
+            if record(plan_path) != plan_record:
                 raise ValueError("plan changed")
             current = {"entry_id": entry["entry_id"], "status": "failed", "started_at": now()}
             terminal["entries"].append(current)
@@ -187,7 +191,7 @@ def main():
             current.update(status="completed", manifest=record(manifest_path), checkpoint=manifest["checkpoint"], finished_at=now())
             write(output / f"{entry['entry_id']}.exit.json", current)
             print(json.dumps({"entry_id": entry["entry_id"], "status": "completed", "checkpoint": manifest["checkpoint"]}), flush=True)
-        if record(PLAN) != plan_record:
+        if record(plan_path) != plan_record:
             raise ValueError("plan changed after exports")
         terminal.update(status="completed", identical_all_four_backbone_state=True,
                         backbone_state_sha256=hashlib.sha256(encode(backbone_state)).hexdigest(),
