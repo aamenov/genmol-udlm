@@ -909,6 +909,13 @@ class GenMol(L.LightningModule):
             self.register_buffer(
                 UDLM_DENOISER_STATE_KEY, torch.tensor(1, dtype=torch.int64)
             )
+        self.udlm_mask_all_special_tokens = udlm_config.get(
+            'mask_all_special_tokens', self.udlm_parameterization == 'x0_denoiser'
+        )
+        if type(self.udlm_mask_all_special_tokens) is not bool:
+            raise ValueError("training.udlm.mask_all_special_tokens must be boolean")
+        if self.udlm_parameterization == 'x0_denoiser' and not self.udlm_mask_all_special_tokens:
+            raise ValueError("x0_denoiser requires mask_all_special_tokens=true")
 
         backbone_config = BertConfig.from_dict(dict(self.config.model))
         if self.diffusion_type == 'udlm':
@@ -1467,14 +1474,14 @@ class GenMol(L.LightningModule):
         """Select molecular content positions while preserving sequence framing."""
 
         token_mask = attention_mask.to(dtype=torch.bool)
-        if self.diffusion_type == 'udlm' and self.udlm_parameterization == 'x0_denoiser':
+        if self.diffusion_type == 'udlm' and self.udlm_mask_all_special_tokens:
             # Boolean attention masks may alias the input after .to(bool).
-            # Selecting CE targets must not remove visible framing from BERT.
+            # The explicit common CT/CE policy preserves BERT's visible framing.
             token_mask = token_mask.clone()
         for token_id in (self.pad_index, self.bos_index, self.eos_index):
             if token_id is not None:
                 token_mask &= input_ids != token_id
-        if self.diffusion_type == 'udlm' and self.udlm_parameterization == 'x0_denoiser':
+        if self.diffusion_type == 'udlm' and self.udlm_mask_all_special_tokens:
             for token_id in self.tokenizer.all_special_ids:
                 token_mask &= input_ids != token_id
         return token_mask
