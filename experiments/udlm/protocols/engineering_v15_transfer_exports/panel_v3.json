@@ -1,0 +1,150 @@
+{
+  "attempt": 3,
+  "child_timeout_seconds": 1200,
+  "entries": [
+    {
+      "config": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_export_architecture_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/configs_v3/r099.json",
+      "entry_id": "r099",
+      "mask_mixture_weight": 0.99,
+      "parameterization": "raw_loo"
+    },
+    {
+      "config": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_export_architecture_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/configs_v3/ce099.json",
+      "entry_id": "ce099",
+      "mask_mixture_weight": 0.99,
+      "parameterization": "x0_denoiser"
+    },
+    {
+      "config": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_export_architecture_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/configs_v3/r0999.json",
+      "entry_id": "r0999",
+      "mask_mixture_weight": 0.999,
+      "parameterization": "raw_loo"
+    },
+    {
+      "config": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_export_architecture_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/configs_v3/ce0999.json",
+      "entry_id": "ce0999",
+      "mask_mixture_weight": 0.999,
+      "parameterization": "x0_denoiser"
+    }
+  ],
+  "exporter_revision": "7b57a86b335d993e1a9500642f04fe999246be97",
+  "exporter_root": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree",
+  "initialization_seed": 2509,
+  "inputs": [
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_design_worktree/experiments/udlm/designs/engineering_v15_zero_update_transfer.md",
+      "sha256": "a2bf4f0662cce3518154b58b8b7660f4ebe58e851677894f70eb5432935a304c",
+      "size_bytes": 7684
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_export_architecture_worktree/scripts/udlm/export_v15_transfers.py",
+      "sha256": "554ca9ddee95fcbea67d56c0d13b260c7655df017b2d51433fa4e36276e3a5d5",
+      "size_bytes": 9739
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+      "sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "size_bytes": 1396998679
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_export_architecture_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/configs_v3/r099.json",
+      "sha256": "71390680d08fb3809e2c4fa3065f25f9d2b257aeaf354294f3452eb84a8ae7fe",
+      "size_bytes": 1173
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_export_architecture_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/configs_v3/ce099.json",
+      "sha256": "733280ab74a69da51f7e27eac5582eae4aace50c681ee347df7614250e31fa5d",
+      "size_bytes": 1177
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_export_architecture_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/configs_v3/r0999.json",
+      "sha256": "82c375782dbc64a802f6dd94e7a216169eaf035163208c16c0f76cb6703dc5d9",
+      "size_bytes": 1174
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_export_architecture_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/configs_v3/ce0999.json",
+      "sha256": "8c17ac062e406f77c78145f12536363571a952082f47f687256ec42ba9b1c408",
+      "size_bytes": 1178
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/scripts/udlm/export_zero_update_transfer.py",
+      "sha256": "a58e721a554ddef4b9f2a2bc4309efc556f0e0fffad9dd78575cd5393e1ad4f9",
+      "size_bytes": 21944
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/model.py",
+      "sha256": "177d0f44500b152268e8d5e855cf0f36370f4f2440cc4e3c04ab2d613091fec3",
+      "size_bytes": 71545
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/backbone.py",
+      "sha256": "0961363a10717b8d4aa82bdb1ff150853f00fb34087d11f8fff7af6bd209b618",
+      "size_bytes": 18764
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/diffusion.py",
+      "sha256": "07e7cc4f0a65b21224196341a1cd2460f146e3356e3c902f3dbca6cb2fc21a17",
+      "size_bytes": 41847
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/denoiser.py",
+      "sha256": "ca3b968b529eb08bb6d4f1ecbbad087ee4a5eae465c316634327746603f2b21b",
+      "size_bytes": 5839
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/utils/checkpoint_io.py",
+      "sha256": "80e22e83d4b6838697d06ab6f08880011f49cdc3f3384f7ed4392400abbf155a",
+      "size_bytes": 6626
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/utils/ema.py",
+      "sha256": "9b3fda01fe5f68d8e265a33423341d6bef460c480316ca8ee459151958efed49",
+      "size_bytes": 4213
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/utils/utils_data.py",
+      "sha256": "981bdc9c3b10b80ab113bcba0bc6709febcb2b9f3d4447a5c5291d6f9daaaee7",
+      "size_bytes": 6613
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/utils/utils_save.py",
+      "sha256": "f092d274a40406feb2df7caabd4ac36a96b15fec08d403547c9c4357a5b3b8f5",
+      "size_bytes": 2172
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/utils/utils_moco.py",
+      "sha256": "5af0f47805f028463aa44e88e0ed25e8d6f852f727608edd38d5c9353ddd24c1",
+      "size_bytes": 3617
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/experiments/udlm/token_frequency/train_first_10000.json",
+      "sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+      "size_bytes": 21043
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v15_transfer_exports_20260907/terminal.json",
+      "sha256": "223a9875377e8e82538255664effb469f1cf3381189cff6b704ac65c1d97cae1",
+      "size_bytes": 2450
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v15_transfer_exports_attempt2_20260907/terminal.json",
+      "sha256": "70c93cd1637824a2a661b1a87f0a55891830f3311d48555547ed4fb9e551c6a7",
+      "size_bytes": 2483
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v15_export_architecture_diagnostic_20260907.json",
+      "sha256": "66deac8e0217eb610f06671636e4867582015fa4b2801e8aa0336438394e4a80",
+      "size_bytes": 1655
+    }
+  ],
+  "operation": "fixed_v15_cpu_transfer_exports",
+  "output_root": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v15_transfer_exports_attempt3_20260907",
+  "predecessor_failed_terminal": {
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v15_transfer_exports_attempt2_20260907/terminal.json",
+    "sha256": "70c93cd1637824a2a661b1a87f0a55891830f3311d48555547ed4fb9e551c6a7"
+  },
+  "repair_scope": "Correct layer_norm_eps from JSON string to numeric1e-12, exactly matching source BERT. Unchanged strict exporter, intended architecture, four priors/interpretations, seed, and molecular panel.",
+  "schema_version": 1,
+  "source_checkpoint": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+  "source_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6"
+}
