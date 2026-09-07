@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import math
+import numbers
 from pathlib import Path
 
 import yaml
@@ -41,6 +42,36 @@ SAMPLING_KEYS = {
     "gibbs_corrector",
     "temperature_space",
 }
+ORACLE_CALL_PROTOCOL = {
+    "input": "singleton list containing the CachedOracle canonical SMILES",
+    "output": "exactly one finite real scalar; booleans rejected",
+    "exception_policy": "propagate ordinary non-docking TDC list-path evaluator failures",
+    "budget": "CachedOracle charges only after a finite successful return",
+}
+
+
+def singleton_list_oracle(evaluator):
+    """Use TDC's error-propagating list dispatch without changing valid scores.
+
+    The installed scalar dispatch silently converts evaluator exceptions to zero.
+    CachedOracle has already canonicalized/validated this one molecule and owns
+    the unique-call budget. A failed evaluator never enters that cache.
+    """
+
+    def score(canonical_smiles):
+        values = evaluator([canonical_smiles])
+        if type(values) is not list or len(values) != 1:
+            raise ValueError("PMO singleton-list oracle must return exactly one score")
+        value = values[0]
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, numbers.Real)
+            or not math.isfinite(value)
+        ):
+            raise ValueError("PMO oracle score must be a finite real scalar")
+        return float(value)
+
+    return score
 
 
 def _fingerprint(path):
@@ -214,6 +245,7 @@ def prepare(contract, *, model_path, device, gamma, guidance_scale, sampler_clas
         ),
         "failure_policy": "propagate generation failures even if released addmask swallows them",
         "fallback_policy": "retain released pre-generation parent fallback, record zero generation calls/NFE",
+        "oracle_call_protocol": dict(ORACLE_CALL_PROTOCOL),
     }
     if sampling.get("temperature_space") == "x0_denoiser":
         receipt.update(benchmark.DENOISER_TEMPERATURE_PROTOCOL)
