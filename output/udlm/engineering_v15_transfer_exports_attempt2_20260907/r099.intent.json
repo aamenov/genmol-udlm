@@ -1,0 +1,30 @@
+{
+  "command": [
+    "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "-u",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/scripts/udlm/export_zero_update_transfer.py",
+    "--config",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_design_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/r099.json",
+    "--source-checkpoint",
+    "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+    "--expected-source-sha256",
+    "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+    "--seed",
+    "2509",
+    "--output-dir",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v15_transfer_exports_attempt2_20260907/r099"
+  ],
+  "cpu_environment": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "HF_HUB_OFFLINE": "1",
+    "MKL_NUM_THREADS": "4",
+    "OMP_NUM_THREADS": "4",
+    "OPENBLAS_NUM_THREADS": "4",
+    "PYTHONHASHSEED": "0",
+    "TOKENIZERS_PARALLELISM": "false",
+    "TRANSFORMERS_OFFLINE": "1"
+  },
+  "entry_id": "r099",
+  "started_at": "2026-09-07T14:53:46.353327+00:00",
+  "status": "failed"
+}

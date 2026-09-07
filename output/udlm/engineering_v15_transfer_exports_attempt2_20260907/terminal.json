@@ -1,0 +1,69 @@
+{
+  "entries": [
+    {
+      "cleanup": {
+        "group_present_at_end": false,
+        "kill_sent": false,
+        "pid": 1811302,
+        "returncode": 1,
+        "term_sent": false
+      },
+      "command": [
+        "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+        "-u",
+        "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/scripts/udlm/export_zero_update_transfer.py",
+        "--config",
+        "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_design_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/r099.json",
+        "--source-checkpoint",
+        "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+        "--expected-source-sha256",
+        "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+        "--seed",
+        "2509",
+        "--output-dir",
+        "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v15_transfer_exports_attempt2_20260907/r099"
+      ],
+      "entry_id": "r099",
+      "log": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v15_transfer_exports_attempt2_20260907/r099.log",
+        "sha256": "aede1e4307161f82b3463e0800d357f713eb7dd68420a8412f1507b335cba275",
+        "size_bytes": 1442
+      },
+      "pid": 1811302,
+      "process_group_exit_grace": {
+        "elapsed_seconds": 5.477492231875658e-05,
+        "group_present_at_end": false,
+        "process_group_id": 1811302
+      },
+      "returncode": 1,
+      "runtime_seconds": 42.451108414912596,
+      "started_at": "2026-09-07T14:53:46.353327+00:00",
+      "status": "failed"
+    },
+    {
+      "entry_id": "ce099",
+      "status": "unlaunched"
+    },
+    {
+      "entry_id": "r0999",
+      "status": "unlaunched"
+    },
+    {
+      "entry_id": "ce0999",
+      "status": "unlaunched"
+    }
+  ],
+  "error": {
+    "message": "export child failed: r099",
+    "type": "RuntimeError"
+  },
+  "finished_at": "2026-09-07T14:54:28.807919+00:00",
+  "request": {
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v15_transfer_exports_attempt2_20260907/request.json",
+    "sha256": "283ccb15ea6259d25acc332326c149b40c88cee22ae22211c904996bad6b4099",
+    "size_bytes": 1119
+  },
+  "runtime_seconds": 46.58457589102909,
+  "schema_version": 1,
+  "status": "failed"
+}

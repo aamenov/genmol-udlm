@@ -1,0 +1,13 @@
+🚨 `inputs` is part of SAFEDoubleHeadsModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/safe/trainer/model.py.
+2026-09-07 18:54:06.428 | INFO     | safe.tokenizer:from_pretrained:598 - Offline mode: forcing local_files_only=True
+2026-09-07 18:54:17.054 | INFO     | safe.tokenizer:from_pretrained:598 - Offline mode: forcing local_files_only=True
+Traceback (most recent call last):
+  File "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/scripts/udlm/export_zero_update_transfer.py", line 558, in <module>
+    main()
+  File "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/scripts/udlm/export_zero_update_transfer.py", line 547, in main
+    result = export_checkpoint(
+  File "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/scripts/udlm/export_zero_update_transfer.py", line 461, in export_checkpoint
+    initialized = validate_initialized(model, reference)
+  File "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/scripts/udlm/export_zero_update_transfer.py", line 291, in validate_initialized
+    raise ValueError("target BERT architecture differs from source MDLM")
+ValueError: target BERT architecture differs from source MDLM

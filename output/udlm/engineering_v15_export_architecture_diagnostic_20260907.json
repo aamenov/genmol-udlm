@@ -1,0 +1,58 @@
+{
+  "bert_config_differences": {
+    "layer_norm_eps": {
+      "source": 1e-12,
+      "source_type": "float",
+      "target": "1e-12",
+      "target_type": "str"
+    }
+  },
+  "declared_target_model_config": {
+    "attention_probs_dropout_prob": 0.1,
+    "attn_implementation": null,
+    "classifier_dropout": null,
+    "hidden_act": "gelu",
+    "hidden_dropout_prob": 0.1,
+    "hidden_size": 768,
+    "initializer_range": 0.02,
+    "intermediate_size": 3072,
+    "layer_norm_eps": "1e-12",
+    "max_position_embeddings": 256,
+    "model_type": "bert",
+    "num_attention_heads": 12,
+    "num_hidden_layers": 12,
+    "pad_token_id": 3,
+    "position_embedding_type": "absolute",
+    "torch_dtype": "float32",
+    "type_vocab_size": 2,
+    "use_cache": true,
+    "vocab_size": 1880
+  },
+  "gpu_jobs": 0,
+  "model_constructions": 0,
+  "model_forward_calls": 0,
+  "molecular_oracle_calls": 0,
+  "operation": "cpu_metadata_only_bert_configuration_comparison",
+  "source_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+  "source_model_config": {
+    "attention_probs_dropout_prob": 0.1,
+    "attn_implementation": null,
+    "classifier_dropout": null,
+    "hidden_act": "gelu",
+    "hidden_dropout_prob": 0.1,
+    "hidden_size": 768,
+    "initializer_range": 0.02,
+    "intermediate_size": 3072,
+    "layer_norm_eps": 1e-12,
+    "max_position_embeddings": 256,
+    "model_type": "bert",
+    "num_attention_heads": 12,
+    "num_hidden_layers": 12,
+    "pad_token_id": 3,
+    "position_embedding_type": "absolute",
+    "torch_dtype": "float32",
+    "type_vocab_size": 2,
+    "use_cache": true,
+    "vocab_size": 1880
+  }
+}

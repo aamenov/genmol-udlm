@@ -1,0 +1,112 @@
+{
+  "config": {
+    "model": {
+      "attention_probs_dropout_prob": 0.1,
+      "classifier_dropout": null,
+      "hidden_act": "gelu",
+      "hidden_dropout_prob": 0.1,
+      "hidden_size": 768,
+      "initializer_range": 0.02,
+      "intermediate_size": 3072,
+      "layer_norm_eps": "1e-12",
+      "max_position_embeddings": 256,
+      "model_type": "bert",
+      "num_attention_heads": 12,
+      "num_hidden_layers": 12,
+      "pad_token_id": 3,
+      "position_embedding_type": "absolute",
+      "torch_dtype": "float32",
+      "type_vocab_size": 2,
+      "use_cache": true,
+      "vocab_size": 1880
+    },
+    "training": {
+      "antithetic_sampling": true,
+      "diffusion": "udlm",
+      "ema": 0.9999,
+      "global_mean_loss": true,
+      "sampling_eps": 0.001,
+      "udlm": {
+        "conditioning_variant": "film_adaln",
+        "empirical_uniform_mix": 0.0002,
+        "exclude_special_tokens": false,
+        "mask_all_special_tokens": true,
+        "mask_mixture_weight": 0.99,
+        "noise_eps": 0.001,
+        "parameterization": "raw_loo",
+        "prior_variant": "mask_rich_empirical",
+        "time_embedding_size": 256,
+        "zero_init_conditioning": false
+      },
+      "use_bracket_safe": false
+    }
+  },
+  "config_input": {
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_design_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/r099.json",
+    "sha256": "7ea2016d27658bbb9ba031266e52b66493d3992f9831678a5173279b2560030f",
+    "size_bytes": 1142
+  },
+  "device": "cpu",
+  "example_exposures": 0,
+  "expected_source_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+  "operation": "zero_update_mdlm_ema_transfer",
+  "schema_version": 1,
+  "seed": 2509,
+  "source": {
+    "files": {
+      "scripts/udlm/export_zero_update_transfer.py": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/scripts/udlm/export_zero_update_transfer.py",
+        "sha256": "a58e721a554ddef4b9f2a2bc4309efc556f0e0fffad9dd78575cd5393e1ad4f9",
+        "size_bytes": 21944
+      },
+      "src/genmol/backbone.py": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/backbone.py",
+        "sha256": "0961363a10717b8d4aa82bdb1ff150853f00fb34087d11f8fff7af6bd209b618",
+        "size_bytes": 18764
+      },
+      "src/genmol/denoiser.py": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/denoiser.py",
+        "sha256": "ca3b968b529eb08bb6d4f1ecbbad087ee4a5eae465c316634327746603f2b21b",
+        "size_bytes": 5839
+      },
+      "src/genmol/diffusion.py": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/diffusion.py",
+        "sha256": "07e7cc4f0a65b21224196341a1cd2460f146e3356e3c902f3dbca6cb2fc21a17",
+        "size_bytes": 41847
+      },
+      "src/genmol/model.py": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/model.py",
+        "sha256": "177d0f44500b152268e8d5e855cf0f36370f4f2440cc4e3c04ab2d613091fec3",
+        "size_bytes": 71545
+      },
+      "src/genmol/utils/checkpoint_io.py": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/utils/checkpoint_io.py",
+        "sha256": "80e22e83d4b6838697d06ab6f08880011f49cdc3f3384f7ed4392400abbf155a",
+        "size_bytes": 6626
+      },
+      "src/genmol/utils/ema.py": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/utils/ema.py",
+        "sha256": "9b3fda01fe5f68d8e265a33423341d6bef460c480316ca8ee459151958efed49",
+        "size_bytes": 4213
+      },
+      "src/genmol/utils/utils_data.py": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/utils/utils_data.py",
+        "sha256": "981bdc9c3b10b80ab113bcba0bc6709febcb2b9f3d4447a5c5291d6f9daaaee7",
+        "size_bytes": 6613
+      },
+      "src/genmol/utils/utils_moco.py": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/utils/utils_moco.py",
+        "sha256": "5af0f47805f028463aa44e88e0ed25e8d6f852f727608edd38d5c9353ddd24c1",
+        "size_bytes": 3617
+      },
+      "src/genmol/utils/utils_save.py": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_config_worktree/src/genmol/utils/utils_save.py",
+        "sha256": "f092d274a40406feb2df7caabd4ac36a96b15fec08d403547c9c4357a5b3b8f5",
+        "size_bytes": 2172
+      }
+    },
+    "head": "7b57a86b335d993e1a9500642f04fe999246be97"
+  },
+  "source_checkpoint": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+  "training_updates": 0
+}
