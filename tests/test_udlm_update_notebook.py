@@ -175,6 +175,32 @@ def test_stage24_compares_resolved_training_inputs_without_gpu(monkeypatch):
     assert all(row["requested_exposures"] == 128000 for row in plans)
 
 
+def test_stage25_pairs_seeds_and_distinguishes_toy_counts_from_results():
+    markdown, cell = updater._objective_evaluation_cells()  # noqa: SLF001
+    for fragment in (
+        "Paper correspondence", "Intuition and motivation", "Mathematics",
+        "Small concrete example", "shapes, and invariants",
+        "Differences from released", "Comprehension checkpoint",
+        "synthetic teaching data", "not a confidence interval",
+        "remains failed", "final seeds 0/1/2 remain reserved",
+    ):
+        assert fragment in markdown["source"]
+    tree = ast.parse(cell["source"])
+    assert {node.module for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)} == {
+        "fractions", "math"
+    }
+    namespace = {}
+    exec(compile(tree, cell["id"], "exec"), namespace)
+    assert namespace["stage25_toy"]["mean_difference"] == 0
+    assert namespace["stage25_toy"]["paired_sample_sd"] == pytest.approx(0.02**0.5)
+    assert namespace["stage25_runs"] == 8
+    compare = namespace["stage25_paired_quality"]
+    with pytest.raises(ValueError, match="same two or more seeds"):
+        compare({1600: 5, 1601: 7}, {1600: 6, 1602: 6}, 10)
+    with pytest.raises(ValueError, match="integers within requests"):
+        compare({1600: 5, 1601: 11}, {1600: 6, 1601: 6}, 10)
+
+
 def test_stage21_executes_independently_as_read_only_protocol_preview(monkeypatch):
     monkeypatch.chdir(REPOSITORY_ROOT)
     markdown, code_cell = updater._engineering_v5_cells()  # noqa: SLF001
@@ -606,8 +632,11 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
     assert ordered_ids.index("stage-24-objective-comparison") == (
         ordered_ids.index("stage-23-denoiser-ce-code") + 1
     )
-    assert ordered_ids.index("stage19-report-note") == (
+    assert ordered_ids.index("stage-25-objective-evaluation") == (
         ordered_ids.index("stage-24-objective-comparison-code") + 1
+    )
+    assert ordered_ids.index("stage19-report-note") == (
+        ordered_ids.index("stage-25-objective-evaluation-code") + 1
     )
 
 
