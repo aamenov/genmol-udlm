@@ -1,6 +1,6 @@
 # GenMol-UDLM project context
 
-## Active continuation: V10 complete, preparing a mask-rich CE prior
+## Active continuation: MASK-rich CE follow-up and fixed prior comparison
 
 V10 ended at 11:40:49 UTC on 2026-09-07; generation and independent CPU
 rescoring accepted all eight runs and 800 requests. The 128-to-512 predictor
@@ -27,14 +27,38 @@ exposure; both leases were released. The original failed attempt is immutable.
 Read `experiments/udlm/results/engineering_v11_prelaunch_incident.md`; terminal
 SHA-256 `6a4aa47e1f7b76ad5efc3ce03cd3e4a55c0db4d95778b0cf60cc55cab7207408`.
 
-V11b is being prepared as a separate attempt with identical fresh MDLM 50k EMA,
+V11b is the separate authorized attempt with identical fresh MDLM 50k EMA,
 seed 1500, 1,000 updates, global batch 128, microbatch 16, two GPUs, accumulation
 4, A1/L1, base smoothing 0.0002, MASK weight 0.9 and all-special clean-target mask.
-Its opt-in bounded availability wait occurs before the first training subprocess.
-Do not reuse or relabel the failed V11 namespace. V12's already published design
-fixes the later molecular comparison at four configurations, 800 requests and
-fresh seeds 2000/2001, with explicit infrastructure-only path amendment pending.
-No MASK-trained molecular result exists and final seeds 0/1/2 remain reserved.
+Its reviewed opt-in capacity wait lasts at most six hours, polling every 30
+seconds before the first training subprocess; it records every rejection and
+never retries a started child. The initial large checkpoint hash is verified
+before waiting; the training warm-start loader independently checks its expected
+SHA-256 again when loading. All 16 training source files remain byte-identical
+to the failed V11 launch revision. Do not reuse or relabel that failed namespace.
+
+After the clean pushed canonical dry-run, the fixed command is
+`/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python -u scripts/udlm/launch_mask_prior_followup_training.py --gpu-count 2`.
+Use named tmux `genmol-udlm-v11b-mask-ce`, controller log
+`output/logs/engineering-v11b-mask-ce-controller.log`, and immutable output
+`output/udlm/engineering_v11b/mask_ce_1000_b128_w2/`.
+Inspect live `gpu_telemetry.jsonl`, `launch_manifest.json`, the training log
+`output/logs/engineering_v11b/mask_ce_1000_b128_w2.training.log`, and eventual
+`terminal_manifest.json` before acting. Source/HEAD must stay frozen throughout
+waiting and training. Its protocol is
+`experiments/udlm/protocols/engineering_v11b_mask_prior.json`, SHA-256
+`5ecf638fa8fc7a3707a0497c8a358697610f52c8af7f2d6468458890e26368eb`.
+
+V12's published design and infrastructure amendment fix the later molecular
+comparison at empirical CE versus MASK-rich CE, temperatures 1.0/0.5, 128 NFE,
+seeds 2000/2001 and 100 requests per seed (four configurations, 800 requests).
+The MASK YAMLs now point explicitly to V11b. Materialize the executable
+checkpoint-bound protocol only after successful training and independent final
+checkpoint identity validation. The reviewed `design.prior_comparison` report
+feature computes both signed prior contrasts with correct CE/prior labels and
+all-pair withholding; 52 focused CPU tests passed. Historical V9 paired
+calculations and CSV bytes remain exact. No MASK-trained molecular result
+exists and final seeds 0/1/2 remain reserved.
 
 The frozen-MDLM CPU diagnostic and source/provenance clarification are published:
 `experiments/udlm/results/frozen_mdlm_transfer_20260907.md`. The same model has

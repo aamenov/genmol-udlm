@@ -38,9 +38,16 @@ UDLM authors.
 > [128-versus-512 predictor comparison](experiments/udlm/results/engineering_v10.md)
 > completed: quality changed by -0.5pp CT and +1.5pp CE with roughly four times
 > the generation time. A reviewed [mask-rich prior prototype](docs/udlm_mask_rich_prior_implementation.md)
-> and notebook Stage 26 support the next transfer hypothesis; it has no trained
-> molecular result yet. Current authorization is
-> at most two dynamically selected GPUs below 10% utilization.
+> and notebook Stage 26 support the next transfer hypothesis. The
+> [frozen MDLM diagnostic](experiments/udlm/results/frozen_mdlm_transfer_20260907.md)
+> found easier reconstruction under the MASK-rich corruption, which changes task
+> difficulty and is not molecular evidence. [V11 stopped before training](experiments/udlm/results/engineering_v11_prelaunch_incident.md)
+> after GPU capacity changed. The separate V11b arm preserves its training
+> settings and waits for eligible capacity before its single launch. The
+> [prospective V12 comparison](experiments/udlm/designs/engineering_v12_mask_prior_evaluation.md)
+> fixes 800 fresh requests and both signed prior contrasts; it requires the
+> validated new checkpoint. No MASK-trained molecular result exists. Current
+> authorization is at most two dynamically selected GPUs below 10% utilization.
 
 The main educational implementation is
 [`genmol_from_scratch.ipynb`](genmol_from_scratch.ipynb); exact experiment
