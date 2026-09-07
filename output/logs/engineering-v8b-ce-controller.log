@@ -1,0 +1,2 @@
+🚨 `inputs` is part of SAFEDoubleHeadsModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/safe/trainer/model.py.
+{"status": "completed", "terminal_manifest": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/terminal_manifest.json"}

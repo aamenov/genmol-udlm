@@ -1,0 +1,263 @@
+{
+  "artifact_hashes": {
+    "output/logs/engineering_v8b/ce_e_1000_b128_w2.training.log": "08f12ee0a8e758e75447de9dea9564757b005a68fd8e41fecf455f1887eb128c",
+    "output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+    "output/udlm/engineering_v8b/ce_e_1000_b128_w2/gpu_telemetry.jsonl": "0470e74eea5542c3d81437f5ca69d922ba3cc4d03274d1a553c912ae91467676"
+  },
+  "checkpoint": {
+    "ctime_ns": 1788779286567337099,
+    "device": 48,
+    "finite_tensor_count": 1156,
+    "global_step": 1000,
+    "inode": 2629704011,
+    "link_count": 1,
+    "mode": 33152,
+    "mtime_ns": 1788779280192121684,
+    "relative_path": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+    "sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+    "size_bytes": 1636492999
+  },
+  "completed_example_exposures": 128000,
+  "controller_seconds": 743.4126012659981,
+  "end_to_end_training_examples_per_second": 181.15049321656954,
+  "finished_at": "2026-09-07T11:08:38.164292+00:00",
+  "kind": "manual_engineering_training_terminal",
+  "launch_sha256": "903819961be96f71da79774d723626d8c4eb1aa50bf482d2a644c7a0dda22315",
+  "leases": [
+    {
+      "ctime_ns": 1788778574672314166,
+      "device": 48,
+      "inode": 2629503848,
+      "link_count": 1,
+      "mode": 33188,
+      "mtime_ns": 1788778574672314166,
+      "relative_path": "output/.single_generation_job.lock",
+      "sha256": "f95b75c03e2f8f5c110699099b7edf9946b4d1d9e0b5515940039780de49b118",
+      "size_bytes": 508
+    },
+    {
+      "ctime_ns": 1788778574682314098,
+      "device": 48,
+      "inode": 2629508354,
+      "link_count": 1,
+      "mode": 33188,
+      "mtime_ns": 1788778574682314098,
+      "relative_path": "output/udlm/.single_training_job.lock",
+      "sha256": "f95b75c03e2f8f5c110699099b7edf9946b4d1d9e0b5515940039780de49b118",
+      "size_bytes": 508
+    }
+  ],
+  "leases_release_authorized": true,
+  "max_observed_aggregate_gpu_used_mib": {
+    "GPU-7ae42da2-3c8d-efa0-99ec-845b7f85399a": 11139,
+    "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece": 9273
+  },
+  "memory_measurement": "External NVIDIA snapshots every 2 seconds; observed aggregate GPU use includes other processes and is not allocator peak memory",
+  "plan": {
+    "argv_sha256": "e2c697ae18ee014e58eb9184134f228fe72bbf710fd9f9c5c5fdfc8795222054",
+    "arm_id": "ce",
+    "attempt_id": "ce_e_1000_b128_w2",
+    "checkpoint_path": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+    "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+    "config": {
+      "callback": {
+        "_target_": "lightning.pytorch.callbacks.ModelCheckpoint",
+        "auto_insert_metric_name": false,
+        "dirpath": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints",
+        "enable_version_counter": false,
+        "every_n_train_steps": 1000,
+        "filename": "{step}",
+        "save_top_k": -1
+      },
+      "data": "safe",
+      "loader": {
+        "batch_size": 16,
+        "global_batch_size": 128,
+        "num_workers": 1,
+        "pin_memory": true
+      },
+      "model": {
+        "attention_probs_dropout_prob": 0.1,
+        "classifier_dropout": null,
+        "hidden_act": "gelu",
+        "hidden_dropout_prob": 0.1,
+        "hidden_size": 768,
+        "initializer_range": 0.02,
+        "intermediate_size": 3072,
+        "layer_norm_eps": 1e-12,
+        "max_position_embeddings": 256,
+        "model_type": "bert",
+        "num_attention_heads": 12,
+        "num_hidden_layers": 12,
+        "pad_token_id": 3,
+        "position_embedding_type": "absolute",
+        "torch_dtype": "float32",
+        "type_vocab_size": 2,
+        "use_cache": true,
+        "vocab_size": 1880
+      },
+      "noise": {
+        "type": "loglinear"
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "eps": 1e-08,
+        "lr": 0.0003,
+        "scheduler": {
+          "decay_floor_lr": 3e-06,
+          "horizon_updates": 1000,
+          "name": "half_cosine_with_linear_warmup_and_floor",
+          "warmup_updates": 50
+        },
+        "weight_decay": 0
+      },
+      "seed": 1500,
+      "trainer": {
+        "_target_": "lightning.Trainer",
+        "accelerator": "cuda",
+        "accumulate_grad_batches": 4,
+        "detect_anomaly": false,
+        "devices": 2,
+        "gradient_clip_val": 1.0,
+        "log_every_n_steps": 10,
+        "max_steps": 1000,
+        "num_nodes": 1,
+        "precision": "bf16"
+      },
+      "training": {
+        "T": 0,
+        "antithetic_sampling": true,
+        "diffusion": "udlm",
+        "ema": 0.9999,
+        "global_mean_loss": true,
+        "init_from_mdlm_checkpoint": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+        "init_from_mdlm_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+        "init_from_mdlm_ema": true,
+        "pilot_fail_on_nonfinite_loss": false,
+        "reseed_after_model_initialization": false,
+        "sampling_eps": 0.001,
+        "udlm": {
+          "conditioning_variant": "film_adaln",
+          "empirical_uniform_mix": 0.0002,
+          "exclude_special_tokens": false,
+          "inference_eps": 1e-05,
+          "mask_all_special_tokens": true,
+          "noise_eps": 0.001,
+          "parameterization": "x0_denoiser",
+          "prior_variant": "empirical_frequency",
+          "sampling_steps": 128,
+          "time_embedding_size": 256,
+          "zero_init_conditioning": false
+        },
+        "use_bracket_safe": false
+      },
+      "wandb": {
+        "name": null,
+        "project": "genmol"
+      }
+    },
+    "config_sha256": "80bd9866ef157690e0ef9ff553b0346b3b91f989c0193d0484c4997ac089b2bb",
+    "config_source_sha256": "354f58cf3cce3661513bbe24400c38bf0d9dbe22d03de9aa161513226ae76531",
+    "example_exposures": 128000,
+    "gpu_count": 2,
+    "kind": "manual_engineering_training",
+    "log_relative": "output/logs/engineering_v8b/ce_e_1000_b128_w2.training.log",
+    "matched_common_config_sha256": "f373121441fca1aaa2f2657a76d7f7ce66be199cd35637597d0df240e257e89a",
+    "output_relative": "output/udlm/engineering_v8b/ce_e_1000_b128_w2",
+    "protocol": {
+      "checkpoint": "outputs/paper_v1/checkpoints/50000.ckpt",
+      "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "claim": "separate_ce_followup_original_v8_campaign_remains_failed",
+      "config": "configs/udlm_e_objective_ce_followup.yaml",
+      "config_sha256": "354f58cf3cce3661513bbe24400c38bf0d9dbe22d03de9aa161513226ae76531",
+      "evidence": {
+        "original_campaign_terminal": {
+          "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/campaign_terminal.json",
+          "sha256": "98075a11c7340dafcc855887348201477981bd2a1a8f5d39053da24866cc663b"
+        },
+        "original_ct_terminal": {
+          "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/terminal_manifest.json",
+          "sha256": "1021ba513564a25ca26ea3c2d6c148d271e1cd98d27078056285e848c9c69b5e"
+        },
+        "post_exit_audit": {
+          "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/post_exit_audit.json",
+          "sha256": "959151c37072431be23b1f5696d7215da5291e0bace40d6f307864a7262f93c2"
+        }
+      },
+      "example_exposures_per_arm": 128000,
+      "execution_policy": "One CE-only attempt in a new namespace. Revalidate original failure/audit hashes, the retained CT checkpoint bytes and unchanged training implementation. Require reviewed 15-second process-group cleanup grace. Never automatically resume or retry.",
+      "final_benchmark_seeds_reserved": [
+        0,
+        1,
+        2
+      ],
+      "follow_up": "No automatic generation, promotion or longer training; the prospective V9 design requires an explicit incident-aware protocol amendment before using the separately audited CT plus V8b CE pair.",
+      "global_batch_size": 128,
+      "gpu_count": 2,
+      "gpu_policy": {
+        "active_compute_processes_allowed": true,
+        "max_gpus": 2,
+        "max_utilization_percent": 10,
+        "min_free_memory_mib": 30000
+      },
+      "initialization_policy": "Fresh original MDLM50k EMA; fresh optimizer and EMA; never continue CT or any interrupted CE checkpoint.",
+      "matched_common_config_sha256": "f373121441fca1aaa2f2657a76d7f7ce66be199cd35637597d0df240e257e89a",
+      "memory_measurement": "External NVIDIA snapshots every 2 seconds; observed aggregate GPU use includes other processes and is not allocator peak memory",
+      "micro_batch_size": 16,
+      "optimizer_updates": 1000,
+      "original_protocol": "experiments/udlm/protocols/engineering_v8_objectives.json",
+      "original_protocol_sha256": "a27875752d25a4a7928401434f9bd90ee6e9d01539586bab70ce3ba75499026e",
+      "original_source_revision": "c8434dda105c5fb2a15bb784d24e0387062c733e",
+      "purpose": "Fresh CE-only follow-up after original V8 CT controller failure; preserve the failed campaign and separately audited CT checkpoint.",
+      "reporting_policy": "Original V8 campaign and CT controller remain failed. Report the separately validated CT checkpoint and this new CE controller outcome with their distinct source revisions, immutable receipt/audit hashes and configured-exposure caveat.",
+      "schema_version": 1,
+      "seed": 1500,
+      "separately_validated_ct_checkpoint_sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+      "study_id": "engineering-v8b-ce-e-1000-b128-w2"
+    },
+    "protocol_sha256": "acb286ac4b938aa049327740affd2dea5beb0ded745cd51dca627f5e8fd9de8b",
+    "schema_version": 1,
+    "training_argv": [
+      "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+      "-u",
+      "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/train.py",
+      "--config-name",
+      "udlm_e_objective_ce_followup",
+      "trainer.devices=2",
+      "trainer.accumulate_grad_batches=4",
+      "training.init_from_mdlm_checkpoint=/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+      "training.init_from_mdlm_checkpoint_sha256=8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "callback.dirpath=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints",
+      "hydra.run.dir=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8b/ce_e_1000_b128_w2/hydra"
+    ]
+  },
+  "process_group_exit_grace": {
+    "elapsed_seconds": 0.7510926679824479,
+    "finished_at": "2026-09-07T11:08:11.853095+00:00",
+    "grace_seconds": 15.0,
+    "group_present_at_end": false,
+    "initially_present": true,
+    "outcome": "exited_during_grace",
+    "poll_interval_seconds": 0.25,
+    "probe_count": 4,
+    "process_group_id": 446773,
+    "started_at": "2026-09-07T11:08:11.101953+00:00"
+  },
+  "request_sha256": "c05fafdd1472e894b553afe580b051b1b2eec4c5dd47f7323df2b939e51f958d",
+  "schema_version": 1,
+  "selected_gpu_uuids": [
+    "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece",
+    "GPU-7ae42da2-3c8d-efa0-99ec-845b7f85399a"
+  ],
+  "source": {
+    "head": "b84f21ba1f30ceb62d2626daf2caad8adb6534cf",
+    "upstream": "b84f21ba1f30ceb62d2626daf2caad8adb6534cf"
+  },
+  "started_at": "2026-09-07T10:56:14.751726+00:00",
+  "status": "completed",
+  "telemetry_errors": [],
+  "training_pid": 446773,
+  "training_return_code": 0,
+  "training_subprocess_seconds": 706.594819187012
+}

@@ -27,8 +27,12 @@ UDLM authors.
 > specifies 1,000 batch-128 updates per arm from the same MDLM EMA. CT reached
 > step 1,000, but a [process-exit incident](experiments/udlm/results/engineering_v8_ct_exit_incident.md)
 > stopped the controller before CE; its checkpoint passed a separate CPU audit.
-> The distinct [CE follow-up](experiments/udlm/protocols/engineering_v8b_ce_followup.json)
-> preserves the original matched training setup. Current authorization is at most two dynamically selected GPUs below 10% utilization.
+> The distinct [CE follow-up completed](experiments/udlm/results/engineering_v8b_ce_training.md)
+> all 1,000 updates with the original matched training setup and passed checkpoint
+> validation. The paired [V9 molecular evaluation](experiments/udlm/protocols/engineering_v9_objectives.json)
+> compares CT/CE at temperatures 1.0/0.5, using 800 requests and 128 predictor
+> evaluations per molecule. Results remain pending. Current authorization is
+> at most two dynamically selected GPUs below 10% utilization.
 
 The main educational implementation is
 [`genmol_from_scratch.ipynb`](genmol_from_scratch.ipynb); exact experiment

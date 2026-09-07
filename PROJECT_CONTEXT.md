@@ -1,6 +1,38 @@
 # GenMol-UDLM project context
 
-## Active continuation: V8 CT post-exit audit and separate CE follow-up
+## Active continuation: completed CT/CE training, paired V9 evaluation
+
+V8b CE completed successfully at 11:08:38 UTC on 2026-09-07: 1,000 optimizer
+updates, 128,000 configured exposures, 1,156 finite checked tensors and 1,000
+EMA updates. The checkpoint SHA-256 is
+`b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1`;
+the terminal receipt SHA-256 is
+`2dd0423257e8908548b69a28b8aa24b3cc956507944c343e24ef615253af2205`.
+The process group exited within 0.751 seconds during the new bounded grace
+period. Both leases were released and the CE tmux session ended. Read
+`experiments/udlm/results/engineering_v8b_ce_training.md`. Do not relaunch it.
+
+The next concrete molecular benchmark is
+`experiments/udlm/protocols/engineering_v9_objectives.json`: separately audited
+V8 CT versus completed V8b CE, temperatures 1.0 (primary) and 0.5 (secondary),
+seeds 1600/1601, 100 requests per seed and 128 predictor evaluations per
+molecule. Four configurations give eight runs and 800 requests. Report both
+paired CE-minus-CT contrasts regardless of sign, including strict and repaired
+metrics. Final seeds 0/1/2 remain reserved. No new molecular result exists yet.
+
+Use tmux `genmol-udlm-v9-objectives`, controller log
+`output/logs/engineering-v9-pipeline.log`, generation root
+`output/udlm/engineering_v9`, job logs `output/logs/engineering_v9`, and CPU
+report directory `output/udlm/engineering_v9_reports/complete`. Verify live
+state before first launch; keep tracked source and HEAD frozen during the
+pipeline. The project virtual environment runs these commands sequentially:
+
+```bash
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python -u scripts/udlm/launch_exploration.py --protocol experiments/udlm/protocols/engineering_v9_objectives.json --output-root output/udlm/engineering_v9 --log-root output/logs/engineering_v9
+CUDA_VISIBLE_DEVICES='' /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python -u scripts/udlm/report_exploration.py --protocol experiments/udlm/protocols/engineering_v9_objectives.json --output-root output/udlm/engineering_v9 --report-dir output/udlm/engineering_v9_reports/complete
+```
+
+The following CT/CE incident and launch details are historical evidence.
 
 The original V8 campaign failed after CT training reached 1,000 updates and
 returned zero: the controller's immediate process-group check found a remaining
@@ -20,15 +52,15 @@ EMA updates. Configured exposure is 128,000 examples. Original source was
 `c8434dda105c5fb2a15bb784d24e0387062c733e`; prior fingerprint is unchanged.
 
 Do not relaunch V8 or alter its outputs. The bounded process-exit grace repair
-is integrated. The distinct CE-only V8b follow-up is prepared under
-`experiments/udlm/protocols/engineering_v8b_ce_followup.json`; check live
-state before its first launch. The new CE arm must start fresh from MDLM 50k EMA with exactly the original
+is integrated. The distinct CE-only V8b follow-up completed under
+`experiments/udlm/protocols/engineering_v8b_ce_followup.json`. It started
+fresh from MDLM 50k EMA with exactly the original
 V8 CE settings: seed 1500, 1,000 updates, global batch 128, microbatch 16,
 two GPUs, accumulation 4, A1, L1, common full alphabet and common clean-target
 mask. Bind the accepted post-exit CT audit and preserve training source hashes.
 There are no CE molecular results. Verify live state before launching anything.
 
-V8b command (project virtual environment, clean pushed artifact worktree):
+Historical V8b command (already completed; do not repeat):
 
 ```bash
 /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python -u scripts/udlm/launch_ce_followup_training.py --gpu-count 2
