@@ -1,4 +1,4 @@
-"""Idempotently align Stage 0, UDLM Stages 20--23, and final reporting."""
+"""Idempotently align Stage 0, UDLM Stages 20--24, and final reporting."""
 
 from __future__ import annotations
 
@@ -4925,6 +4925,130 @@ print({"LOO": list(map(str, stage23_loo)), "reverse": list(map(str, stage23_brid
     ]
 
 
+def _objective_comparison_cells():
+    """Preview the matched training budget without starting training."""
+    return [
+        _cell(
+            "markdown",
+            r"""
+# Stage 24 — Comparing objectives with the same training examples and masks
+
+**Paper correspondence.** Earlier stages implement the original UDLM CT
+objective and the Stage 23 clean-denoiser CE hypothesis, motivated by the
+[D3PM](https://arxiv.org/abs/2107.03006) clean-token parameterization. This
+experiment compares two local adaptation procedures; it does not reproduce
+either paper's original training architecture or establish their superiority.
+
+**Intuition and motivation.** V5 and V6 tested sampling choices on small
+1,000-update, batch-16 adaptations. Their best selected quality was 57.03125%,
+below the local MDLM mean 85.8%. That observation motivates more adaptation
+and a different objective. V8 gives CT and CE the same larger example budget,
+starting both afresh from the same MDLM EMA. The throughput pilot's twenty
+updates are not carried into either arm. Matching the tokenizer vocabulary
+alone is insufficient: target masks must agree too. Both V8 arms explicitly
+mask every tokenizer control, including UNK/MASK if present in clean input.
+
+**Mathematics, with every symbol defined.** Let $b$ be examples per GPU per
+microbatch, $W$ the number of GPUs, $G$ accumulated microbatches before one
+optimizer update, $B$ the global batch, and $T$ the number of updates. Then
+$B=bWG$ and the requested example exposure is $E=TB$. Here $b=16$, $B=128$,
+$T=1000$ and $E=128000$ per arm. These are exposure counts, not a claim that all
+molecular identities are unique. For a fixed $W$, both arms use the same
+batch grouping, stream partition, initialization seed and learning-rate
+schedule. CT logits target clean LOO probabilities; CE logits target clean
+denoiser probabilities and require the Stage 23 inference conversion.
+
+**Small concrete example.** One GPU uses $16\times1\times8=128$ examples per
+update. Two GPUs use $16\times2\times4=128$. Each arm requests 128,000 exposures,
+eight times the old 16,000 per-arm adaptation budget; together the arms request
+256,000. Holding global
+batch fixed across different GPU counts does not guarantee identical floating
+point reductions or local antithetic time assignments. The actual comparison
+therefore uses one common GPU count for both arms and records it.
+
+**Code below, tensor shapes, and invariants.** The cell reads the prospective
+protocol and asks its launcher to compose both one- and two-GPU plans on CPU.
+It checks all resolved settings match after removing only the intended logit
+parameterization and separate checkpoint output directories. IDs and common
+target masks have shape $[b,L]$, logits $[b,L,K]$, with sequence length $L$ and
+full vocabulary size $K$. Both masks exclude the same immutable controls; the
+stationary prior and active vocabulary are identical. The preview checks
+budgets, not completion. It does not inspect GPU inventory, load checkpoints,
+create artifacts, or launch processes. Live runs must first verify the
+throughput result and dynamically select at most two GPUs below 10% utilization.
+
+**Differences from released implementations.** The common all-control target
+mask is an explicit new CT setting; historical CT defaults retain their
+BOS/EOS/PAD mask. CE retains its all-control invariant. Both new arms share
+the same MDLM EMA, FiLM conditioner, empirical prior with uniform mixture
+0.0002, seed 1500 and L1 scheduler: peak 0.0003, warmup 50 updates, horizon
+1000, floor 0.000003. CE and CT differ in their statistical target and gradient
+weighting, so equal updates/examples do not imply equal compute cost or equally
+optimized hyperparameters. An observed difference is conditional on this
+shared optimization bundle. Future generation must disclose both strict and
+repaired metrics, raw rows, sample count, model evaluations and runtime. Final
+evaluation seeds 0/1/2 remain reserved; no V8 molecular result is asserted here.
+
+**Comprehension checkpoint.** Why start both arms from MDLM instead of resuming
+the throughput pilot? Expected reasoning: otherwise one arm inherits extra
+exposures and optimizer history. Why specify the target mask explicitly?
+Expected reasoning: changed loss positions would confound the objective
+comparison. Does 128,000 exposures mean 128,000 distinct molecules? Expected
+reasoning: duplicate data and representation choices can repeat identities.
+What does a better training loss prove across CT and CE? Expected reasoning:
+their scales and statistical targets differ, so molecular generation must be
+evaluated directly under a separately specified protocol.
+""",
+            "stage-24-objective-comparison",
+        ),
+        _cell(
+            "code",
+            """
+import copy as stage24_copy
+import json as stage24_json
+from pathlib import Path as Stage24Path
+import sys as stage24_sys
+
+stage24_relative = Stage24Path("experiments/udlm/protocols/engineering_v8_objectives.json")
+stage24_start = Stage24Path.cwd().resolve()
+stage24_candidates = [stage24_start, *stage24_start.parents]
+stage24_candidates += [p / "run_sources/udlm_genmol_worktree" for p in stage24_candidates.copy()]
+stage24_root = next(p for p in stage24_candidates if (p / stage24_relative).is_file())
+if str(stage24_root) not in stage24_sys.path:
+    stage24_sys.path.insert(0, str(stage24_root))
+from scripts.udlm.launch_objective_training import build_plans as stage24_build_plans
+
+stage24_protocol = stage24_json.loads((stage24_root / stage24_relative).read_text())
+assert stage24_protocol["seed"] == 1500
+assert stage24_protocol["optimizer_updates"] == 1000
+stage24_preview = []
+for stage24_w in (1, 2):
+    stage24_plans = stage24_build_plans(stage24_w, root=stage24_root)
+    assert len(stage24_plans) == 2
+    stage24_comparable = []
+    for stage24_plan in stage24_plans:
+        stage24_cfg = stage24_copy.deepcopy(stage24_plan["config"])
+        stage24_udlm = stage24_cfg["training"]["udlm"]
+        assert stage24_udlm["mask_all_special_tokens"] is True
+        assert stage24_udlm["exclude_special_tokens"] is False
+        stage24_parameterization = stage24_udlm.pop("parameterization")
+        assert stage24_parameterization in {"raw_loo", "x0_denoiser"}
+        stage24_g = stage24_cfg["trainer"]["accumulate_grad_batches"]
+        assert stage24_cfg["loader"]["batch_size"] * stage24_w * stage24_g == 128
+        assert stage24_cfg["trainer"]["max_steps"] * 128 == 128000
+        stage24_cfg["callback"].pop("dirpath")
+        stage24_comparable.append(stage24_cfg)
+        stage24_preview.append({"gpus": stage24_w, "accumulation": stage24_g,
+                                "parameterization": stage24_parameterization,
+                                "requested_exposures": 128000})
+    assert stage24_comparable[0] == stage24_comparable[1]
+print(stage24_json.dumps({"plans": stage24_preview, "molecular_result": None}, indent=2))
+""",
+            "stage-24-objective-comparison-code",
+        ),
+    ]
+
+
 def _replace_required(text: str, old: str, new: str, *, label: str) -> str:
     """Apply one migration exactly once while remaining idempotent."""
     if new in text:
@@ -6124,7 +6248,10 @@ def update_notebook(source: Path, destination: Path):
         *v4_campaign_cells,
     ]
     engineering_cells = [
-        *_engineering_v5_cells(), *_engineering_v6_cells(), *_denoiser_ce_cells()
+        *_engineering_v5_cells(),
+        *_engineering_v6_cells(),
+        *_denoiser_ce_cells(),
+        *_objective_comparison_cells(),
     ]
     engineering_ids = {cell["id"] for cell in engineering_cells}
     notebook["cells"] = [

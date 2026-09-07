@@ -114,18 +114,65 @@ def test_update_is_byte_idempotent(tmp_path: Path) -> None:
 def test_stage23_independent_exact_posterior_example():
     markdown, cell = updater._denoiser_ce_cells()  # noqa: SLF001
     for fragment in (
-        "Paper correspondence", "Intuition and motivation", "Mathematics",
-        "Small concrete example", "tensor shapes", "Differences from released",
-        "Comprehension checkpoint", "joint reverse", "39/400",
+        "Paper correspondence",
+        "Intuition and motivation",
+        "Mathematics",
+        "Small concrete example",
+        "tensor shapes",
+        "Differences from released",
+        "Comprehension checkpoint",
+        "joint reverse",
+        "39/400",
     ):
         assert fragment in markdown["source"]
     tree = ast.parse(cell["source"])
-    imports = [node for node in ast.walk(tree) if isinstance(node, (ast.Import, ast.ImportFrom))]
+    imports = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+    ]
     assert len(imports) == 1 and imports[0].module == "fractions"
     namespace = {}
     exec(compile(tree, cell["id"], "exec"), namespace)
     assert namespace["stage23_bridge"] == namespace["stage23_mixture"]
     assert float(namespace["stage23_error"]) == 0.0975
+
+
+def test_stage24_compares_resolved_training_inputs_without_gpu(monkeypatch):
+    from scripts.udlm import launch_engineering_training as engine
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("CPU teaching preview must not query or launch GPUs")
+
+    monkeypatch.chdir(REPOSITORY_ROOT)
+    monkeypatch.setattr(engine.audited, "probe_all_gpus", forbidden)
+    monkeypatch.setattr(engine.audited, "probe_gpu_uuid", forbidden)
+    monkeypatch.setattr(engine, "execute", forbidden)
+    markdown, cell = updater._objective_comparison_cells()  # noqa: SLF001
+    for fragment in (
+        "Paper correspondence",
+        "Intuition and motivation",
+        "Mathematics",
+        "Small concrete example",
+        "tensor shapes",
+        "Differences from released",
+        "Comprehension checkpoint",
+        "eight times",
+        "target masks",
+        "seed 1500",
+    ):
+        assert fragment in markdown["source"]
+    namespace = {}
+    exec(compile(cell["source"], cell["id"], "exec"), namespace)
+    plans = namespace["stage24_preview"]
+    assert len(plans) == 4
+    assert [(row["gpus"], row["accumulation"]) for row in plans] == [
+        (1, 8),
+        (1, 8),
+        (2, 4),
+        (2, 4),
+    ]
+    assert all(row["requested_exposures"] == 128000 for row in plans)
 
 
 def test_stage21_executes_independently_as_read_only_protocol_preview(monkeypatch):
@@ -556,8 +603,11 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
     assert ordered_ids.index("stage-23-denoiser-ce") == (
         ordered_ids.index("stage-22-engineering-v6-code") + 1
     )
-    assert ordered_ids.index("stage19-report-note") == (
+    assert ordered_ids.index("stage-24-objective-comparison") == (
         ordered_ids.index("stage-23-denoiser-ce-code") + 1
+    )
+    assert ordered_ids.index("stage19-report-note") == (
+        ordered_ids.index("stage-24-objective-comparison-code") + 1
     )
 
 
