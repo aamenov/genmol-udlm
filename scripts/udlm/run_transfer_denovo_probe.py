@@ -727,6 +727,9 @@ def execute(plan, *, device, output_dir):
             texts, protocol, input_ids, sampled_ids = bench.generate_raw_model_text(
                 sampler, plan["spec"]["num_samples"], **plan["sampling"]
             )
+        protocol["model_use_bracket_safe"] = bool(
+            sampler.model.config.training.get("use_bracket_safe")
+        )
         bench.synchronize_device(sampler.model.device)
         sampling_seconds = time.perf_counter() - generation_start
         count = plan["spec"]["num_samples"]
@@ -749,9 +752,7 @@ def execute(plan, *, device, output_dir):
         decode_timing = {}
         records = bench.decode_records(
             texts,
-            use_bracket_safe=bool(
-                sampler.model.config.training.get("use_bracket_safe")
-            ),
+            use_bracket_safe=protocol["model_use_bracket_safe"],
             timing=decode_timing,
         )
         metrics, failures = score_records(records, count, sa_snapshot)
