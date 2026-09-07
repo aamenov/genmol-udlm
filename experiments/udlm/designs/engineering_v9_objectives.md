@@ -54,7 +54,8 @@ identical model trajectories.
 The executable V9 protocol must include explicit entry parameterizations
 (`raw_loo` or `x0_denoiser`), immutable checkpoint/configuration hashes,
 the shared prior fingerprint, V8 source/protocol/configuration identities,
-and the accepted campaign/arm completion-receipt hashes. Raw-LOO inference
+the original failed V8 receipts, the separate accepted CT post-exit audit,
+and the successful V8b CE completion-receipt hash. Raw-LOO inference
 retains the historical canonical omission of its default parameterization;
 CE inference explicitly sets `parameterization: x0_denoiser`.
 

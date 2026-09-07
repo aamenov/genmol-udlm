@@ -19,13 +19,29 @@ It has the exact launch configuration, 1,155 finite checked tensors and 1,000
 EMA updates. Configured exposure is 128,000 examples. Original source was
 `c8434dda105c5fb2a15bb784d24e0387062c733e`; prior fingerprint is unchanged.
 
-Do not relaunch V8 or alter its outputs. A bounded process-exit grace repair
-and a distinct CE-only V8b follow-up are being prepared in isolated branches.
-The new CE arm must start fresh from MDLM 50k EMA with exactly the original
+Do not relaunch V8 or alter its outputs. The bounded process-exit grace repair
+is integrated. The distinct CE-only V8b follow-up is prepared under
+`experiments/udlm/protocols/engineering_v8b_ce_followup.json`; check live
+state before its first launch. The new CE arm must start fresh from MDLM 50k EMA with exactly the original
 V8 CE settings: seed 1500, 1,000 updates, global batch 128, microbatch 16,
 two GPUs, accumulation 4, A1, L1, common full alphabet and common clean-target
 mask. Bind the accepted post-exit CT audit and preserve training source hashes.
 There are no CE molecular results. Verify live state before launching anything.
+
+V8b command (project virtual environment, clean pushed artifact worktree):
+
+```bash
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python -u scripts/udlm/launch_ce_followup_training.py --gpu-count 2
+```
+
+Use tmux `genmol-udlm-v8b-ce`, controller log
+`output/logs/engineering-v8b-ce-controller.log`, immutable attempt
+`output/udlm/engineering_v8b/ce_e_1000_b128_w2/`, and training log
+`output/logs/engineering_v8b/ce_e_1000_b128_w2.training.log`. The launcher verifies
+original CT checkpoint bytes, failed receipts, separate audit, unchanged training
+implementation and exact original CE configuration before launching. Keep
+tracked source and HEAD frozen while the job runs. It does not automatically
+retry, generate samples, or change the original V8 campaign status.
 
 Every launch must dynamically recheck at most two GPU UUIDs below 10%
 utilization with at least 30,000 MiB free. Existing processes are allowed under
