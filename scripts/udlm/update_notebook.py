@@ -5477,6 +5477,375 @@ print("Synthetic reverse-step B probabilities (old, new):", float(stage27_old_st
     ]
 
 
+def _pmo_optimization_cells():
+    """Teach the prospective PMO comparison without models or oracle calls."""
+    return [
+        _cell("markdown", r"""
+# Stage 28 — Property optimization with fragment remasking
+
+## 28.1 A fixed token context inside a changing search population
+
+**Paper correspondence.** GenMol's fragment attaching/remasking method in
+Sections 4.2 and 5.3 searches for high-scoring molecules by combining fragments,
+regenerating part of a candidate and updating a fragment population. See the
+[GenMol paper](https://arxiv.org/html/2501.06158v3). Our V14 engineering question
+is whether an existing UDLM sampler helps this conditional search, even though
+earlier de novo studies did not establish superiority. No PMO outcome is used
+or reported in this stage.
+
+**Intuition and motivation.** Keep most of a proposed SAFE token sequence as
+context, replace one fragment span by MASK tokens, and generate only that span.
+The neural generator proposes a molecule; a separate property oracle scores
+the decoded molecule. The population policy can then reuse useful fragments.
+Gamma zero disables molecular-context guidance, not the surrounding fixed
+tokens or bidirectional attention to them. Property scores do not become a
+gradient through this generator in the released population search.
+
+**Mathematics, with every symbol defined.** Let $x\in\{0,\ldots,K-1\}^{B\times L}$
+be input token IDs, with batch size $B$, padded length $L$ and vocabulary size
+$K$. Let $e_{b\ell}\in\{0,1\}$ mark an editable MASK position in row $b$ and
+column $\ell$. If $z^{(r)}$ is the token array after update $r$, every update
+must satisfy $z^{(r)}_{b\ell}=x_{b\ell}$ wherever $e_{b\ell}=0$.
+UDLM initialization draws only editable positions from the checkpoint's stationary
+prior $\pi$, where $\pi_j>0$ and $\sum_{j=0}^{K-1}\pi_j=1$. UDLM reverse
+updates can revise a token that was already filled; editability is the original
+mask, not a fresh test for whether the current value equals MASK.
+
+**Small concrete example.** The invented sequence below has two editable
+positions between separators. We supply two updates by hand, including a final
+MASK token. Context preservation still holds. This demonstrates an invariant;
+the supplied updates are not draws from a diffusion model or molecular samples.
+
+**Code below, shapes, and invariants.** Nested tuples represent `[B,L]=[1,9]`
+IDs and Boolean masks. Each replacement row has two entries, one per editable
+position. The assertion checks every immutable position after both updates,
+including BOS/EOS/PAD framing. The final count is over editable positions only.
+No model, tokenizer, chemistry package, dataset, file, or device is accessed.
+
+**Differences from released implementations.** The long-input path retains
+GenMol's random fragment choice and insertion of 5..15 MASK tokens, subject to
+capacity. Short inputs retain completion with effective added length 18;
+`mask_len` does not override that released completion path. UDLM changes the
+sampling law inside the editable span. Immutable token context does **not**
+guarantee graph-level fragment preservation after SAFE decoding, repair or
+largest-component selection. PMO searches property-scored valid molecules;
+it does not use the separate fragment-constraint success metric. Residual
+control tokens also require token-level evidence, not decoded text inspection.
+
+**Comprehension checkpoint.** Can an already-filled editable token change
+again? Expected reasoning: yes; editability is frozen from the input mask.
+Does gamma zero remove the context? Expected reasoning: no, the unchanged
+tokens remain visible to attention. Does the invariant prove molecular
+substructure preservation? Expected reasoning: no, it is a token-array fact
+before the decoding/repair map. Does a final MASK violate context preservation?
+Expected reasoning: only if it changed an immutable position; completion and
+chemistry require additional checks.
+""", "stage-28-pmo-context"),
+        _cell("code", """
+stage28_ids = ((1, 6, 5, 4, 4, 5, 7, 2, 3),)
+stage28_editable = tuple(tuple(token == 4 for token in row) for row in stage28_ids)
+stage28_states = []
+for replacement in ((6, 7), (4, 8)):
+    values = iter(replacement)
+    state = tuple(tuple(next(values) if editable else original
+        for original, editable in zip(row, mask))
+        for row, mask in zip(stage28_ids, stage28_editable))
+    assert all(state[b][position] == stage28_ids[b][position]
+        for b, mask in enumerate(stage28_editable)
+        for position, editable in enumerate(mask) if not editable)
+    stage28_states.append(state)
+stage28_editable_count = sum(sum(row) for row in stage28_editable)
+stage28_final_mask_count = sum(token == 4 for row, mask in zip(stage28_states[-1], stage28_editable)
+    for token, editable in zip(row, mask) if editable)
+assert (stage28_final_mask_count, stage28_editable_count) == (1, 2)
+print("Invented final editable MASK count / positions:", stage28_final_mask_count, "/", stage28_editable_count)
+""", "stage-28-pmo-context-code"),
+        _cell("markdown", r"""
+## 28.2 What does the Fexofenadine MPO score reward?
+
+**Paper correspondence.** Goal-directed hit generation requires an explicit
+property objective. V14 uses the existing `fexofenadine_mpo` task and released
+gamma-zero setting. Its exact implementation is pinned in
+`experiments/udlm/diagnostics/pmo_oracle_inputs_20260907/manifest.json`, including
+PyTDC 0.4.1 and the RDKit source/native libraries. The formulas below were read
+from the pinned `tdc/chem_utils/oracle/oracle.py`, not inferred from the task name.
+
+**Intuition and motivation.** This synthetic benchmark objective rewards
+similarity to a reference molecule together with a polarity/lipophilicity
+profile. Its geometric mean penalizes a weak component. It is not a clinical
+efficacy, toxicity or synthesizability assay. The provisional GSK3B task was
+deferred after an oracle pickle/library incompatibility was found before any
+optimization; no PMO output selected this replacement task.
+
+**Mathematics, with every symbol defined.** For a valid molecule $m$, let
+$s(m)\in[0,1]$ be RDKit's Tanimoto similarity of atom-pair count fingerprints
+to the fixed Fexofenadine reference (maximum atom-pair path length 10).
+Let $p(m)$ be topological polar surface area (TPSA, in square ångströms), and
+$l(m)$ be RDKit's dimensionless MolLogP estimate. Define
+
+$$C(s)=\min(1,\max(0,s/0.8)),\quad
+H(p)=\exp\!\left[-\tfrac12\left(\tfrac{\max(90-p,0)}{10}\right)^2\right],$$
+$$J(l)=\exp\!\left[-\tfrac12\left(\tfrac{\max(l-4,0)}{1}\right)^2\right],\quad
+F(m)=[C(s(m))H(p(m))J(l(m))]^{1/3}.$$
+
+Here $C,H,J$ are unitless component scores, $F$ is the unitless property score,
+and $\exp$ is the exponential function. TPSA at least 90 and logP at most 4
+receive no respective penalty; similarity saturates at 0.8. The reference
+structure itself is fixed in the pinned TDC implementation. A legitimate zero
+component yields zero score and still consumes a valid new oracle call.
+
+**Small concrete example.** Supply invented descriptor values, not a molecule:
+$s=0.1,p=90,l=4$ gives $C=1/8,H=J=1$, hence $F=1/2$.
+With $s=0.8,p=80,l=5$, both Gaussian components equal $e^{-1/2}$, so
+$F=e^{-1/3}\approx0.716531$. Raising TPSA above 90 or lowering logP below 4
+cannot further improve its saturated component.
+
+**Code below, shapes, and invariants.** The cell takes three finite scalar
+descriptors and returns three scalar components plus a scalar score. It imports
+only `math`; no fingerprint, molecule, or oracle is computed. The hand-derived
+cases and saturation directions guard against accidentally reversing a modifier.
+
+**Differences from released implementations.** We retain the actual TDC
+evaluator and normalization. The opt-in adapter calls its singleton-list API
+and requires exactly one finite real result, rejecting booleans. The installed
+scalar API can silently replace evaluator exceptions by zero; that failure
+must stop this study rather than masquerade as poor chemistry. The untouched
+legacy runner retains its scalar path. Fail-fast scoring changes error handling,
+not this objective's formula or a successful valid molecule's score.
+
+**Comprehension checkpoint.** Why is the first score 0.5 rather than the
+arithmetic mean 0.7083? Expected reasoning: the task uses a cube root of the
+product. Which direction of TPSA is rewarded up to the target? Expected
+reasoning: increasing it toward 90 removes a lower-side penalty. Is a zero
+score always an error? Expected reasoning: no; distinguish a legitimate zero
+from an exception that a library silently converted to zero. Does a high score
+establish therapeutic benefit? Expected reasoning: no; this is a specified
+computational benchmark objective.
+""", "stage-28-pmo-objective"),
+        _cell("code", """
+from math import exp as stage28_exp, isfinite as stage28_isfinite, isclose as stage28_isclose
+
+def stage28_descriptor_score(similarity, tpsa, logp):
+    assert all(stage28_isfinite(value) for value in (similarity, tpsa, logp))
+    assert 0 <= similarity <= 1 and tpsa >= 0
+    components = (min(1.0, similarity / 0.8),
+        stage28_exp(-0.5 * (max(90 - tpsa, 0) / 10) ** 2),
+        stage28_exp(-0.5 * max(logp - 4, 0) ** 2))
+    score = (components[0] * components[1] * components[2]) ** (1 / 3)
+    assert 0 <= score <= 1
+    return components, score
+
+stage28_half_components, stage28_half_score = stage28_descriptor_score(0.1, 90, 4)
+assert stage28_half_components == (0.125, 1.0, 1.0)
+assert stage28_isclose(stage28_half_score, 0.5, abs_tol=1e-15)
+assert stage28_isclose(stage28_descriptor_score(0.8, 80, 5)[1], stage28_exp(-1 / 3), abs_tol=1e-15)
+assert stage28_descriptor_score(0.8, 100, 3)[1] == 1
+assert stage28_descriptor_score(0, 90, 4)[1] == 0
+print("Invented descriptor-only score:", stage28_half_score)
+""", "stage-28-pmo-objective-code"),
+        _cell("markdown", r"""
+## 28.3 A proposal is not an oracle call, and a final score is not AUC
+
+**Paper correspondence.** PMO evaluates efficient goal-directed search under
+a limited oracle-call budget. Our saved curves use the released top-10 AUC
+convention. The production definitions are in
+`scripts/exps/pmo/main/genmol/experiment_io.py`; V14 freezes its grid and budget.
+
+**Intuition and motivation.** Count new canonical molecules whose property
+score was actually obtained. Invalid proposals and cache hits do not consume
+another oracle call; offline scores in the starting fragment vocabulary are
+separate. A repeated cached child can still update the released fragment
+population. AUC rewards finding good molecules earlier, even when two searches
+end with the same collection. Rejected proposals may consume neural compute.
+
+**Mathematics, with every symbol defined.** Let $q_1,\ldots,q_B$ be successful
+new canonical molecule scores in charging order, with budget $B$. For $c>0$
+charged calls, let $k_c=\min(10,c)$ and $m(c)$ be the sum of the $k_c$ highest
+scores among $q_1,\ldots,q_c$, divided by $k_c$; define $m(0)=0$.
+For increasing reporting counts $0=c_0<c_1<\cdots<c_n=B$, the normalized
+trapezoidal score is
+
+$$\mathrm{AUC}_{10}=\frac1B\sum_{i=1}^{n}
+(c_i-c_{i-1})\frac{m(c_{i-1})+m(c_i)}2.$$
+
+Here $i$ indexes grid intervals and $n$ is their count. V14 uses $B=2000$
+and grid spacing 100. For an incomplete run, an optionally padded runner AUC
+is not evidence of completing $B$ calls; retain the observed endpoint and status.
+Separately, iteration $r$ is zero-based and warmup length parameter $W=1000$
+uses the released condition $r>W$: remasking first occurs at $r=1001$.
+Thus iterations 0 through 1000 are attaching-only, at most 1001 new calls;
+duplicates can make the actual number smaller. Warmup requires zero generation
+NFE (backbone forward evaluations), even though the checkpoint is loaded.
+
+**Small concrete example.** Fictional already-canonical IDs `A,A,None,B,C,D,E`
+produce four charged scores $1/5,4/5,1/2,9/10$ under a toy budget 4. The
+second A is cached, None is invalid, and E is beyond budget. With spacing 2,
+the curve is $(0,0),(2,1/2),(4,3/5)$ and AUC is exactly $2/5$.
+Reordering the same scores to find $9/10,4/5$ first gives $23/40$ while the
+terminal top-10 mean remains $3/5$. These are chosen scores, not oracle outputs.
+
+**Code below, shapes, and invariants.** `Fraction` supplies exact arithmetic.
+The cache maps invented canonical identifiers to scalar scores; the charging
+axis is a length-four list, separate from the length-seven proposal list.
+The toy does not canonicalize SMILES or fragment molecules. The generic top-10
+function uses only available scores when fewer than ten exist and keeps the
+zero origin. Warmup boundary assertions prevent an unnoticed off-by-one change.
+
+**Differences from released implementations.** The adapter leaves canonical
+caching, released duplicate updates and the `r>1000` warmup boundary intact.
+It adds checkpoint/source bindings, observed NFE, strict failures and disabled
+resume. Same-seed attaching-only warmup must be audited across arms: selected
+fragments, molecules, scores and population evolution should agree. An accepted,
+charged post-warmup remasking event with positive observed NFE is needed before
+calling the run a diffusion comparison; compute spent only on rejected
+proposals is insufficient. The toy omits the real population mechanics on purpose.
+
+**Comprehension checkpoint.** Why does the second A not advance the call axis?
+Expected reasoning: its canonical score is already cached. Can it still affect
+the released population? Expected reasoning: yes, released duplicate updates
+remain enabled. Why do identical final scores give different AUCs? Expected
+reasoning: intermediate best-score means depend on discovery order. Does
+`warmup=1000` mean exactly 1000 oracle calls? Expected reasoning: no, the
+condition is an iteration boundary with 1001 attaching-only iterations and
+possible duplicates. Does a completed warmup-only run test the diffusion law?
+Expected reasoning: no, there must be accepted charged neural mutations.
+""", "stage-28-pmo-budget"),
+        _cell("code", """
+from fractions import Fraction as Stage28Fraction
+
+stage28_lookup = dict(A=Stage28Fraction(1, 5), B=Stage28Fraction(4, 5),
+    C=Stage28Fraction(1, 2), D=Stage28Fraction(9, 10), E=Stage28Fraction(1))
+stage28_cache, stage28_charged, stage28_reasons = {}, [], []
+for canonical in ("A", "A", None, "B", "C", "D", "E"):
+    if canonical is None:
+        reason = "invalid"
+    elif canonical in stage28_cache:
+        reason = "cache_hit"
+    elif len(stage28_charged) == 4:
+        reason = "budget_exhausted"
+    else:
+        stage28_cache[canonical] = stage28_lookup[canonical]
+        stage28_charged.append(stage28_cache[canonical])
+        reason = "charged"
+    stage28_reasons.append(reason)
+assert stage28_reasons == ["charged", "cache_hit", "invalid", "charged", "charged", "charged", "budget_exhausted"]
+
+def stage28_top10(values):
+    assert values
+    selected = sorted(values, reverse=True)[:10]
+    return sum(selected, Stage28Fraction(0)) / len(selected)
+
+def stage28_exact_auc(scores, spacing):
+    budget = len(scores)
+    assert budget and type(spacing) is int and spacing > 0
+    calls = sorted(set([0, *range(spacing, budget + 1, spacing), budget]))
+    curve = [(c, stage28_top10(scores[:c]) if c else Stage28Fraction(0)) for c in calls]
+    area = sum((right[0] - left[0]) * (left[1] + right[1]) / 2
+        for left, right in zip(curve, curve[1:]))
+    return curve, area / budget
+
+stage28_curve, stage28_auc = stage28_exact_auc(stage28_charged, 2)
+assert stage28_curve == [(0, Stage28Fraction(0)), (2, Stage28Fraction(1, 2)), (4, Stage28Fraction(3, 5))]
+assert stage28_auc == Stage28Fraction(2, 5)
+stage28_early = [stage28_charged[i] for i in (3, 1, 2, 0)]
+assert stage28_exact_auc(stage28_early, 2)[1] == Stage28Fraction(23, 40)
+assert stage28_top10(stage28_early) == stage28_top10(stage28_charged) == Stage28Fraction(3, 5)
+stage28_remask_enabled = [iteration > 1000 for iteration in (999, 1000, 1001)]
+assert stage28_remask_enabled == [False, False, True]
+print("Invented exact AUC and terminal mean:", stage28_auc, stage28_top10(stage28_charged))
+""", "stage-28-pmo-budget-code"),
+        _cell("markdown", r"""
+## 28.4 The prospective comparison and the evidence needed to interpret it
+
+**Paper correspondence.** The paper's full PMO benchmark covers 23 tasks,
+10,000 calls per run and three runs. V14 is a one-task, two-seed, 2,000-call
+engineering pilot; it cannot reproduce a full-paper sum or establish that UDLM
+beats GenMol. Its committed design is
+`experiments/udlm/designs/engineering_v14_pmo_pilot.md` and executable panel is
+`experiments/udlm/protocols/engineering_v14_pmo.json`.
+
+**Intuition and motivation.** Fix the online oracle budget, initial scored
+fragment vocabulary and released population policy, then compare three actual
+checkpoint/sampler combinations. The selected candidates use earlier de novo
+observations; these are prospective PMO evaluations, not independent selection
+confirmation. No outcome table is embedded or read by this stage.
+
+**Mathematics, with every symbol defined.** With arm index $a$, seed index $s$,
+and measured full-budget AUC $A_{a,s}$, a paired treatment difference is
+$d_s=A_{\mathrm{treatment},s}-A_{\mathrm{MDLM},s}$. The two-seed mean is
+$\bar d=(d_{2300}+d_{2301})/2$ and sample SD is
+$\sqrt{\sum_s(d_s-\bar d)^2/(2-1)}$. Neither statistic is a superiority test
+with two adaptive engineering seeds. Primary treatment is MASK CE; secondary
+is S CT. Each comparison requires both declared complete pairs and successful
+integrity/warmup/charged-mutation checks, with failures and unlaunched runs shown.
+
+**Small concrete example.** Three arms times two seeds gives six planned runs;
+six budgets of 2000 permit at most 12,000 online oracle calls. This count is a
+ceiling, not an observed exposure. A failure can leave fewer calls and stop
+later waves. A hypothetical pair of differences $+0.02,-0.01$ has mean $+0.005$
+but disagrees in sign; it fails V14's declared both-seeds-positive gate.
+
+**Code below, shapes, and invariants.** The cell contains only the three frozen
+checkpoint identifiers and small dictionaries. The two-element seed tuple and
+three-element arm list describe plans, not results. It asserts complete hashes,
+fixed controls and requested budgets, and computes the invented contrast with
+`Fraction`. It performs no file reads, checkpoint loads, oracle calls or launches.
+
+**Differences from released implementations.** MDLM uses EMA from 50k training,
+temperature 1.2 and confidence randomness 2, with adaptive observed NFE. S CT
+uses 1000 additional batch-16 updates, a schedule-consistent uniform prior and
+128 predictor NFE. MASK CE uses 1000 batch-128 updates, clean-token CE and its
+verified 0.9 MASK / 0.1 empirical mixture prior. CE first converts clean
+probabilities by the local likelihood, then V14 applies temperature in raw-LOO
+space. Both UDLM arms use temperature 0.5, top-p one, endpoint 1e-5, no Gibbs,
+full active support and ignored randomness zero. The trained prior is never
+swapped at inference. All arms preserve gamma zero, effective completion
+length 18, population size 100, seeds 2300/2301 and the fixed scored vocabulary.
+These training amounts, prior/loss choices and neural compute differ; the
+experiment compares complete sampler configurations, not one isolated cause.
+
+The controller enforces at most two freshly qualified GPU UUIDs, frozen source,
+bounded child time, explicit process mapping and preserved terminal failures.
+`PYTHONHASHSEED=0` and CPU thread limits one are common across arms. Scoring
+errors propagate; actual generation calls, NFE, cache charges and runtime must
+be saved. Shared-GPU timing does not establish a controlled speed advantage.
+Independent score replay and a PDF with all arms, both signed contrasts and
+paper-comparison caveats are required before interpretation. Final de novo
+seeds 0/1/2 remain reserved. Nothing here changes the active campaign.
+
+**Comprehension checkpoint.** Does equal oracle budget imply equal NFE or equal
+training? Expected reasoning: no; those are separately recorded budgets.
+Can one retain the better seed and omit the other? Expected reasoning: no,
+both predeclared pairs and all failures remain visible. Does a positive mean
+for the invented contrast pass the gate? Expected reasoning: no, one seed is
+negative. Would passing the engineering gate complete the overall project
+goal? Expected reasoning: no; a later independent, broader benchmark is needed.
+""", "stage-28-pmo-panel"),
+        _cell("code", """
+from fractions import Fraction as Stage28PanelFraction
+
+stage28_planned_seeds = (2300, 2301)
+stage28_planned_arms = (
+    dict(name="MDLM", checkpoint_sha256="8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+         temperature=1.2, randomness=2.0, prior="absorbing MASK", nfe=None),
+    dict(name="S CT", checkpoint_sha256="100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72",
+         temperature=0.5, randomness=0.0, prior="schedule_uniform", nfe=128),
+    dict(name="MASK CE", checkpoint_sha256="62299de99d8c003e3776215efce9643cca196091a6284f351de2b404a22c2e8d",
+         temperature=0.5, randomness=0.0, prior="mask_rich_empirical", nfe=128),
+)
+assert all(len(arm["checkpoint_sha256"]) == 64 for arm in stage28_planned_arms)
+stage28_requested_runs = len(stage28_planned_arms) * len(stage28_planned_seeds)
+stage28_requested_call_ceiling = stage28_requested_runs * 2000
+assert (stage28_requested_runs, stage28_requested_call_ceiling) == (6, 12000)
+stage28_invented_differences = (Stage28PanelFraction(2, 100), Stage28PanelFraction(-1, 100))
+stage28_invented_mean = sum(stage28_invented_differences) / 2
+assert stage28_invented_mean == Stage28PanelFraction(1, 200)
+assert not all(value > 0 for value in stage28_invented_differences)
+print("Planned runs / online-call ceiling, not outcomes:", stage28_requested_runs, stage28_requested_call_ceiling)
+""", "stage-28-pmo-panel-code"),
+    ]
+
+
 def _replace_required(text: str, old: str, new: str, *, label: str) -> str:
     """Apply one migration exactly once while remaining idempotent."""
     if new in text:
@@ -6683,6 +7052,7 @@ def update_notebook(source: Path, destination: Path):
         *_objective_evaluation_cells(),
         *_mask_rich_prior_cells(),
         *_denoiser_temperature_cells(),
+        *_pmo_optimization_cells(),
     ]
     engineering_ids = {cell["id"] for cell in engineering_cells}
     notebook["cells"] = [
