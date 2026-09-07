@@ -226,7 +226,7 @@ def inspect_source(path, expected_sha256):
     ):
         raise ValueError("source must record the actual MDLM50000 global step")
     config = OmegaConf.to_container(
-        OmegaConf.create(checkpoint["hyper_parameters"]["config"]), resolve=True
+        OmegaConf.create(checkpoint["hyper_parameters"]["config"]), resolve=False
     )
     if config["training"].get("diffusion", "mdlm") != "mdlm":
         raise ValueError("source checkpoint is not MDLM")
@@ -270,6 +270,7 @@ def inspect_source(path, expected_sha256):
         "diffusion": "mdlm",
         "weights": "ema",
         "config_sha256": digest(config),
+        "config_sha256_scope": "complete_unresolved_source_configuration_no_eager_interpolation",
         "backbone_config": source.backbone.config.to_dict(),
         "ema": ema,
         "backbone_state": state,

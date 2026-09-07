@@ -69,6 +69,12 @@ reference for all parameters, persistent buffers, and tied state aliases. All
 named buffers, including nonpersistent BERT position/type buffers, are also
 recorded. Parameters come from source EMA; persistent buffers come from the source
 raw checkpoint, while nonpersistent buffers come from its strict architecture.
+The source config fingerprint covers its complete **unresolved** configuration,
+with `config_sha256_scope` stating that meaning. Unused callback/output/schedule
+interpolations are retained literally rather than eagerly resolved or assigned
+invented values. GenMol receives that OmegaConf structure and resolves the fields
+its constructor actually accesses normally; an unresolved required architecture
+field still fails. The explicit target export config remains fully resolved.
 
 The categorical target is initialized using the existing
 `initialize_from_mdlm_checkpoint(use_ema=True, expected_sha256=...)`. Its full base
