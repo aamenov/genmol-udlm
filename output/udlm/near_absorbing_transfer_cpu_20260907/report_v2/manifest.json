@@ -1,0 +1,32 @@
+{
+  "inputs": [
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_near_absorbing_worktree/output/udlm/near_absorbing_transfer_cpu_20260907/result.json",
+      "sha256": "c007b026da8fbcc66986b8cad2bc8e975dcd8b0bb1d42b48d08d344c03c41e8f",
+      "size_bytes": 22800
+    },
+    {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_near_absorbing_worktree/output/udlm/near_absorbing_transfer_cpu_20260907/terminal.json",
+      "sha256": "e7bddfcf9fe1cdd34b77ecb3d67cfc567cd284e48e73b0ae9292b6d30d52b782",
+      "size_bytes": 923
+    }
+  ],
+  "metric_scope": "token diagnostic, distinct from molecular benchmarks; no new evaluations",
+  "outputs": {
+    "groups.csv": {
+      "sha256": "c3eee3566a60fadd3b2fd99e5751ba6247c29e2d152f0f62afabf6456ad82328",
+      "size_bytes": 5978
+    },
+    "report.pdf": {
+      "sha256": "8251a97254ea3521c7c5b934618d041506884ac0a177053af4a78c4aebe2740d",
+      "size_bytes": 5904
+    },
+    "report_source.py": {
+      "sha256": "1d2b3fe07f3099ee280909d096ef6b57175fb6708a6253814b72af72acd6cdee",
+      "size_bytes": 9336
+    }
+  },
+  "schema_version": 1,
+  "source_sha256": "1d2b3fe07f3099ee280909d096ef6b57175fb6708a6253814b72af72acd6cdee",
+  "study": "near_absorbing_frozen_transfer_cpu"
+}
