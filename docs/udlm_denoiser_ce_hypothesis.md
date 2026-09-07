@@ -295,8 +295,8 @@ The original proposal suggested explicit post-initialization reseeding to
 ensure matching. The implemented V8 pair instead keeps
 `reseed_after_model_initialization=false` in both arms. The CE metadata/state
 marker adds no random draws: focused tests verify identical constructor RNG
-states, A1 backbone weights, masks, times and corruptions for the matched CT/CE
-configurations. Thus reseeding is not a prerequisite for this implementation.
+states, A1 backbone weights and masks, plus equal corruption outputs at a
+fixed common time and RNG, for the matched CT/CE configurations. Thus reseeding is not a prerequisite for this implementation.
 Both arms retain the same seed and grouping; this does not assert bitwise
 identity of different objectives or GPU executions. Hosted data resumes do
 not restore their cursor, so V8 uses fresh, disclosed data starts.
