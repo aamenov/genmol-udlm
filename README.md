@@ -9,8 +9,8 @@ controls and molecular variants derived from the
 It is not NVIDIA's official repository and is not affiliated with NVIDIA or the
 UDLM authors.
 
-> **Research status — 2026-09-07.** Temperature, fixed-budget Gibbs and training-objective
-> studies completed 44 runs and independently rescored all 3,104 requested
+> **Research status — 2026-09-07.** Temperature, fixed-budget Gibbs, training-objective
+> and predictor-resolution studies completed 52 runs and independently rescored all 3,904 requested
 > samples. Best selected pilot quality is **57.03%**, versus **85.8%** for the
 > local MDLM baseline. **No superiority has been established.** Each exploratory
 > configuration used only two seeds of 64 or 100 requests; the baseline used
@@ -35,8 +35,11 @@ UDLM authors.
 > reached 54.5% best quality; CE changed quality by -5.5pp at T1 and -2.0pp at T0.5.
 > The [paired report](output/udlm/engineering_v9_reports/paired_complete/report.pdf)
 > includes both decoding rules and all signed contrasts. A fresh
-> [128-versus-512 predictor comparison](experiments/udlm/protocols/engineering_v10_resolution.json)
-> is ready to launch. Current authorization is
+> [128-versus-512 predictor comparison](experiments/udlm/results/engineering_v10.md)
+> completed: quality changed by -0.5pp CT and +1.5pp CE with roughly four times
+> the generation time. A reviewed [mask-rich prior prototype](docs/udlm_mask_rich_prior_implementation.md)
+> and notebook Stage 26 support the next transfer hypothesis; it has no trained
+> molecular result yet. Current authorization is
 > at most two dynamically selected GPUs below 10% utilization.
 
 The main educational implementation is

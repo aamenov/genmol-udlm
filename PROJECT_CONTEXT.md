@@ -1,6 +1,46 @@
 # GenMol-UDLM project context
 
-## Active continuation: completed V9, preparing predictor-resolution V10
+## Active continuation: V10 complete, preparing a mask-rich CE prior
+
+V10 ended at 11:40:49 UTC on 2026-09-07; generation and independent CPU
+rescoring accepted all eight runs and 800 requests. The 128-to-512 predictor
+change gave repaired-quality differences of -0.5pp CT and +1.5pp CE, with
+3.79366x/4.02467x observed generation time. Best V10 quality is 48.0%; no
+superiority. See `experiments/udlm/results/engineering_v10.md` and the
+three-page supplement
+`output/udlm/engineering_v10_reports/resolution_analysis/analysis.pdf`
+(SHA-256 `6204c58405e5b3a4e710a0407cdb20574dede06f9f77fdd74f758b70cec0230c`).
+The original complete report, all raw rows and failed historical campaigns
+remain unchanged. V10 tmux ended; do not repeat its completed generation.
+
+An opt-in `mask_rich_empirical` prior prototype is independently reviewed and
+integrated. It mixes a MASK point mass with the existing positive empirical
+base using `mask_mixture_weight` in [0,1), and binds that weight, MASK ID, base
+prior and final prior in checkpoint metadata/state. Historical R/S/E identities
+remain unchanged. Read `docs/udlm_mask_rich_prior_implementation.md`,
+`docs/udlm_mask_rich_prior_hypothesis.md`, and notebook Stage 26.
+
+The next V11 preparation is a single new CE arm with mixture weight 0.9,
+fresh MDLM 50k EMA initialization, seed 1500, 1,000 updates, global batch 128,
+microbatch 16, two GPUs, accumulation 4, and the same A1/L1/base smoothing and
+clean-target mask as V8b CE. It does not resume or relabel an E checkpoint.
+The frozen-MDLM CPU transfer diagnostic completed and was independently
+reviewed: the same model gives lower clean-token CE with the MASK-rich
+corruption, which also changes the reconstruction difficulty. This is not a
+molecular result. The reviewed fixed launcher is
+`scripts/udlm/launch_mask_prior_training.py --gpu-count 2`, with prospective
+protocol `experiments/udlm/protocols/engineering_v11_mask_prior.json`. Its final
+checkpoint must pass independent prior reconstruction and the predeclared
+metadata fingerprint before completion. 101 focused CPU tests and the isolated
+real dry-run passed. The canonical dry-run and launch follow publication;
+verify live tmux `genmol-udlm-v11-mask-ce`,
+`output/logs/engineering-v11-mask-ce-controller.log` and
+`output/udlm/engineering_v11/mask_ce_1000_b128_w2/` before any action. All jobs still use at most two dynamically selected GPUs strictly below
+10% utilization with enough free memory, and named tmux/log namespaces.
+
+The following V9/V10 plans are retained as historical provenance.
+
+### Completed V9 and V10 design
 
 V9 generation and independent rescoring completed at 11:22:42 UTC on
 2026-09-07. All eight runs and 800 requested rows were accepted. Repaired
