@@ -111,6 +111,57 @@ def test_update_is_byte_idempotent(tmp_path: Path) -> None:
     assert second.read_bytes() == first.read_bytes()
 
 
+def test_stage21_executes_independently_as_read_only_protocol_preview(monkeypatch):
+    monkeypatch.chdir(REPOSITORY_ROOT)
+    markdown, code_cell = updater._engineering_v5_cells()  # noqa: SLF001
+    code = code_cell["source"]
+    tree = ast.parse(code)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            assert all(
+                alias.name not in {"torch", "subprocess", "os"} for alias in node.names
+            )
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            assert node.func.attr not in {
+                "write_text",
+                "write_bytes",
+                "mkdir",
+                "unlink",
+                "system",
+                "run",
+                "Popen",
+            }
+    namespace = {}
+    exec(compile(tree, code_cell["id"], "exec"), namespace)
+    preview = namespace["stage21_preview"]
+    assert preview["seeds"] == [1200, 1201]
+    assert len(preview["entries"]) == 12
+    assert preview["total_requests"] == 1536
+    assert preview["superiority_claim"] is False
+    assert all(
+        preview[key] == 0
+        for key in (
+            "gpu_queries",
+            "checkpoint_loads",
+            "process_launches",
+            "artifact_writes",
+        )
+    )
+    for fragment in (
+        "Paper correspondence",
+        "Intuition and motivation",
+        "Mathematics",
+        "Small concrete example",
+        "tensor shapes",
+        "Comprehension checkpoint",
+        "20/32",
+        "4/32",
+        "separately specified experiment",
+        "two GPUs",
+    ):
+        assert fragment in markdown["source"]
+
+
 def test_generated_stage0_uses_utilization_based_shared_gpu_policy(
     tmp_path: Path,
 ) -> None:
@@ -135,8 +186,8 @@ def test_generated_stage0_uses_utilization_based_shared_gpu_policy(
     assert "a nonempty inventory is allowed" in markdown
     assert "card at exactly 10% is rejected" in markdown
     assert "never interrupts or kills" in markdown
-    assert "1 <= NUM_GPUS <= 3" in count_code
-    assert "user-authorized hard ceiling: 3" in count_code
+    assert "1 <= NUM_GPUS <= 2" in count_code
+    assert "user-authorized hard ceiling: 2" in count_code
     compile(code, "stage0-setup", "exec")
 
 
@@ -383,7 +434,7 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
         "[B,L,1880]",
         "[B,1,H]",
         "utilization strictly below 10%",
-        "at most three",
+        "at most two",
     ):
         assert fragment in markdown
     for fragment in (
@@ -401,7 +452,7 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
         '"final_generation_seeds_used"] == []',
         '"screen_selection_artifacts_alone_authorize_scale_up": False',
         '"supported_gpu_counts": [1, 2, 3, 4]',
-        '"maximum_user_authorized_gpu_count_without_additional_permission": 3',
+        '"maximum_user_authorized_gpu_count_without_additional_permission": 2',
         '"completed_first_registered_gpu_count": 1',
         '"terminal_panel_bound_by_protocol_v4": True',
         '"reseed_after_model_initialization_each": True',
@@ -416,8 +467,11 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
     assert ordered_ids.index("stage-20-udlm-selection-bound-scale-up-code") == (
         ordered_ids.index("stage-20-udlm-selection-bound-scale-up") + 1
     )
-    assert ordered_ids.index("stage19-report-note") == (
+    assert ordered_ids.index("stage-21-engineering-v5-note") == (
         ordered_ids.index("stage-20-udlm-publication-runbook-code") + 1
+    )
+    assert ordered_ids.index("stage19-report-note") == (
+        ordered_ids.index("stage-21-engineering-v5-code") + 1
     )
 
 
@@ -564,7 +618,7 @@ def test_v4_campaign_stage_verifies_small_first_accounting_and_gpu_policy(
         "6,680",
         "*strictly* below 10%",
         "exactly 10% is rejected",
-        "maximum is three GPUs",
+        "maximum is two GPUs",
         "candidate-decision-only",
         "retry and substitution are forbidden",
     ):
@@ -620,7 +674,7 @@ def test_v4_publication_runbook_teaches_exact_cli_and_executes_cpu_oracle(
         "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
         "strictly* below 10%",
         "30,000 MiB",
-        "D has concurrency one",
+        "D had concurrency one",
         "[B,L]",
     ):
         assert fragment in markdown

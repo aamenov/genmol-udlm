@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "study_id": "engineering-v5-temperature",
+  "purpose": "Prospective temperature screen of existing R/S/E UDLM continuation checkpoints after the archived v4 structural diagnostic failed launcher configuration validation.",
+  "claim": "engineering_screen_only_no_superiority_claim",
+  "gpu_policy": {
+    "max_gpus": 2,
+    "max_utilization_percent": 10,
+    "min_free_memory_mib": 30000
+  },
+  "seeds": [
+    1200,
+    1201
+  ],
+  "num_samples": 64,
+  "nfe": 128,
+  "entries": [
+    {
+      "attempt_id": "v5-e-t050-p100",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "arm_id": "E",
+      "config_id": "e_t050_p100",
+      "config": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t050_p100.yaml",
+      "config_sha256": "6ba6c860cd6db8064bbe42bdb81bbbeaba00438e56027a32aecc1ccb670d4f30",
+      "checkpoint": "output/udlm/scaleup-w1-e-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005"
+    },
+    {
+      "attempt_id": "v5-e-t070-p100",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "arm_id": "E",
+      "config_id": "e_t070_p100",
+      "config": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t070_p100.yaml",
+      "config_sha256": "0a1afddbd71ef75acb2f007a7595f59817f51289123d386e489d47d4c3ed5c97",
+      "checkpoint": "output/udlm/scaleup-w1-e-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005"
+    },
+    {
+      "attempt_id": "v5-e-t085-p100",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "arm_id": "E",
+      "config_id": "e_t085_p100",
+      "config": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t085_p100.yaml",
+      "config_sha256": "3bdfe69f94a3d69d2bd02ccf63a900298e5a329cbcef7904c99950569252f381",
+      "checkpoint": "output/udlm/scaleup-w1-e-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005"
+    },
+    {
+      "attempt_id": "v5-e-t100-p100",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "arm_id": "E",
+      "config_id": "e_t100_p100",
+      "config": "scripts/exps/denovo/hparams_udlm_categorical_floor0002.yaml",
+      "config_sha256": "309bbed7b67ad2090def3ba5429f00f4e56b4fb7af2f6be245b9e79619aa3c06",
+      "checkpoint": "output/udlm/scaleup-w1-e-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005"
+    },
+    {
+      "attempt_id": "v5-s-t050-p100",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "arm_id": "S",
+      "config_id": "s_t050_p100",
+      "config": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t050_p100.yaml",
+      "config_sha256": "8f01a9c8dc6c53560554b6a7b081eb2061d35688ac732eee0bd3607dd0c612ff",
+      "checkpoint": "output/udlm/scaleup-w1-s-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72"
+    },
+    {
+      "attempt_id": "v5-s-t070-p100",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "arm_id": "S",
+      "config_id": "s_t070_p100",
+      "config": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t070_p100.yaml",
+      "config_sha256": "c1568f403bf4d340cd838eefa0bf517bd5189a4c3e93b7f1bd7f5d4316189733",
+      "checkpoint": "output/udlm/scaleup-w1-s-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72"
+    },
+    {
+      "attempt_id": "v5-s-t085-p100",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "arm_id": "S",
+      "config_id": "s_t085_p100",
+      "config": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t085_p100.yaml",
+      "config_sha256": "1fa3c17f6ffcdead6df18a5ef537eaefcb4b402a6995ab59839c25b7c1a62753",
+      "checkpoint": "output/udlm/scaleup-w1-s-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72"
+    },
+    {
+      "attempt_id": "v5-s-t100-p100",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "arm_id": "S",
+      "config_id": "s_t100_p100",
+      "config": "scripts/exps/denovo/hparams_udlm_schedule_uniform.yaml",
+      "config_sha256": "8f07751d3504eabc938dbccf91b90217df809945cb06b2fc8f96671cde59f739",
+      "checkpoint": "output/udlm/scaleup-w1-s-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72"
+    },
+    {
+      "attempt_id": "v5-r-t050-p100",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "arm_id": "R",
+      "config_id": "r_t050_p100",
+      "config": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t050_p100.yaml",
+      "config_sha256": "1e1fe8b61b6a23174f23e814bbbccc1b3c81fd9d896ae9fc49834d7c2ec014b5",
+      "checkpoint": "output/udlm/scaleup-w1-r-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c"
+    },
+    {
+      "attempt_id": "v5-r-t070-p100",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "arm_id": "R",
+      "config_id": "r_t070_p100",
+      "config": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t070_p100.yaml",
+      "config_sha256": "532fcd20914b08beea333147b726522ef6004a67d169b75e25b6b261df2d035a",
+      "checkpoint": "output/udlm/scaleup-w1-r-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c"
+    },
+    {
+      "attempt_id": "v5-r-t085-p100",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "arm_id": "R",
+      "config_id": "r_t085_p100",
+      "config": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t085_p100.yaml",
+      "config_sha256": "d5e522480a0e21048fd836e2d2cabaf3be2d2b3943ad64203bd142a00340b7c3",
+      "checkpoint": "output/udlm/scaleup-w1-r-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c"
+    },
+    {
+      "attempt_id": "v5-r-t100-p100",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "arm_id": "R",
+      "config_id": "r_t100_p100",
+      "config": "scripts/exps/denovo/hparams_udlm.yaml",
+      "config_sha256": "bc28eb26297702624e009eed77d13b2a600aeba341b21fbc938d7d01d4c0d84d",
+      "checkpoint": "output/udlm/scaleup-w1-r-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c"
+    }
+  ],
+  "baseline": {
+    "manifest": "experiments/udlm/baselines/mdlm_50000.json",
+    "validity": 1.0,
+    "uniqueness": 0.9986666666666667,
+    "quality": 0.858,
+    "diversity": 0.8230213192558725,
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "samples_per_seed": 1000,
+    "training_updates": 50000
+  },
+  "prior_incident": {
+    "source_revision": "34c990ebb3e5d51656e860c54ba306f5ede35d06",
+    "status": "preserved_failed_v4_diagnostic_not_reclassified_or_retried",
+    "failure_receipt": "output/udlm/de_novo_candidate_campaign_v1/attempts/stage-d-e_t100_p100/seed_1100/failure_receipt.json",
+    "reason": "UDLM identity top-p default omitted by expected effective config; generation completed but completion validator rejected it.",
+    "diagnostic_chemistry_observed_before_this_protocol": true
+  },
+  "training": {
+    "initialization": "MDLM 50000-step EMA warm start",
+    "extra_updates": 1000,
+    "global_batch_size": 16,
+    "training_seed": 17,
+    "arms": {
+      "R": "official uniform with released schedule mismatch",
+      "S": "schedule-consistent uniform categorical",
+      "E": "schedule-consistent empirical SAFE prior with 0.0002 uniform floor"
+    }
+  },
+  "selection": {
+    "rule": "Rank only independently rescored current-screen outcomes by mean released quality descending, then mean diversity descending, then config_id ascending; failed or undefined outcomes unrankable.",
+    "next_step": "Propose a new prospective held-out screen if needed. This screen does not authorize or satisfy the archived v4 final gate.",
+    "final_seeds_reserved": [
+      0,
+      1,
+      2
+    ],
+    "failures": "Preserve every attempted outcome; no automatic retry under the same attempt ID."
+  },
+  "limitations": [
+    "Exploratory parameter selection, not a confirmatory benchmark.",
+    "Only 1000 UDLM continuation updates: matched method training superiority is not isolated.",
+    "Historical baseline has 1000 samples per seed versus 64 here; diversity and uniqueness vary with sample count.",
+    "Strict molecular validity is reported separately from repaired validity."
+  ]
+}

@@ -1,5 +1,58 @@
 # GenMol-UDLM project context
 
+## Active continuation: engineering temperature screen, 2026-09-07
+
+This section supersedes the stale launch status and three-GPU authorization
+below. The user currently authorizes **at most two GPUs**, selected dynamically
+at strictly less than 10% utilization, with active processes permitted when
+enough free memory remains. The engineering launcher retains a 30,000 MiB
+minimum. Long jobs use tmux and log under `output/logs/`.
+
+The v4 D diagnostic at source `34c990ebb3e5d51656e860c54ba306f5ede35d06`
+generated 32 samples, then its launcher rejected the completed artifacts because
+the expected effective configuration omitted the normalized `raw_loo_top_p=1.0`
+default. The benchmark child included it. This is a configuration-identity bug,
+not a CUDA or checkpoint failure. The launcher now mirrors the child's UDLM-only
+default normalization; MDLM identity remains unchanged. Existing v4 receipts,
+decisions, logs and raw rows remain unchanged, and v4 is still incomplete.
+
+The archived diagnostic is explicitly exploratory: repaired validity 29/32,
+strict validity 6/32, repaired quality 12/32. Its token audit had no editable
+control tokens; 20/32 raw outputs had an odd ring-label count and 4/32 unbalanced
+parentheses. No superiority over the 50k MDLM comparator has been established.
+
+`experiments/udlm/protocols/engineering_v5.json` specifies a fresh screen of
+the existing corrected 1,000-update R/S/E continuation checkpoints at softmax
+temperatures 0.50, 0.70, 0.85 and 1.00, with no nucleus truncation. Each of 12
+entries uses seeds 1200 and 1201, 64 requests per seed and 128 backbone calls
+per molecule: 24 runs and 1,536 requests. Final seeds 0/1/2 remain reserved.
+This is a new engineering study, not a retry or promotion of the failed v4
+campaign. Small-sample metrics do not establish a confirmatory benchmark claim.
+
+The controller `scripts/udlm/launch_exploration.py` executes the already audited
+benchmark launcher sequentially across configurations with at most two seed
+jobs active, binds a committed prospective protocol, and writes immutable
+per-entry receipts. Resume verifies previously recorded bytes and skips
+terminal entries; it does not automatically retry interrupted or failed jobs.
+The report `scripts/udlm/report_exploration.py` independently redecodes raw
+samples in fresh CPU workers and produces JSON, CSV and PDF snapshots,
+including incomplete and failed slots. Its configurations, seeds, checkpoint
+hashes, runtime, physical/logical device mapping, repaired and strict metrics,
+paper references, and limitations must remain visible.
+
+Run from this worktree using the project `.venv`; commit and push all changes
+before a launch. The new screen command is:
+
+```bash
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_exploration.py --protocol experiments/udlm/protocols/engineering_v5.json
+```
+
+Use a detached session named `genmol-udlm-v5-temperature` and redirect its
+controller output to `output/logs/engineering-v5-controller.log`. Verify live
+tmux/log/receipt state before resuming; the command alone is not evidence that
+a run is active or complete. The root workspace has unrelated uncommitted work
+and must remain untouched. Push to `origin` (`aamenov/genmol-udlm`).
+
 Snapshot: 2026-09-07, after the corrected W=1 scale-up lineage completed and the
 independent terminal validator accepted its full R→S→E chain. Protocol v4 and
 its CPU-tested generation framework are being prepared for the F publication;

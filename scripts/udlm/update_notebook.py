@@ -1,4 +1,4 @@
-"""Idempotently align Stage 0, taught UDLM Stage 20, and final reporting."""
+"""Idempotently align Stage 0, UDLM Stages 20--21, and final reporting."""
 
 from __future__ import annotations
 
@@ -138,13 +138,13 @@ def _validate_stage20_cells(
 
 
 STAGE0_GPU_COUNT_CODE = """
-# USER SETTING: request 1--3 GPUs; physical IDs are selected dynamically.
+# USER SETTING: request 1--2 GPUs; physical IDs are selected dynamically.
 NUM_GPUS: int = 1
 
-if type(NUM_GPUS) is not int or not 1 <= NUM_GPUS <= 3:
-    raise ValueError('NUM_GPUS must be an integer from 1 through 3.')
+if type(NUM_GPUS) is not int or not 1 <= NUM_GPUS <= 2:
+    raise ValueError('NUM_GPUS must be an integer from 1 through 2.')
 
-print(f'Requested GPU count: {NUM_GPUS} (user-authorized hard ceiling: 3)')
+print(f'Requested GPU count: {NUM_GPUS} (user-authorized hard ceiling: 2)')
 """
 
 
@@ -381,8 +381,8 @@ def take_gpu_snapshot() -> list[dict]:
 
 
 def select_idle_gpus(num_gpus: int) -> list[dict]:
-    if type(num_gpus) is not int or not 1 <= num_gpus <= 3:
-        raise ValueError('NUM_GPUS must be an integer from 1 through 3.')
+    if type(num_gpus) is not int or not 1 <= num_gpus <= 2:
+        raise ValueError('NUM_GPUS must be an integer from 1 through 2.')
 
     snapshot = take_gpu_snapshot()
     eligible = sorted(
@@ -3155,7 +3155,7 @@ and a registry that were separately reviewed, committed, and pushed. Eligible ph
 utilization strictly below 10%, at least 30,000 MiB free, and non-prohibited
 compute mode. The scale-up tooling can represent world sizes through four for
 historical completeness, but the active user authorization permits at most
-three GPUs without another request; no physical ID is hard-coded.
+two GPUs without another request; no physical ID is hard-coded.
 
 **Comprehension checkpoint.** Why is S required between R and E? Expected
 reasoning: it holds the stationary prior uniform while repairing the schedule,
@@ -3308,7 +3308,7 @@ stage209_future_scale_up_contract = {
     "selected_scheduler": "E-L1",
     "selected_conditioning": "E-A1",
     "supported_gpu_counts": [1, 2, 3, 4],
-    "maximum_user_authorized_gpu_count_without_additional_permission": 3,
+    "maximum_user_authorized_gpu_count_without_additional_permission": 2,
     "completed_first_registered_gpu_count": 1,
     "terminal_panel_bound_by_protocol_v4": True,
     "gpu_utilization_must_be_strictly_below_percent": 10,
@@ -3329,7 +3329,7 @@ print(stage209_future_scale_up_contract)
 
 def _v4_candidate_campaign_cells() -> list[dict]:
     """Return executable teaching cells for the frozen v4 generation campaign."""
-    return [
+    cells = [
         _cell(
             "markdown",
             r"""
@@ -3837,7 +3837,7 @@ controller inspects the full inventory and re-probes the chosen UUID. A card is
 idle only when utilization is *strictly* below 10%, at least 30,000 MiB is free,
 and compute mode is not prohibited; exactly 10% is rejected. Active processes
 may coexist only if those live checks pass, are recorded, and are never
-interrupted. The user-authorized maximum is three GPUs without another request,
+interrupted. The current user-authorized maximum is two GPUs without another request,
 physical GPU 0 is never assumed, and long jobs run in named detached `tmux`
 sessions with logs under `output/logs/`.
 
@@ -4080,8 +4080,9 @@ independent rescore rather than copied from producer summaries.
 `/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python`. Launch each prefix
 in a separately named detached `tmux` controller with inherited
 `CUDA_VISIBLE_DEVICES` removed and controller stdout/stderr redirected below
-`output/logs/`. D has concurrency one. Other stages may use at most three
-one-GPU children, and each selected UUID must pass a fresh inventory and
+`output/logs/`. D had concurrency one. The archived v4 protocol encoded at most three
+one-GPU children; current work is limited to two by the latest user instruction.
+Every selected UUID must pass a fresh inventory and
 re-probe with utilization *strictly* below 10% and at least 30,000 MiB free.
 After the eligible decision, run the CPU evidence materializer at exact $G$,
 then run the same materializer with `--stage-published-evidence`; that flag
@@ -4293,6 +4294,226 @@ stage213_runbook_summary = {
 print(stage213_runbook_summary)
 """,
             f"{STAGE_TAG_PREFIX}-publication-runbook-code",
+        ),
+    ]
+    for cell in cells:
+        if cell["cell_type"] == "markdown":
+            cell["source"] = (
+                "> Historical v4 teaching: D terminated on 2026-09-07 with a "
+                "launcher configuration-identity failure. Its artifacts and "
+                "protocol remain immutable; these examples do not resume it. "
+                "Stage 21 describes the separate engineering-v5 experiment. "
+                "Current GPU authorization is at most two cards.\n\n" + cell["source"]
+            )
+    return cells
+
+
+def _engineering_v5_cells() -> list[dict]:
+    """Teach the new engineering screen using only CPU calculations and reads."""
+    return [
+        _cell(
+            "markdown",
+            r"""
+# Stage 21 — Diagnose the failed pilot and preview temperature screening
+
+**Paper correspondence and released-code differences.** GenMol combines a
+SAFE representation, absorbing MDLM, and confidence-based token revelation.
+Our R/S/E checkpoints instead update editable positions with UDLM reverse
+bridges: R retains the released uniform process, S repairs schedule consistency,
+and E adds an empirical stationary prior. These are warmed from GenMol EMA,
+with a local BERT time conditioner, not fresh replicas of the official DiT
+architecture. Each received 1,000 updates of batch 16, or 16,000 additional
+example exposures. The [UDLM paper](https://arxiv.org/abs/2412.10193) motivates
+continuous token editing; the [later LOO analysis](https://arxiv.org/abs/2605.22765)
+clarifies the meaning of the plug-in predictor. Temperature screening is a
+sampling hypothesis, not a change to either training objective.
+
+**Intuition and motivation.** Archived v4 diagnostic D generated all 32 samples,
+but completion validation failed because the producer inserted the default
+`raw_loo_top_p=1.0` while the launcher expected a configuration without that
+field. Its terminal failure is preserved, with no promotion or retry in v4.
+Engineering v5 is a separately specified experiment using seeds 1200/1201.
+It tests whether concentrating probability on plausible tokens improves SAFE
+consistency before spending more training compute. Final seeds 0/1/2 remain
+excluded from tuning.
+
+The failed D artifacts contain observations, not a successful registered
+benchmark: repaired validity was 29/32, strict validity 6/32, and repaired
+quality 12/32. A direct syntax recount found odd ring-label occurrence counts
+in 20/32 rows and unbalanced parentheses in 4/32. These diagnostics overlap and
+are not an exhaustive chemistry validator. Repair recovered 23 strict failures
+and largest-component selection affected 15 rows. No editable BOS, EOS, PAD,
+MASK, or UNK survived. Thus this sample suggests a structural-consistency
+problem; it does not support a superiority claim or identify its unique cause.
+
+**Mathematics, with every symbol defined.** Let $B$ be the number of molecules,
+$L$ the padded sequence length, and $K$ the active vocabulary size (1,880 here).
+For example index $b$, position $\ell$, and token $j$, the network returns logit
+$z_{b\ell j}$. Temperature $\tau>0$ gives raw leave-one-out probabilities
+
+$$r^{(\tau)}_{b\ell j}=\frac{\exp(z_{b\ell j}/\tau)}
+ {\sum_{k=1}^{K}\exp(z_{b\ell k}/\tau)}.$$
+
+Here $k$ is the summation token index; $r$ predicts a clean token from its noisy
+context. Let $t$ be current time, $s<t$ earlier time, $i$ the current token,
+$\pi_j$ stationary noise mass, and $\alpha_u=1-(1-\epsilon)u$ the clean fraction
+at time $u$, with residual-clean constant $\epsilon=0.001$. Set
+$a=\alpha_t/\alpha_s$. The reverse probability of earlier token $j$ is
+
+$$P(j\mid i)=\frac{[a\,\mathbf1\{j=i\}+(1-a)\pi_i]
+ [\alpha_s r^{(\tau)}_j+(1-\alpha_s)\pi_j]}
+ {\sum_k[a\,\mathbf1\{k=i\}+(1-a)\pi_i]
+ [\alpha_s r^{(\tau)}_k+(1-\alpha_s)\pi_k]}.$$
+
+$\mathbf1$ is one when its condition holds and zero otherwise. Notice the
+likelihood uses $\pi_i$, the observed category's mass. Temperature acts on $r$
+before the bridge; applying it to final $P$ changes the transition differently.
+Top-$p$ would retain the smallest ranked prefix whose cumulative raw mass reaches
+$p$, including the crossing token. V5 fixes $p=1$, so no category is truncated.
+
+**Small concrete example.** For raw probabilities $(0.6,0.3,0.1)$, temperature
+$\tau=0.5$ squares and normalizes them to $(0.782609,0.195652,0.021739)$.
+With uniform $\pi=(1/3,1/3,1/3)$, $\alpha_t=0.2$, $\alpha_s=0.6$, and current
+category $i=2$ (the second category), the following CPU calculation shows the
+different reverse probabilities before and after sharpening. Decreasing
+temperature concentrates model confidence; it does not guarantee chemical
+validity and can reduce diversity.
+
+**Code below, tensor shapes, and invariants.** This cell is self-contained from
+a clean kernel in this worktree. It reads the small v5 protocol and pinned YAMLs,
+hashes configuration bytes, and calculates the three-category example using
+Python lists. It never imports PyTorch, opens a model checkpoint, queries a GPU,
+launches a process, or writes an artifact. Real token IDs and editable masks
+have shapes `[B,L]`; logits and reverse probabilities have `[B,L,K]`.
+Probabilities must be finite, nonnegative, and normalized; immutable framing
+must remain unchanged. The preview verifies 128 NFE, distinct engineering
+seeds, equal requested counts, and at most two GPUs with utilization strictly
+below 10% at launch. Historical protocol fields allowing more GPUs are not
+current authorization. Actual jobs use dynamic UUID discovery in named tmux
+sessions with logs in `output/logs/`, separately from this notebook.
+
+**Comprehension checkpoint.** Why can identical sampling defaults still cause
+a validation failure? Expected reasoning: literal effective dictionaries and
+their hashes differed even though both meant $p=1$. Why not infer raw molecular
+validity from 29/32 repaired successes? Expected reasoning: strict decoding
+accepted only six, and repair or component removal changes the output. Why keep
+the crossing token in top-$p$? Expected reasoning: omitting it can leave retained
+mass below $p$. Why are 12 temperature configurations and two seeds still not a
+final comparison? Expected reasoning: these outcomes select settings; an
+independent locked evaluation is needed to estimate the selected model's
+performance. What trade-off might sharpening create? Expected reasoning:
+quality can rise while coverage and diversity fall, so both must be measured.
+""",
+            "stage-21-engineering-v5-note",
+        ),
+        _cell(
+            "code",
+            r"""
+import hashlib as stage21_hashlib
+import json as stage21_json
+import math as stage21_math
+from pathlib import Path as Stage21Path
+
+import yaml as stage21_yaml
+
+
+stage21_relative_protocol = Stage21Path(
+    "experiments/udlm/protocols/engineering_v5.json"
+)
+stage21_start = Stage21Path.cwd().resolve()
+stage21_candidates = [
+    stage21_start,
+    stage21_start / "run_sources/udlm_genmol_worktree",
+    *stage21_start.parents,
+]
+stage21_root = next(
+    root for root in stage21_candidates
+    if (root / stage21_relative_protocol).is_file()
+)
+stage21_protocol_bytes = (stage21_root / stage21_relative_protocol).read_bytes()
+stage21_protocol = stage21_json.loads(stage21_protocol_bytes)
+assert stage21_protocol["schema_version"] == 1
+assert stage21_protocol["claim"] == "engineering_screen_only_no_superiority_claim"
+assert stage21_protocol["gpu_policy"] == {
+    "max_gpus": 2,
+    "max_utilization_percent": 10,
+    "min_free_memory_mib": 30000,
+}
+stage21_seeds = stage21_protocol["seeds"]
+assert len(stage21_seeds) == len(set(stage21_seeds))
+assert all(type(seed) is int and seed >= 1000 for seed in stage21_seeds)
+assert not set(stage21_seeds).intersection({0, 1, 2})
+assert 1 <= stage21_protocol["num_samples"] <= 100
+assert stage21_protocol["nfe"] == 128
+stage21_entries = stage21_protocol["entries"]
+assert len({entry["attempt_id"] for entry in stage21_entries}) == len(stage21_entries)
+
+stage21_preview_rows = []
+for stage21_entry in stage21_entries:
+    stage21_config_path = (stage21_root / stage21_entry["config"]).resolve()
+    assert stage21_config_path.is_relative_to(stage21_root)
+    stage21_config_bytes = stage21_config_path.read_bytes()
+    assert stage21_hashlib.sha256(stage21_config_bytes).hexdigest() == (
+        stage21_entry["config_sha256"]
+    )
+    stage21_config = stage21_yaml.safe_load(stage21_config_bytes)
+    assert stage21_config["diffusion_type"] == "udlm"
+    assert stage21_config["num_steps"] == stage21_protocol["nfe"]
+    assert stage21_config.get("raw_loo_top_p", 1.0) == 1.0
+    stage21_preview_rows.append({
+        "attempt": stage21_entry["attempt_id"],
+        "arm": stage21_entry["arm_id"],
+        "temperature": stage21_config["softmax_temp"],
+        "raw_loo_top_p": stage21_config.get("raw_loo_top_p", 1.0),
+        "requests_per_seed": stage21_protocol["num_samples"],
+        "checkpoint_sha256": stage21_entry["checkpoint_sha256"],
+    })
+
+
+def stage21_normalize(values):
+    total = sum(values)
+    probabilities = [value / total for value in values]
+    assert all(stage21_math.isfinite(value) and value >= 0 for value in probabilities)
+    assert stage21_math.isclose(sum(probabilities), 1.0, abs_tol=1e-12)
+    return probabilities
+
+
+def stage21_toy_bridge(raw_probabilities):
+    alpha_t, alpha_s, current_index = 0.2, 0.6, 1
+    stationary = [1 / 3] * 3
+    ratio = alpha_t / alpha_s
+    return stage21_normalize([
+        (ratio * (j == current_index) + (1 - ratio) * stationary[current_index])
+        * (alpha_s * raw_probabilities[j] + (1 - alpha_s) * stationary[j])
+        for j in range(3)
+    ])
+
+
+stage21_raw = [0.6, 0.3, 0.1]
+stage21_sharp = stage21_normalize([value ** (1 / 0.5) for value in stage21_raw])
+assert stage21_math.isclose(stage21_sharp[0], 18 / 23)
+stage21_toy_result = {
+    "raw_tau_1": stage21_raw,
+    "raw_tau_05": stage21_sharp,
+    "bridge_tau_1": stage21_toy_bridge(stage21_raw),
+    "bridge_tau_05": stage21_toy_bridge(stage21_sharp),
+}
+stage21_preview = {
+    "protocol_sha256": stage21_hashlib.sha256(stage21_protocol_bytes).hexdigest(),
+    "seeds": stage21_seeds,
+    "entries": stage21_preview_rows,
+    "total_requests": (
+        len(stage21_entries) * len(stage21_seeds) * stage21_protocol["num_samples"]
+    ),
+    "gpu_queries": 0,
+    "checkpoint_loads": 0,
+    "process_launches": 0,
+    "artifact_writes": 0,
+    "superiority_claim": False,
+}
+print(stage21_json.dumps({"toy": stage21_toy_result, "preview": stage21_preview}, indent=2))
+""",
+            "stage-21-engineering-v5-code",
         ),
     ]
 
@@ -4534,12 +4755,12 @@ random seeds.
 
 An A6000 is not computationally equivalent to an A100. Matching the GPU count
 does not reproduce the paper's wall-clock time. The active user authorization
-permits a count from one through three without another permission request;
+permits a count from one through two without another permission request;
 physical IDs are selected dynamically.
 
 ## What the next code cell does
 
-The next cell defines `NUM_GPUS` as an integer from 1 through 3. It is a count, not a
+The next cell defines `NUM_GPUS` as an integer from 1 through 2. It is a count, not a
 physical GPU index and not a list of device IDs. For example,
 
 ```python
@@ -4547,7 +4768,7 @@ NUM_GPUS = 2
 ```
 
 means "require exactly two eligible GPUs." It does not mean physical GPU 2.
-The validation rejects zero, values above three, floats, strings, and Booleans.
+The validation rejects zero, values above two, floats, strings, and Booleans.
 
 The cell prints the requested count. It does not inspect, reserve, or initialize
 any GPU. Changing the count requires a kernel restart and a run from the top
@@ -4559,7 +4780,7 @@ Stage 0 contains no SAFE encoding, diffusion, BERT, optimizer, or training.
 
 1. Does `NUM_GPUS = 2` select physical GPU 2?
 2. What should happen if fewer than two GPUs later pass the guard?
-3. Why is the three-GPU authorization distinct from the paper's eight-GPU setup?
+3. Why is the two-GPU authorization distinct from the paper's eight-GPU setup?
 4. Why must the kernel be restarted after changing `NUM_GPUS`?
 """
     setup_note = """## Stage 0.2 - Resolve this worktree and inspect the server
@@ -4609,7 +4830,7 @@ PyTorch.
 The completed runtime path is:
 
 ```text
-requested count in {{1, 2, 3}}
+requested count in {{1, 2}}
     -> dynamic worktree and source resolution
     -> discovered physical GPU inventory and eligibility checks
     -> selected UUIDs
@@ -5404,9 +5625,12 @@ def _update_completion_gate(notebook: dict) -> None:
   seeds 1000/1001 x 256 at 128 NFE. Failures remain visible and unrankable;
   retries, substitution, and cross-stage score pooling are forbidden. Ranked
   metrics come from fresh CPU independent rescores before advancement.
-- The exact resume sequence is `--through-stage D`, then separate A, B, C, and
+- The historical resume sequence was `--through-stage D`, then separate A, B, C, and
   `eligible` invocations after each predecessor decision. D concurrency is one;
-  the campaign maximum is three. On the artifact-bearing host, all 43 outcomes
+  the frozen protocol maximum was three. Current work is capped at two GPUs.
+  D terminated with a launcher configuration-identity failure; v4 is archived,
+  not eligible for continuation or promotion. Stage 21 previews the separately
+  specified engineering-v5 experiment. The historical workflow required all 43 outcomes
   become an addition-only exact-G child through
   `materialize_candidate_evidence.py --stage-published-evidence`, followed by
   separate clean pushed decision, deterministic ledger, and deterministically
@@ -5421,7 +5645,7 @@ def _update_completion_gate(notebook: dict) -> None:
 - Every launch rechecks the full GPU inventory. A qualifying card has
   utilization strictly below 10% (exactly 10% is rejected), at least 30,000 MiB
   free, and non-prohibited compute mode. The active authorization is at most
-  three GPUs without another request; UUID mapping never assumes physical GPU
+  two GPUs without another request; UUID mapping never assumes physical GPU
   0 and active processes are recorded but never interrupted.
 - Completed selection seeds publish schema-2 reference-only envelopes after
   structural validation and fresh-process raw-text rescoring. Failed seeds use
@@ -5492,6 +5716,18 @@ def update_notebook(source: Path, destination: Path):
         *late_stage20_cells,
         *v4_campaign_cells,
     ]
+    engineering_cells = _engineering_v5_cells()
+    engineering_ids = {cell["id"] for cell in engineering_cells}
+    notebook["cells"] = [
+        cell for cell in notebook["cells"] if cell.get("id") not in engineering_ids
+    ]
+    report_index = next(
+        index
+        for index, cell in enumerate(notebook["cells"])
+        if cell.get("id") == "stage19-report-note"
+    )
+    notebook["cells"][report_index:report_index] = engineering_cells
+    _validate_unique_cell_ids(notebook["cells"], label="updated notebook")
     # Stage 0 changes the device count, source checkout, and provenance state.
     # Every prior saved execution is therefore stale, including downstream
     # tables and launch commands that were produced with three GPUs.  Keep the

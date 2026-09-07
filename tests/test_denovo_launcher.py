@@ -1939,6 +1939,10 @@ def test_expected_identity_uses_checkpoint_metadata_and_normalized_sampling(
     )
     assert expected.effective_config["num_samples"] == expected_fixture.num_samples
     assert expected.effective_config["device"] == "cuda:0"
+    # The historical MDLM effective config and its digest must stay unchanged.
+    assert expected.effective_config == expected_fixture.effective_config
+    assert expected.effective_config_sha256 == expected_fixture.effective_config_sha256
+    assert "raw_loo_top_p" not in expected.effective_config
     assert expected.benchmark_runner_sha256 == launcher._sha256_file(
         Path(launcher.benchmark_runner.__file__).resolve()
     )
@@ -1947,8 +1951,10 @@ def test_expected_identity_uses_checkpoint_metadata_and_normalized_sampling(
     assert preflight_order[:2] == ["metric_input", "checkpoint"]
 
 
-def test_expected_identity_supports_udlm_and_rejects_endpoint_mismatch(
+@pytest.mark.parametrize("top_p", [None, 1, 0.95])
+def test_expected_identity_normalizes_udlm_top_p_and_rejects_endpoint_mismatch(
     tmp_path: Path,
+    top_p: float | None,
 ) -> None:
     expected_fixture = _expected(tmp_path)
     expected_fixture.config_path.write_text(
@@ -1958,9 +1964,11 @@ def test_expected_identity_supports_udlm_and_rejects_endpoint_mismatch(
         "min_add_len: 40\n"
         "num_steps: 32\n"
         "inference_eps: 1.0e-5\n"
-        "exclude_special_tokens: false\n",
+        "exclude_special_tokens: false\n"
+        + ("" if top_p is None else f"raw_loo_top_p: {top_p}\n"),
         encoding="utf-8",
     )
+    source_bytes = expected_fixture.config_path.read_bytes()
     metadata = {
         "sha256": expected_fixture.checkpoint_sha256,
         "global_step": 100,
@@ -1993,6 +2001,31 @@ def test_expected_identity_supports_udlm_and_rejects_endpoint_mismatch(
         )
         assert expected.checkpoint_diffusion_type == "udlm"
         assert expected.sampling_config["num_steps"] == 32
+        # The child records the normalized default even when the historical
+        # YAML omits it; hash exactly the same effective configuration.
+        effective = {
+            "diffusion_type": "udlm",
+            "softmax_temp": 1.0,
+            "randomness": 0.0,
+            "min_add_len": 40,
+            "num_steps": 32,
+            "inference_eps": 1e-5,
+            "exclude_special_tokens": False,
+            "model_path": str(expected_fixture.checkpoint_path),
+            "num_samples": 32,
+            "device": "cuda:0",
+            "raw_loo_top_p": 1.0 if top_p is None else float(top_p),
+        }
+        assert expected.effective_config == effective
+        assert isinstance(expected.effective_config["raw_loo_top_p"], float)
+        assert expected.effective_config_sha256 == launcher._canonical_json_sha256(
+            effective
+        )
+        assert ("raw_loo_top_p" in expected.source_config) is (top_p is not None)
+        assert expected_fixture.config_path.read_bytes() == source_bytes
+        assert expected.source_config_sha256 == launcher._sha256_file(
+            expected_fixture.config_path
+        )
 
         metadata["udlm_inference_eps"] = 2e-5
         with pytest.raises(ValueError, match="inference_eps"):
@@ -2003,11 +2036,13 @@ def test_expected_identity_supports_udlm_and_rejects_endpoint_mismatch(
             )
 
 
+@pytest.mark.parametrize("prior_variant", ["schedule_uniform", "empirical_frequency"])
 def test_expected_identity_pins_full_categorical_prior_metadata(
     tmp_path: Path,
+    prior_variant: str,
 ) -> None:
     expected_fixture = _expected(tmp_path)
-    prior_metadata = {"variant": "schedule_uniform", "immutable": True}
+    prior_metadata = {"variant": prior_variant, "immutable": True}
     prior_digest = "a" * 64
     expected_fixture.config_path.write_text(
         "diffusion_type: udlm\n"
@@ -2017,7 +2052,7 @@ def test_expected_identity_pins_full_categorical_prior_metadata(
         "num_steps: 32\n"
         "inference_eps: 1.0e-5\n"
         "exclude_special_tokens: false\n"
-        "prior_variant: schedule_uniform\n"
+        f"prior_variant: {prior_variant}\n"
         f"prior_metadata_sha256: {prior_digest}\n",
         encoding="utf-8",
     )
@@ -2028,7 +2063,7 @@ def test_expected_identity_pins_full_categorical_prior_metadata(
         "diffusion_type": "udlm",
         "udlm_inference_eps": 1e-5,
         "udlm_exclude_special_tokens": False,
-        "udlm_prior_variant": "schedule_uniform",
+        "udlm_prior_variant": prior_variant,
         "udlm_prior_metadata": prior_metadata,
         "udlm_prior_metadata_sha256": prior_digest,
     }
@@ -2056,6 +2091,8 @@ def test_expected_identity_pins_full_categorical_prior_metadata(
         )
         assert expected.checkpoint_udlm_prior_metadata == prior_metadata
         assert expected.checkpoint_udlm_prior_metadata_sha256 == prior_digest
+        assert expected.effective_config["raw_loo_top_p"] == 1.0
+        assert "raw_loo_top_p" not in expected.source_config
 
         metadata["udlm_prior_metadata_sha256"] = "b" * 64
         with pytest.raises(ValueError, match="prior_metadata_sha256"):

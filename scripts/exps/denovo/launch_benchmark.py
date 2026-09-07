@@ -1877,6 +1877,10 @@ def _build_expected_run_identity(
             "device": "cuda:0",
         }
     )
+    if checkpoint_diffusion_type == "udlm":
+        # Match the child's effective configuration, including historical YAMLs
+        # that omit the normalized identity (no-truncation) top-p default.
+        effective_config["raw_loo_top_p"] = sampling_config["raw_loo_top_p"]
     return ExpectedRunIdentity(
         checkpoint_path=checkpoint,
         checkpoint_sha256=str(checkpoint_info["sha256"]),
