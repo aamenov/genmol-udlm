@@ -1,0 +1,15 @@
+# V13 MASK-rich CE treatment; temperature acts before CE-to-LOO conversion; bridge temperature is one.
+model_path: output/udlm/engineering_v11b/mask_ce_1000_b128_w2/checkpoints/1000.ckpt
+num_samples: 100
+diffusion_type: udlm
+parameterization: x0_denoiser
+softmax_temp: 0.5
+raw_loo_top_p: 1.0
+randomness: 0.0
+min_add_len: 40
+num_steps: 128
+inference_eps: 1.0e-5
+exclude_special_tokens: false
+prior_variant: mask_rich_empirical
+prior_metadata_sha256: 4e1febe2684beebdbf3d4c86aa01bc24ed1d3941af67b63473979e2ae810ee45
+temperature_space: x0_denoiser
