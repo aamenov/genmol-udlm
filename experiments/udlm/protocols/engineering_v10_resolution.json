@@ -1,0 +1,271 @@
+{
+  "baseline": {
+    "local_mdlm_50000": {
+      "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "diversity": 0.8230213192558725,
+      "quality": 0.858,
+      "requests_per_seed": 1000,
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "source": "PROJECT_CONTEXT.md: frozen GenMol comparator",
+      "uniqueness": 0.9986666666666667,
+      "validity": 1.0
+    },
+    "paper_genmol_v1_table1": {
+      "diversity": 0.818,
+      "quality": 0.846,
+      "requests_per_seed": 1000,
+      "run_count": 3,
+      "source": "scripts/exps/denovo/report.py: PAPER_REFERENCE",
+      "uniqueness": 0.997,
+      "validity": 1.0
+    }
+  },
+  "claim": "engineering_screen_only_no_superiority_claim",
+  "design": {
+    "compute_comparison": "512 predictor NFEs cost four times 128 per molecule; measure wall time and make no equal-compute or fixed-NFE claim.",
+    "corrector_steps_per_molecule": 0,
+    "inference_eps": 1e-05,
+    "inference_weights": "ema",
+    "min_add_len": 40,
+    "nfe_by_configuration": {
+      "ce_t050_n128": 128,
+      "ce_t050_n512": 512,
+      "ct_t050_n128": 128,
+      "ct_t050_n512": 512
+    },
+    "parameterization_controls": "Convert CE clean-denoiser logits to LOO at the current noisy state/time before temperature and top-p; CT logits already parameterize raw LOO.",
+    "randomness": 0.0,
+    "raw_loo_top_p": 1.0,
+    "resolution_comparison": {
+      "aggregation": "Equal-seed mean and sample SD; all declared seed pairs must define the metric before summary; undefined values are not zero.",
+      "contrasts": [
+        {
+          "contrast_id": "ct_512_minus_128",
+          "control_config": "ct_t050_n128",
+          "method": "CT",
+          "treatment_config": "ct_t050_n512"
+        },
+        {
+          "contrast_id": "ce_512_minus_128",
+          "control_config": "ce_t050_n128",
+          "method": "CE",
+          "treatment_config": "ce_t050_n512"
+        }
+      ],
+      "decoding_branches": [
+        "released_comparable",
+        "strict"
+      ],
+      "direction": "512 minus 128 within each method and seed; report both contrasts even when negative.",
+      "metrics": [
+        "validity",
+        "uniqueness",
+        "quality",
+        "diversity"
+      ],
+      "paired_unit": "Seed/run labels, not molecule-level trajectories."
+    },
+    "selection_history": "V5/V6 and complete V9 outcomes were observed before this design. Temperature 0.5 is an informed engineering choice; both frozen CT and CE checkpoints remain included.",
+    "temperature": 0.5
+  },
+  "entries": [
+    {
+      "arm_id": "CT",
+      "attempt_id": "v10-ct-t050-n128",
+      "candidate_id": "v8-ct-e-w2-1000u-48986899c401",
+      "checkpoint": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+      "config": "experiments/udlm/protocols/engineering_v10_configs/ct_t050_n128.yaml",
+      "config_id": "ct_t050_n128",
+      "config_sha256": "69cf9272e577258a32bde4183f2abb4b0f92f16d3f7321bd959bb586b8381988",
+      "parameterization": "raw_loo"
+    },
+    {
+      "arm_id": "CT",
+      "attempt_id": "v10-ct-t050-n512",
+      "candidate_id": "v8-ct-e-w2-1000u-48986899c401",
+      "checkpoint": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+      "config": "experiments/udlm/protocols/engineering_v10_configs/ct_t050_n512.yaml",
+      "config_id": "ct_t050_n512",
+      "config_sha256": "c69de19294fdc57267755fd694cbe64bfb328cefbea95d921d6681f391d2562e",
+      "parameterization": "raw_loo"
+    },
+    {
+      "arm_id": "CE",
+      "attempt_id": "v10-ce-t050-n128",
+      "candidate_id": "v8b-ce-e-w2-1000u-b7d674ed5bdd",
+      "checkpoint": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+      "config": "experiments/udlm/protocols/engineering_v10_configs/ce_t050_n128.yaml",
+      "config_id": "ce_t050_n128",
+      "config_sha256": "e5fda2a3c4e70cc08cf9e57644d431c5b21d0c3e3ed0223c5b09d01a94ec7b53",
+      "parameterization": "x0_denoiser"
+    },
+    {
+      "arm_id": "CE",
+      "attempt_id": "v10-ce-t050-n512",
+      "candidate_id": "v8b-ce-e-w2-1000u-b7d674ed5bdd",
+      "checkpoint": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+      "config": "experiments/udlm/protocols/engineering_v10_configs/ce_t050_n512.yaml",
+      "config_id": "ce_t050_n512",
+      "config_sha256": "de7c85d799e80c8af82f3ea9c35ca134438d76b6038929632bb69b94a38eef18",
+      "parameterization": "x0_denoiser"
+    }
+  ],
+  "gpu_policy": {
+    "max_gpus": 2,
+    "max_utilization_percent": 10,
+    "min_free_memory_mib": 30000
+  },
+  "limitations": [
+    "This design follows V5/V6 and complete V9 results; temperature 0.5 was selected using those outcomes and is not independent confirmation.",
+    "The 512-step treatment costs four times the predictor NFEs of 128, so any gain is not an equal-compute win; wall-clock scaling is measured.",
+    "The finite-state oracle uses exact untempered conditionals; it does not prove an improvement for learned temperature-0.5 molecular models or identify the cause of their quality gap.",
+    "The original V8 CT controller and campaign remain failed. This panel reuses its separately audited checkpoint plus the completed V8b CE checkpoint; neither is retrained or substituted.",
+    "Training source revisions differ through controller/reporting changes; model/training implementation and resolved common training settings match by recorded hashes.",
+    "128000 training exposures are configured accounting, not distinct molecules or an independent live row trace. Finite final tensors do not establish finiteness of every intermediate update.",
+    "Two seeds of 100 requests per setting are small; pairing is by seed/run, not molecule-level trajectories or independence. Withhold each contrast summary until both pairs define its metric.",
+    "Report validity, uniqueness, quality and diversity under strict SAFE decoding and released repair/largest-component selection, plus every per-seed 512-minus128 contrast. Quality counts unique QED>=0.6 and SA<=4 molecules divided by requests.",
+    "MDLM and paper means remain contextual comparisons with different sample/training budgets. Final UDLM seeds 0/1/2 remain reserved; no superiority, promotion or additional experiment is authorized by the results alone."
+  ],
+  "num_samples": 100,
+  "prior_evidence": {
+    "molecular_failure_audit": {
+      "relative_path": "docs/udlm_molecular_failure_audit_20260907.md",
+      "sha256": "06ea761fafe19aea3328684fe1b0927c2ed4fbda90df841a42f39a4754e1d6ab"
+    },
+    "molecular_failure_counts": {
+      "relative_path": "experiments/udlm/diagnostics/v5_v6_failure_modes_20260907/audit.json",
+      "sha256": "4e99dd1c91491c92305c99444a37e687c1866c187c5bb642ab3c240b75db10b8"
+    },
+    "resolution_oracle": {
+      "relative_path": "docs/udlm_predictor_resolution_audit.md",
+      "sha256": "06d61398d3f0789cee9e1a3d45d10803c89c468d52b182bfa589cbbfcddb315f"
+    },
+    "resolution_oracle_evidence": {
+      "relative_path": "experiments/udlm/diagnostics/predictor_resolution_oracle_20260907.json",
+      "sha256": "b8ff5e816abff745e38b427f0b03d7fe00e9ace50b69e5c67adfb182c779c295"
+    },
+    "resolution_oracle_revision": "c0810c1",
+    "v9_complete_report": {
+      "independently_rescored_requests": 800,
+      "independently_rescored_runs": 8,
+      "relative_path": "output/udlm/engineering_v9_reports/complete/report.json",
+      "sha256": "b880c8bbad2e5e1d5f3639ba8f6848da934c87c2ec44d7e9c466f46a941c7fb6",
+      "status": "complete"
+    },
+    "v9_protocol": {
+      "relative_path": "experiments/udlm/protocols/engineering_v9_objectives.json",
+      "sha256": "718893198b0e08a2405e33177c64989499914207ff39b6880edbc5eff2b35c7d"
+    }
+  },
+  "prospective_design": {
+    "relative_path": "experiments/udlm/designs/engineering_v10_resolution.md",
+    "sha256": "a57ea8fd91f88acae5ef8fca4d81e7df283e0182eb203fb2c2e121a062bb7572"
+  },
+  "purpose": "Outcome-informed fixed-checkpoint CT and CE sampling-resolution comparison: 512 minus 128 predictor NFEs at temperature 0.5.",
+  "schema_version": 1,
+  "seeds": [
+    1700,
+    1701
+  ],
+  "selection": {
+    "failures": "No automatic retry or checkpoint substitution.",
+    "final_seeds_reserved": [
+      0,
+      1,
+      2
+    ],
+    "rule": "No automatic promotion or training-loss comparison; report every configuration and failed/pending slot."
+  },
+  "study_id": "engineering-v10-predictor-resolution",
+  "training": {
+    "accumulate_grad_batches": 4,
+    "arms": {
+      "CE": {
+        "checkpoint_sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+        "controller_status": "completed",
+        "launch_receipt": {
+          "relative_path": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/launch_manifest.json",
+          "sha256": "903819961be96f71da79774d723626d8c4eb1aa50bf482d2a644c7a0dda22315",
+          "size_bytes": 17020
+        },
+        "protocol": {
+          "relative_path": "experiments/udlm/protocols/engineering_v8b_ce_followup.json",
+          "sha256": "acb286ac4b938aa049327740affd2dea5beb0ded745cd51dca627f5e8fd9de8b"
+        },
+        "request_receipt": {
+          "relative_path": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/request_manifest.json",
+          "sha256": "c05fafdd1472e894b553afe580b051b1b2eec4c5dd47f7323df2b939e51f958d",
+          "size_bytes": 8621
+        },
+        "resolved_config_sha256": "80bd9866ef157690e0ef9ff553b0346b3b91f989c0193d0484c4997ac089b2bb",
+        "source_revision": "b84f21ba1f30ceb62d2626daf2caad8adb6534cf",
+        "terminal_receipt": {
+          "relative_path": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/terminal_manifest.json",
+          "sha256": "2dd0423257e8908548b69a28b8aa24b3cc956507944c343e24ef615253af2205",
+          "size_bytes": 11719
+        },
+        "udlm_denoiser_metadata": {
+          "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
+          "objective": "clean_token_cross_entropy",
+          "parameterization": "x0_denoiser",
+          "schema_version": 1
+        }
+      },
+      "CT": {
+        "checkpoint_sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+        "checkpoint_status": "separately_validated_after_controller_failure",
+        "controller_status": "failed",
+        "post_exit_audit": {
+          "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/post_exit_audit.json",
+          "sha256": "959151c37072431be23b1f5696d7215da5291e0bace40d6f307864a7262f93c2",
+          "size_bytes": 9166
+        },
+        "resolved_config_sha256": "adbf518da62ea14d0e0b2e11f1ea91e058b25d0d35a59c3e8edfef060b5f0c46",
+        "source_revision": "c8434dda105c5fb2a15bb784d24e0387062c733e",
+        "terminal_receipt": {
+          "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/terminal_manifest.json",
+          "sha256": "1021ba513564a25ca26ea3c2d6c148d271e1cd98d27078056285e848c9c69b5e",
+          "size_bytes": 9822
+        }
+      }
+    },
+    "common_mask_policy": "All tokenizer special IDs immutable clean targets; full active corruption vocabulary.",
+    "conditioning_variant": "film_adaln",
+    "example_exposures_per_arm": 128000,
+    "global_batch_size": 128,
+    "gpu_count": 2,
+    "initialization": "Fresh common MDLM 50,000-update EMA; fresh optimizer and EMA for both arms.",
+    "matched_common_config_sha256": "f373121441fca1aaa2f2657a76d7f7ce66be199cd35637597d0df240e257e89a",
+    "micro_batch_size": 16,
+    "optimizer_updates": 1000,
+    "original_failed_campaign": {
+      "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/campaign_terminal.json",
+      "sha256": "98075a11c7340dafcc855887348201477981bd2a1a8f5d39053da24866cc663b",
+      "size_bytes": 846
+    },
+    "original_v8_protocol": {
+      "relative_path": "experiments/udlm/protocols/engineering_v8_objectives.json",
+      "sha256": "a27875752d25a4a7928401434f9bd90ee6e9d01539586bab70ce3ba75499026e"
+    },
+    "peak_learning_rate": 0.0003,
+    "prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+    "prior_variant": "empirical_frequency",
+    "scheduler": {
+      "decay_floor_lr": 3e-06,
+      "horizon_updates": 1000,
+      "name": "half_cosine_with_linear_warmup_and_floor",
+      "warmup_updates": 50
+    },
+    "training_implementation_hashes_sha256": "c9641b7e447d1f4617599e4df338fde0010fe68f7877566de37d2e6c5a6ccd2b",
+    "training_seed": 1500,
+    "uniform_mixture": 0.0002
+  }
+}
