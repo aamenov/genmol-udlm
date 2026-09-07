@@ -162,6 +162,69 @@ def test_stage21_executes_independently_as_read_only_protocol_preview(monkeypatc
         assert fragment in markdown["source"]
 
 
+def test_stage22_executes_independently_without_gpu_or_global_rng_mutation(monkeypatch):
+    import random
+
+    monkeypatch.chdir(REPOSITORY_ROOT)
+    markdown, code_cell = updater._engineering_v6_cells()  # noqa: SLF001
+    tree = ast.parse(code_cell["source"])
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            assert all(
+                alias.name not in {"torch", "subprocess", "os"} for alias in node.names
+            )
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            assert node.func.attr not in {
+                "write_text",
+                "write_bytes",
+                "mkdir",
+                "unlink",
+                "system",
+                "run",
+                "Popen",
+            }
+    before_rng = random.getstate()
+    namespace = {}
+    exec(compile(tree, code_cell["id"], "exec"), namespace)
+    assert random.getstate() == before_rng
+    preview = namespace["stage22_preview"]
+    assert len(preview["entries"]) == 6
+    assert preview["total_requests"] == 768
+    assert preview["toy_conditional"] == pytest.approx([0.325, 0.675])
+    assert preview["toy_selected_coordinates"][0] in {1, 2}
+    assert preview["toy_selected_coordinates"][1] is None
+    assert preview["toy_corrected"][1] == preview["toy_original"][1]
+    for entry in preview["entries"]:
+        assert entry["predictor_calls"] + entry["corrector_calls"] == 128
+        assert entry["corrector_calls"] == (64 if entry["gibbs_corrector"] else 0)
+    assert preview["superiority_claim"] is False
+    assert all(
+        preview[key] == 0
+        for key in (
+            "gpu_queries",
+            "checkpoint_loads",
+            "process_launches",
+            "artifact_writes",
+        )
+    )
+    for fragment in (
+        "Paper correspondence",
+        "Intuition and motivation",
+        "Mathematics",
+        "Small concrete example",
+        "shapes, and invariants",
+        "Released-code differences",
+        "Comprehension checkpoint",
+        "partial v5",
+        "64+64=128",
+        "compatible conditionals",
+        "does not apply the study temperature",
+        "768",
+        "two GPUs",
+    ):
+        assert fragment in markdown["source"]
+
+
 def test_generated_stage0_uses_utilization_based_shared_gpu_policy(
     tmp_path: Path,
 ) -> None:
@@ -470,8 +533,11 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
     assert ordered_ids.index("stage-21-engineering-v5-note") == (
         ordered_ids.index("stage-20-udlm-publication-runbook-code") + 1
     )
-    assert ordered_ids.index("stage19-report-note") == (
+    assert ordered_ids.index("stage-22-engineering-v6-note") == (
         ordered_ids.index("stage-21-engineering-v5-code") + 1
+    )
+    assert ordered_ids.index("stage19-report-note") == (
+        ordered_ids.index("stage-22-engineering-v6-code") + 1
     )
 
 
