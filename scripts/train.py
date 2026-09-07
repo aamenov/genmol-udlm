@@ -1399,6 +1399,21 @@ def _pilot_streaming_partition(trainer):
     return global_rank, actual_world_size
 
 
+def _training_streaming_partition(trainer):
+    """Partition hosted data using the actual Trainer identity in every mode."""
+
+    if _PILOT_CONTRACT is not None:
+        # Preserve the registered pilot's stricter environment and launch checks.
+        return _pilot_streaming_partition(trainer)
+    world_size = _exact_positive_integer(
+        getattr(trainer, "world_size", None), "training runtime world size"
+    )
+    rank = getattr(trainer, "global_rank", None)
+    if type(rank) is not int or not 0 <= rank < world_size:
+        raise RuntimeError("training trainer has an invalid global rank")
+    return rank, world_size
+
+
 def _training_strategy():
     """Use a self-spawning environment only for the reviewed local pilot."""
 
@@ -3104,9 +3119,9 @@ def train(config):
     )
 
     train_dataloader = None
-    if _PILOT_CONTRACT is None:
+    if _PILOT_CONTRACT is None and config.data != "safe":
         train_dataloader = get_dataloader(config)
-    else:
+    elif _PILOT_CONTRACT is not None:
         # Revalidate descriptor-bound scale-up output identities immediately
         # before Lightning receives checkpoint and Hydra output paths.
         _launch_manifest_evidence()
@@ -3118,11 +3133,11 @@ def train(config):
         logger=wandb_logger,
         enable_progress_bar=True,
     )
-    if _PILOT_CONTRACT is not None:
+    if _PILOT_CONTRACT is not None or config.data == "safe":
         # Lightning cannot inject a DistributedSampler into an iterable
-        # dataset. Resolve the pilot rank after Trainer construction and split
-        # the hosted stream explicitly; manual/released paths remain unchanged.
-        streaming_rank, streaming_world_size = _pilot_streaming_partition(trainer)
+        # dataset. Every hosted stream is split exactly once after Trainer
+        # construction, including direct/manual multi-GPU training.
+        streaming_rank, streaming_world_size = _training_streaming_partition(trainer)
         train_dataloader = get_dataloader(
             config,
             streaming_rank=streaming_rank,
