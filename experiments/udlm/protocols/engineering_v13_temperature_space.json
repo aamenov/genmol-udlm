@@ -1,0 +1,365 @@
+{
+  "baseline": {
+    "local_mdlm_50000": {
+      "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "diversity": 0.8230213192558725,
+      "quality": 0.858,
+      "requests_per_seed": 1000,
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "source": "PROJECT_CONTEXT.md: frozen GenMol comparator",
+      "uniqueness": 0.9986666666666667,
+      "validity": 1.0
+    },
+    "paper_genmol_v1_table1": {
+      "diversity": 0.818,
+      "quality": 0.846,
+      "requests_per_seed": 1000,
+      "run_count": 3,
+      "source": "scripts/exps/denovo/report.py: PAPER_REFERENCE",
+      "uniqueness": 0.997,
+      "validity": 1.0
+    }
+  },
+  "checkpoint_acceptance_context": {
+    "relative_path": "experiments/udlm/protocols/engineering_v12_mask_prior.json",
+    "sha256": "f4ea756fabb9e5133c72f302e8398bcbb8d0eabaa81f183b017af8c19b02cadd",
+    "size_bytes": 17364
+  },
+  "claim": "engineering_screen_only_no_superiority_claim",
+  "cpu_derivation_audit_source": {
+    "relative_path": "scripts/udlm/audit_denoiser_temperature.py",
+    "sha256": "a7c4df6cf0bb8f60791a671f1206784ed228aa2b2dab7ea5ffce5960c6178a42",
+    "size_bytes": 6999
+  },
+  "design": {
+    "corrector_steps_per_molecule": 0,
+    "inference_eps": 1e-05,
+    "inference_weights": "ema",
+    "min_add_len": 40,
+    "parameterization_controls": "Both arms use the same CE checkpoint within each prior pair. Control applies temperature after CE-to-LOO conversion; treatment tempers clean logits before conversion and fixes reverse bridge temperature to one. NFE is unchanged.",
+    "predictor_transitions_per_molecule": 128,
+    "randomness": 0.0,
+    "raw_loo_top_p": 1.0,
+    "temperature": 0.5,
+    "temperature_space_comparison": {
+      "primary": {
+        "control_config": "e_ce_raw_t050",
+        "temperature": 0.5,
+        "treatment_config": "e_ce_clean_t050"
+      },
+      "secondary": {
+        "control_config": "mask_ce_raw_t050",
+        "temperature": 0.5,
+        "treatment_config": "mask_ce_clean_t050"
+      }
+    },
+    "temperature_space_semantics": {
+      "raw_loo": "loo_conversion_then_temperature_then_reverse_bridge",
+      "x0_denoiser": "clean_denoiser_temperature_then_loo_conversion_then_reverse_bridge_at_one"
+    },
+    "total_requested_molecule_network_evaluations": 102400
+  },
+  "entries": [
+    {
+      "arm_id": "E_CE",
+      "attempt_id": "v13-e-ce-raw-t050",
+      "candidate_id": "v8b-e-ce-b7d674ed5bdd",
+      "checkpoint": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+      "config": "experiments/udlm/protocols/engineering_v13_configs/e_ce_raw_t050.yaml",
+      "config_id": "e_ce_raw_t050",
+      "config_sha256": "3c37178b971c7927bf19a8aa482e1713542426a151dcf581a2eb4ea09ae43e78",
+      "parameterization": "x0_denoiser",
+      "prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+      "prior_variant": "empirical_frequency",
+      "temperature_space": "raw_loo"
+    },
+    {
+      "arm_id": "E_CE",
+      "attempt_id": "v13-e-ce-clean-t050",
+      "candidate_id": "v8b-e-ce-b7d674ed5bdd",
+      "checkpoint": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+      "config": "experiments/udlm/protocols/engineering_v13_configs/e_ce_clean_t050.yaml",
+      "config_id": "e_ce_clean_t050",
+      "config_sha256": "e87cc63fc1de833c8296e59bacb8d636016e983e0c70c41aa732c9390f2c36ef",
+      "parameterization": "x0_denoiser",
+      "prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+      "prior_variant": "empirical_frequency",
+      "temperature_space": "x0_denoiser"
+    },
+    {
+      "arm_id": "MASK_CE",
+      "attempt_id": "v13-mask-ce-raw-t050",
+      "candidate_id": "v11b-mask-ce-62299de99d8c",
+      "checkpoint": "output/udlm/engineering_v11b/mask_ce_1000_b128_w2/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "62299de99d8c003e3776215efce9643cca196091a6284f351de2b404a22c2e8d",
+      "config": "experiments/udlm/protocols/engineering_v13_configs/mask_ce_raw_t050.yaml",
+      "config_id": "mask_ce_raw_t050",
+      "config_sha256": "2cac4cc6569868c493a5d835b0a5ab5020583afa6c4e2463ef1354c7f88999c9",
+      "parameterization": "x0_denoiser",
+      "prior_metadata_sha256": "4e1febe2684beebdbf3d4c86aa01bc24ed1d3941af67b63473979e2ae810ee45",
+      "prior_variant": "mask_rich_empirical",
+      "temperature_space": "raw_loo"
+    },
+    {
+      "arm_id": "MASK_CE",
+      "attempt_id": "v13-mask-ce-clean-t050",
+      "candidate_id": "v11b-mask-ce-62299de99d8c",
+      "checkpoint": "output/udlm/engineering_v11b/mask_ce_1000_b128_w2/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "62299de99d8c003e3776215efce9643cca196091a6284f351de2b404a22c2e8d",
+      "config": "experiments/udlm/protocols/engineering_v13_configs/mask_ce_clean_t050.yaml",
+      "config_id": "mask_ce_clean_t050",
+      "config_sha256": "550e0145bd4f1e99e606e74038ffb1f3fc34416020b2fa29566834cc8feb6a6d",
+      "parameterization": "x0_denoiser",
+      "prior_metadata_sha256": "4e1febe2684beebdbf3d4c86aa01bc24ed1d3941af67b63473979e2ae810ee45",
+      "prior_variant": "mask_rich_empirical",
+      "temperature_space": "x0_denoiser"
+    }
+  ],
+  "gpu_policy": {
+    "max_gpus": 2,
+    "max_utilization_percent": 10,
+    "min_free_memory_mib": 30000
+  },
+  "hypothesis_derivation": {
+    "relative_path": "docs/udlm_denoiser_temperature_hypothesis.md",
+    "sha256": "a1475af8209fffd89179ef7147e3a116d84d20629ac15d69b75522f4b85d7de6",
+    "size_bytes": 5986
+  },
+  "limitations": [
+    "The prospective design was fixed while V12 was running, before reading any MASK-rich molecular outcome. It discloses incidental viewing of one unfinished empirical T1 log. No V12 outcome selected a prior, temperature or excluded arm.",
+    "Temperature 0.5 was informed by earlier V5/V6/V9/V10 engineering studies. Both empirical and MASK-rich CE checkpoints are retained; this is a new inference hypothesis, not a bug fix or additional training.",
+    "Within each pair only temperature_space changes: same frozen checkpoint, prior, EMA, temperature 0.5, 128 predictor NFE, top-p 1, no Gibbs and other sampling controls. Clean temperature acts before conversion; its reverse bridge temperature is one.",
+    "Two seeds of 100 requests are small. Pair by seed, not molecular trajectory. Report every configuration and failure, both strict/repaired branches, all four metrics and signed clean-temperature-minus-raw-LOO-temperature contrasts, including negative differences.",
+    "Quality counts within-seed unique valid molecules with QED >= 0.6 and SA <= 4 divided by all requests. Withhold each paired mean/SD unless both declared seed pairs define the metric; SD is descriptive, not a confidence interval.",
+    "Disclose final editable MASK and other control counts with the editable-position denominator from sampled_token_control_audit. Decoded strings skip specials and cannot supply these counts; report recovery and component-selection frequencies with denominators.",
+    "Training/checkpoint references are inherited unchanged from the accepted V12 protocol; no molecular metrics are used by this preparation. Original V11 failed before training and V8 CT remains a failed controller with a separate checkpoint audit; V11b and V8b are distinct successful follow-ups.",
+    "Each CE checkpoint has 1,000 adaptation updates and 128,000 configured exposures from MDLM 50k EMA. These are not necessarily distinct molecules, equal exposures do not imply equal runtime, and final finiteness does not establish every update was finite.",
+    "Local MDLM quality 0.858 and paper GenMol V1 quality 0.846 use different training/sample budgets and remain contextual. No superiority, automatic promotion or final-seed evaluation; seeds 0/1/2 remain reserved."
+  ],
+  "log_root": "output/logs/engineering_v13",
+  "nfe": 128,
+  "num_samples": 100,
+  "output_root": "output/udlm/engineering_v13",
+  "prospective_design": {
+    "relative_path": "experiments/udlm/designs/engineering_v13_denoiser_temperature_evaluation.md",
+    "sha256": "fe26d8b15f6023657b1a4ae9e303bc73b699d1cd08da56edb0df1537fb181da1",
+    "size_bytes": 4395
+  },
+  "purpose": "Fixed within-checkpoint comparison of raw-LOO versus clean-denoiser temperature on both accepted CE models.",
+  "report_root": "output/udlm/engineering_v13_reports/complete",
+  "schema_version": 1,
+  "seeds": [
+    2100,
+    2101
+  ],
+  "selection": {
+    "failures": "Preserve all failures without automatic retry, replacement seed or checkpoint substitution.",
+    "final_seeds_reserved": [
+      0,
+      1,
+      2
+    ],
+    "rule": "Evaluate every declared setting and both within-prior signed temperature-space contrasts; neither CE checkpoint is selected or excluded using V12 outcomes. No candidate promotion."
+  },
+  "study_id": "engineering-v13-ce-temperature-space",
+  "training": {
+    "accumulate_grad_batches": 4,
+    "arms": {
+      "E_CE": {
+        "checkpoint_sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+        "checkpoint_size_bytes": 1636492999,
+        "controller_status": "completed",
+        "launch_receipt": {
+          "relative_path": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/launch_manifest.json",
+          "sha256": "903819961be96f71da79774d723626d8c4eb1aa50bf482d2a644c7a0dda22315",
+          "size_bytes": 17020
+        },
+        "prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+        "prior_variant": "empirical_frequency",
+        "protocol": {
+          "relative_path": "experiments/udlm/protocols/engineering_v8b_ce_followup.json",
+          "sha256": "acb286ac4b938aa049327740affd2dea5beb0ded745cd51dca627f5e8fd9de8b",
+          "size_bytes": 3161
+        },
+        "request_receipt": {
+          "relative_path": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/request_manifest.json",
+          "sha256": "c05fafdd1472e894b553afe580b051b1b2eec4c5dd47f7323df2b939e51f958d",
+          "size_bytes": 8621
+        },
+        "resolved_config_sha256": "80bd9866ef157690e0ef9ff553b0346b3b91f989c0193d0484c4997ac089b2bb",
+        "source_revision": "b84f21ba1f30ceb62d2626daf2caad8adb6534cf",
+        "terminal_receipt": {
+          "relative_path": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/terminal_manifest.json",
+          "sha256": "2dd0423257e8908548b69a28b8aa24b3cc956507944c343e24ef615253af2205",
+          "size_bytes": 11719
+        },
+        "udlm_denoiser_metadata": {
+          "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
+          "objective": "clean_token_cross_entropy",
+          "parameterization": "x0_denoiser",
+          "schema_version": 1
+        },
+        "udlm_prior_metadata": {
+          "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+          "active_vocab_size": 1880,
+          "antithetic_sampling": true,
+          "comparison_role": "empirical_prior_treatment",
+          "excluded_token_ids": [],
+          "frequency_active_token_count": 517090,
+          "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+          "frequency_artifact_schema_version": 1,
+          "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+          "frequency_content_token_count": 517090,
+          "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+          "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+          "frequency_dataset_selection": "first 10000 streaming rows",
+          "frequency_dataset_split": "train",
+          "frequency_example_count": 10000,
+          "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+          "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+          "full_vocab_size": 1880,
+          "noise_eps": 0.001,
+          "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+          "prior_source": "pinned_frequency_artifact_uniform_mixture",
+          "process_family": "rank_one_continuous_categorical",
+          "sampling_eps": 0.001,
+          "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+          "schema_version": 1,
+          "stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+          "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+          "tokenizer_repo_id": "datamol-io/safe-gpt",
+          "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+          "uniform_mixture_weight": 0.0002,
+          "variant": "empirical_frequency"
+        }
+      },
+      "MASK_CE": {
+        "checkpoint_sha256": "62299de99d8c003e3776215efce9643cca196091a6284f351de2b404a22c2e8d",
+        "checkpoint_size_bytes": 1636493702,
+        "controller_status": "completed",
+        "launch_receipt": {
+          "relative_path": "output/udlm/engineering_v11b/mask_ce_1000_b128_w2/launch_manifest.json",
+          "sha256": "457912bcf1975f0adb72cb2b5f02ec07c32915dc2119f184c19d6003edb60f85",
+          "size_bytes": 24826
+        },
+        "prior_metadata_sha256": "4e1febe2684beebdbf3d4c86aa01bc24ed1d3941af67b63473979e2ae810ee45",
+        "prior_variant": "mask_rich_empirical",
+        "protocol": {
+          "relative_path": "experiments/udlm/protocols/engineering_v11b_mask_prior.json",
+          "sha256": "5ecf638fa8fc7a3707a0497c8a358697610f52c8af7f2d6468458890e26368eb",
+          "size_bytes": 7982
+        },
+        "request_receipt": {
+          "relative_path": "output/udlm/engineering_v11b/mask_ce_1000_b128_w2/request_manifest.json",
+          "sha256": "a039045f0e3589b3c15ac56fa215cb27bf0bde36b87902c0e1028c456b45f956",
+          "size_bytes": 14003
+        },
+        "resolved_config_sha256": "5d73af507e81b643cf8f35225ab5d796357024d1665d039fdf40b5f37df15698",
+        "source_revision": "be18a3244a717978e027d6e43ba0ac20b8137e4a",
+        "terminal_receipt": {
+          "relative_path": "output/udlm/engineering_v11b/mask_ce_1000_b128_w2/terminal_manifest.json",
+          "sha256": "891f5d6d609146a02ebb18caa7176bf555e3f67fe2493795c8a3e1fccb264779",
+          "size_bytes": 17667
+        },
+        "udlm_denoiser_metadata": {
+          "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
+          "objective": "clean_token_cross_entropy",
+          "parameterization": "x0_denoiser",
+          "schema_version": 1
+        },
+        "udlm_prior_metadata": {
+          "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+          "active_vocab_size": 1880,
+          "antithetic_sampling": true,
+          "base_stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+          "comparison_role": "mask_rich_empirical_prior_treatment",
+          "excluded_token_ids": [],
+          "frequency_active_token_count": 517090,
+          "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+          "frequency_artifact_schema_version": 1,
+          "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+          "frequency_content_token_count": 517090,
+          "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+          "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+          "frequency_dataset_selection": "first 10000 streaming rows",
+          "frequency_dataset_split": "train",
+          "frequency_example_count": 10000,
+          "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+          "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+          "full_vocab_size": 1880,
+          "mask_mixture_weight": 0.9,
+          "mask_token_id": 4,
+          "noise_eps": 0.001,
+          "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+          "prior_source": "mask_point_mass_mixture_with_pinned_smoothed_frequency",
+          "process_family": "rank_one_continuous_categorical",
+          "sampling_eps": 0.001,
+          "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+          "schema_version": 1,
+          "stationary_probs_sha256": "07d011c07bdac8fdbe096f514ded6e2d1b6850268c48bec8dd0e3f3853d013eb",
+          "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+          "tokenizer_repo_id": "datamol-io/safe-gpt",
+          "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+          "uniform_mixture_weight": 0.0002,
+          "variant": "mask_rich_empirical"
+        }
+      }
+    },
+    "common_mask_policy": "All tokenizer special IDs immutable clean targets; full active corruption vocabulary.",
+    "conditioning_variant": "film_adaln",
+    "example_exposures_per_arm": 128000,
+    "global_batch_size": 128,
+    "gpu_count": 2,
+    "initialization": "Fresh common MDLM 50,000-update EMA; fresh optimizer and EMA for both arms.",
+    "matched_common_config_definition": "Empirical-arm configuration after removing parameterization and normalizing callback.dirpath. The MASK arm matches after restoring empirical_frequency and removing mask_mixture_weight.",
+    "matched_common_config_sha256": "f373121441fca1aaa2f2657a76d7f7ce66be199cd35637597d0df240e257e89a",
+    "micro_batch_size": 16,
+    "optimizer_updates": 1000,
+    "original_failed_campaign": {
+      "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/campaign_terminal.json",
+      "sha256": "98075a11c7340dafcc855887348201477981bd2a1a8f5d39053da24866cc663b",
+      "size_bytes": 846
+    },
+    "original_v11_failure": {
+      "relative_path": "output/udlm/engineering_v11/mask_ce_1000_b128_w2/terminal_manifest.json",
+      "sha256": "6a4aa47e1f7b76ad5efc3ce03cd3e4a55c0db4d95778b0cf60cc55cab7207408",
+      "size_bytes": 14510
+    },
+    "original_v8_ct_context": {
+      "checkpoint_sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+      "checkpoint_status": "separately_validated_after_controller_failure",
+      "controller_status": "failed",
+      "post_exit_audit": {
+        "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/post_exit_audit.json",
+        "sha256": "959151c37072431be23b1f5696d7215da5291e0bace40d6f307864a7262f93c2",
+        "size_bytes": 9166
+      },
+      "resolved_config_sha256": "adbf518da62ea14d0e0b2e11f1ea91e058b25d0d35a59c3e8edfef060b5f0c46",
+      "source_revision": "c8434dda105c5fb2a15bb784d24e0387062c733e",
+      "terminal_receipt": {
+        "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/terminal_manifest.json",
+        "sha256": "1021ba513564a25ca26ea3c2d6c148d271e1cd98d27078056285e848c9c69b5e",
+        "size_bytes": 9822
+      }
+    },
+    "original_v8_protocol": {
+      "relative_path": "experiments/udlm/protocols/engineering_v8_objectives.json",
+      "sha256": "a27875752d25a4a7928401434f9bd90ee6e9d01539586bab70ce3ba75499026e"
+    },
+    "peak_learning_rate": 0.0003,
+    "scheduler": {
+      "decay_floor_lr": 3e-06,
+      "horizon_updates": 1000,
+      "name": "half_cosine_with_linear_warmup_and_floor",
+      "warmup_updates": 50
+    },
+    "training_seed": 1500,
+    "uniform_mixture": 0.0002
+  }
+}
