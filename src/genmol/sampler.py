@@ -301,6 +301,10 @@ class Sampler:
                 t = timesteps[i].expand(x.shape[0])
                 s = timesteps[i + 1].expand(x.shape[0])
                 logits = self.model(x, attention_mask, t=t)
+                if getattr(self.model, 'udlm_parameterization', 'raw_loo') == 'x0_denoiser':
+                    logits = self.model.sampling_logits(
+                        logits, x, t, mutable_mask=editable_mask
+                    )
                 x = self.mdlm.step(
                     logits,
                     x,
@@ -312,6 +316,10 @@ class Sampler:
                 )
                 if gibbs_corrector:
                     corrector_logits = self.model(x, attention_mask, t=s)
+                    if getattr(self.model, 'udlm_parameterization', 'raw_loo') == 'x0_denoiser':
+                        corrector_logits = self.model.sampling_logits(
+                            corrector_logits, x, s, mutable_mask=editable_mask
+                        )
                     x = random_scan_gibbs_step(
                         self.mdlm,
                         corrector_logits,
