@@ -1,6 +1,30 @@
 # GenMol-UDLM project context
 
-## Active continuation: completed CT/CE training, paired V9 evaluation
+## Active continuation: completed V9, preparing predictor-resolution V10
+
+V9 generation and independent rescoring completed at 11:22:42 UTC on
+2026-09-07. All eight runs and 800 requested rows were accepted. Repaired
+quality means: CT T1 46.5%, CE T1 41.0%, CT T0.5 54.5%, CE T0.5 52.5%.
+The predeclared CE-minus-CT means are -5.5pp at T1 and -2.0pp at T0.5.
+Best V9 quality 54.5% remains below local MDLM 85.8%; no superiority.
+Read `experiments/udlm/results/engineering_v9.md`. The separate 12-page paired
+report is `output/udlm/engineering_v9_reports/paired_complete/report.pdf`,
+SHA-256 `4419c7b1ed7466d47d0f118ae4738f615f774de292255fd2c28ef0eb295f1811`.
+Original `complete/` report and all raw evidence remain unchanged.
+
+The next bounded V10 design compares both frozen CT/CE checkpoints at
+temperature 0.5 with 128 versus 512 predictor evaluations, fresh seeds
+1700/1701 and 100 requests per seed. Four settings give eight runs and 800
+requests. Temperature is informed by V5/V6/V9; 512 costs four times the calls.
+The existing sampler supports both counts without a model implementation
+change. Publish the independently reviewed V10 protocol/configs, dry-run,
+then recheck dynamic GPU state immediately before its first tmux launch.
+Use at most two GPUs below 10%, with actual free memory at least 30,000 MiB.
+V9 tmux ended; do not rerun its completed generation namespaces.
+
+The following V8/V8b/V9 setup records are historical, not launch instructions.
+
+### Completed objective training and V9 setup
 
 V8b CE completed successfully at 11:08:38 UTC on 2026-09-07: 1,000 optimizer
 updates, 128,000 configured exposures, 1,156 finite checked tensors and 1,000
@@ -12,20 +36,19 @@ The process group exited within 0.751 seconds during the new bounded grace
 period. Both leases were released and the CE tmux session ended. Read
 `experiments/udlm/results/engineering_v8b_ce_training.md`. Do not relaunch it.
 
-The next concrete molecular benchmark is
+The completed molecular benchmark is
 `experiments/udlm/protocols/engineering_v9_objectives.json`: separately audited
 V8 CT versus completed V8b CE, temperatures 1.0 (primary) and 0.5 (secondary),
 seeds 1600/1601, 100 requests per seed and 128 predictor evaluations per
 molecule. Four configurations give eight runs and 800 requests. Report both
 paired CE-minus-CT contrasts regardless of sign, including strict and repaired
-metrics. Final seeds 0/1/2 remain reserved. No new molecular result exists yet.
+metrics. Final seeds 0/1/2 remain reserved. Results are summarized above.
 
 Use tmux `genmol-udlm-v9-objectives`, controller log
 `output/logs/engineering-v9-pipeline.log`, generation root
 `output/udlm/engineering_v9`, job logs `output/logs/engineering_v9`, and CPU
-report directory `output/udlm/engineering_v9_reports/complete`. Verify live
-state before first launch; keep tracked source and HEAD frozen during the
-pipeline. The project virtual environment runs these commands sequentially:
+report directory `output/udlm/engineering_v9_reports/complete`. These completed
+historical commands used a frozen clean source and must not be repeated:
 
 ```bash
 /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python -u scripts/udlm/launch_exploration.py --protocol experiments/udlm/protocols/engineering_v9_objectives.json --output-root output/udlm/engineering_v9 --log-root output/logs/engineering_v9

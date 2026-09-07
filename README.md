@@ -9,19 +9,19 @@ controls and molecular variants derived from the
 It is not NVIDIA's official repository and is not affiliated with NVIDIA or the
 UDLM authors.
 
-> **Research status — 2026-09-07.** The temperature and fixed-budget Gibbs
-> studies completed 36 runs and independently rescored all 2,304 requested
+> **Research status — 2026-09-07.** Temperature, fixed-budget Gibbs and training-objective
+> studies completed 44 runs and independently rescored all 3,104 requested
 > samples. Best selected pilot quality is **57.03%**, versus **85.8%** for the
 > local MDLM baseline. **No superiority has been established.** Each exploratory
-> configuration used only two seeds of 64 requests; the baseline used three
-> seeds of 1,000. Final UDLM evaluation seeds remain reserved.
+> configuration used only two seeds of 64 or 100 requests; the baseline used
+> three seeds of 1,000. Final UDLM evaluation seeds remain reserved.
 >
 > See the [27-page study report](output/udlm/study_overview_20260907/study_overview.pdf),
 > [temperature results](experiments/udlm/results/engineering_v5.md), and
 > [Gibbs results](experiments/udlm/results/engineering_v6.md). All R/S/E
 > checkpoints received 1,000 batch-16 updates from the common MDLM EMA.
 > An opt-in [CE clean-denoiser adaptation](docs/udlm_ce_implementation.md) is
-> implemented and CPU-tested; its molecular benchmark results are pending. The
+> implemented and CPU-tested; its matched molecular comparison is complete. The
 > [batch-128 resource pilot](experiments/udlm/results/engineering_v7_throughput.md)
 > passed. The prospective [matched CT/CE study](experiments/udlm/protocols/engineering_v8_objectives.json)
 > specifies 1,000 batch-128 updates per arm from the same MDLM EMA. CT reached
@@ -30,8 +30,12 @@ UDLM authors.
 > The distinct [CE follow-up completed](experiments/udlm/results/engineering_v8b_ce_training.md)
 > all 1,000 updates with the original matched training setup and passed checkpoint
 > validation. The paired [V9 molecular evaluation](experiments/udlm/protocols/engineering_v9_objectives.json)
-> compares CT/CE at temperatures 1.0/0.5, using 800 requests and 128 predictor
-> evaluations per molecule. Results remain pending. Current authorization is
+> compared CT/CE at temperatures 1.0/0.5, using 800 requests and 128 predictor
+> evaluations per molecule. [V9 results](experiments/udlm/results/engineering_v9.md)
+> reached 54.5% best quality; CE changed quality by -5.5pp at T1 and -2.0pp at T0.5.
+> The [paired report](output/udlm/engineering_v9_reports/paired_complete/report.pdf)
+> includes both decoding rules and all signed contrasts. A fresh 128-versus-512
+> predictor comparison is being prepared. Current authorization is
 > at most two dynamically selected GPUs below 10% utilization.
 
 The main educational implementation is

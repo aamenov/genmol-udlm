@@ -1,0 +1,66 @@
+{
+  "artifacts": {
+    "output/udlm/engineering_v9/v9-ct-t100/seed_1600/raw_samples.csv": "f8b3994c1a65b0070cf248e44d795a4071ec06f521a7b693b8aba10d1457445d",
+    "output/udlm/engineering_v9/v9-ct-t100/seed_1600/summary.json": "5b3b8dd068921fb8125c9a06cbd3cc4e42d7b8ac0f58803a3dbb3fe334188bd2",
+    "output/udlm/engineering_v9/v9-ct-t100/seed_1601/raw_samples.csv": "13a78c24b80be0063ee9e44b9aace057d322c35acb2af114efef1f50cb374ee6",
+    "output/udlm/engineering_v9/v9-ct-t100/seed_1601/summary.json": "8bb7780d91ffbe56dc0b9ffa66f40cefb53998fdb7aad79e7b2766ec279bd4e4"
+  },
+  "command": [
+    "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/denovo/launch_benchmark.py",
+    "--checkpoint",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+    "--config",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v9_configs/ct_t100.yaml",
+    "--pilot",
+    "--attempt-id",
+    "v9-ct-t100",
+    "--candidate-id",
+    "v8-ct-e-w2-1000u-48986899c401",
+    "--num-samples",
+    "100",
+    "--seeds",
+    "1600",
+    "1601",
+    "--gpu-count",
+    "2",
+    "--max-utilization-percent",
+    "10",
+    "--min-free-memory-mib",
+    "30000",
+    "--poll-seconds",
+    "10",
+    "--output-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v9",
+    "--log-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/logs/engineering_v9"
+  ],
+  "completed_at_utc": "2026-09-07T11:16:48.478845+00:00",
+  "identity": {
+    "entry": {
+      "arm_id": "CT",
+      "attempt_id": "v9-ct-t100",
+      "candidate_id": "v8-ct-e-w2-1000u-48986899c401",
+      "checkpoint": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+      "config": "experiments/udlm/protocols/engineering_v9_configs/ct_t100.yaml",
+      "config_id": "ct_t100",
+      "config_sha256": "2ade5abdf42c0c1f3a45d552444968bdf6b71aa2431ed80e40bc6b291c462942",
+      "parameterization": "raw_loo"
+    },
+    "num_samples": 100,
+    "protocol_sha256": "718893198b0e08a2405e33177c64989499914207ff39b6880edbc5eff2b35c7d",
+    "seeds": [
+      1600,
+      1601
+    ],
+    "source": {
+      "head": "da8f5403ec9de02792261d1ffc3aa20ac08474e9",
+      "upstream": "da8f5403ec9de02792261d1ffc3aa20ac08474e9"
+    }
+  },
+  "process_return_code": 0,
+  "return_code": 0,
+  "started_at_utc": "2026-09-07T11:15:19.564439+00:00",
+  "validation_error": null
+}
