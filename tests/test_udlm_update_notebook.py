@@ -201,6 +201,31 @@ def test_stage25_pairs_seeds_and_distinguishes_toy_counts_from_results():
         compare({1600: 5, 1601: 11}, {1600: 6, 1601: 6}, 10)
 
 
+def test_stage26_mask_prior_is_stationary_and_keeps_positive_mass():
+    markdown, cell = updater._mask_rich_prior_cells()  # noqa: SLF001
+    for fragment in (
+        "Paper correspondence", "Intuition and motivation", "Mathematics",
+        "Small concrete example", "shapes, and invariants",
+        "Differences from released", "Comprehension checkpoint",
+        "not a reproduction", "terminal", "mask_mixture_weight",
+        "sampling-only override",
+    ):
+        assert fragment in markdown["source"]
+    tree = ast.parse(cell["source"])
+    assert {node.module for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)} == {
+        "fractions"
+    }
+    namespace = {}
+    exec(compile(tree, cell["id"], "exec"), namespace)
+    assert float(namespace["stage26_forward"][2][0]) == pytest.approx(0.450549)
+    mix = namespace["stage26_mix_prior"]
+    base = namespace["stage26_base"]
+    with pytest.raises(ValueError, match="mixture in"):
+        mix(base, 1, 0)
+    with pytest.raises(ValueError, match="active token"):
+        mix(base, 0, 3)
+
+
 def test_stage21_executes_independently_as_read_only_protocol_preview(monkeypatch):
     monkeypatch.chdir(REPOSITORY_ROOT)
     markdown, code_cell = updater._engineering_v5_cells()  # noqa: SLF001
@@ -635,8 +660,11 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
     assert ordered_ids.index("stage-25-objective-evaluation") == (
         ordered_ids.index("stage-24-objective-comparison-code") + 1
     )
-    assert ordered_ids.index("stage19-report-note") == (
+    assert ordered_ids.index("stage-26-mask-rich-prior") == (
         ordered_ids.index("stage-25-objective-evaluation-code") + 1
+    )
+    assert ordered_ids.index("stage19-report-note") == (
+        ordered_ids.index("stage-26-mask-rich-prior-code") + 1
     )
 
 
