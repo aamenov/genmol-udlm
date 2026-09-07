@@ -260,6 +260,11 @@ UDLM_DENOISER_METADATA = {
     "objective": "clean_token_cross_entropy",
     "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
 }
+DENOISER_TEMPERATURE_PROTOCOL = {
+    "temperature_space": "x0_denoiser",
+    "temperature_application": "clean_denoiser_before_loo_conversion",
+    "reverse_bridge_temperature": 1.0,
+}
 GIBBS_CORRECTOR_NUM_STEPS_SOURCE = (
     "explicit UDLM total predictor-plus-corrector NFE budget"
 )
@@ -1387,6 +1392,7 @@ def generate_raw_model_text(
     raw_loo_top_p: float | None = None,
     gibbs_corrector: bool = False,
     parameterization: str = "raw_loo",
+    temperature_space: str = "raw_loo",
 ) -> tuple[list[str], dict[str, Any], Any, Any]:
     """Run either diffusion backend through the shared raw-token sampler API.
 
@@ -1396,6 +1402,13 @@ def generate_raw_model_text(
     """
     import torch
 
+    _validate_temperature_space(
+        temperature_space,
+        diffusion_type=diffusion_type,
+        parameterization=parameterization,
+        raw_loo_top_p=raw_loo_top_p,
+        gibbs_corrector=gibbs_corrector,
+    )
     if type(gibbs_corrector) is not bool:
         raise BenchmarkConfigurationError("gibbs_corrector must be a boolean")
     if gibbs_corrector and (
@@ -1488,6 +1501,8 @@ def generate_raw_model_text(
             generate_arguments["raw_loo_top_p"] = raw_loo_top_p
         if gibbs_corrector:
             generate_arguments["gibbs_corrector"] = True
+        if temperature_space == "x0_denoiser":
+            generate_arguments["temperature_space"] = temperature_space
         token_ids = sampler.generate(x, **generate_arguments)
         decoded = sampler.model.tokenizer.batch_decode(
             token_ids, skip_special_tokens=True
@@ -1514,6 +1529,8 @@ def generate_raw_model_text(
     }
     if diffusion_type == "udlm":
         protocol["raw_loo_top_p"] = raw_loo_top_p
+    if temperature_space == "x0_denoiser":
+        protocol.update(DENOISER_TEMPERATURE_PROTOCOL)
     if gibbs_corrector:
         protocol.update(
             {
@@ -2642,6 +2659,26 @@ def load_yaml_config(path: Path) -> dict[str, Any]:
     return config
 
 
+def _validate_temperature_space(
+    value, *, diffusion_type, parameterization, raw_loo_top_p, gibbs_corrector
+):
+    if not isinstance(value, str) or value not in {"raw_loo", "x0_denoiser"}:
+        raise BenchmarkConfigurationError(
+            "temperature_space must be raw_loo or x0_denoiser"
+        )
+    if value == "x0_denoiser" and (
+        diffusion_type != "udlm"
+        or parameterization != "x0_denoiser"
+        or isinstance(raw_loo_top_p, bool)
+        or raw_loo_top_p != 1.0
+        or gibbs_corrector is not False
+    ):
+        raise BenchmarkConfigurationError(
+            "x0_denoiser temperature_space requires UDLM CE, raw_loo_top_p=1, "
+            "and no Gibbs corrector"
+        )
+
+
 def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
     missing = [
         key
@@ -2807,6 +2844,16 @@ def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
     if gibbs_corrector:
         # Omit the inactive setting to preserve historical canonical identities.
         normalized["gibbs_corrector"] = True
+    temperature_space = config.get("temperature_space", "raw_loo")
+    _validate_temperature_space(
+        temperature_space,
+        diffusion_type=diffusion_type,
+        parameterization=parameterization,
+        raw_loo_top_p=raw_loo_top_p,
+        gibbs_corrector=gibbs_corrector,
+    )
+    if temperature_space == "x0_denoiser":
+        normalized["temperature_space"] = temperature_space
     return normalized
 
 

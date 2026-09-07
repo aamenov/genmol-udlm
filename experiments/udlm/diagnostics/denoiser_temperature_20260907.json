@@ -1,0 +1,57 @@
+{
+  "checkpoint_reads": 0,
+  "example": {
+    "current": 2,
+    "denoiser": [
+      0.001,
+      0.009,
+      0.99
+    ],
+    "implied_old": [
+      0.005561598698355333,
+      0.45048949456678195,
+      0.5439489067348627
+    ],
+    "new_bridge": [
+      2.2180159262104614e-05,
+      1.896689166716911e-05,
+      0.9999588529490707
+    ],
+    "new_denoiser": [
+      1.0202186940792628e-06,
+      8.263771422042029e-05,
+      0.9999163420670855
+    ],
+    "old_bridge": [
+      0.05575380432529095,
+      0.0961631037023602,
+      0.8480830919723489
+    ],
+    "pi": [
+      0.9,
+      0.0999,
+      0.0001
+    ],
+    "power": 2,
+    "s": 0.4,
+    "t": 0.5
+  },
+  "limitations": [
+    "chosen toy probabilities",
+    "coordinate rather than joint tempering",
+    "no learned-model or benchmark measurement"
+  ],
+  "maximum_production_absolute_error": 1.4432899320127035e-15,
+  "molecular_samples": 0,
+  "production_scalar_checks": 1458,
+  "rational_cases": 243,
+  "schema_version": 1,
+  "scope": "CPU algebra and existing production primitives; no molecular claim",
+  "source_sha256": {
+    "scripts/udlm/audit_denoiser_temperature.py": "a7c4df6cf0bb8f60791a671f1206784ed228aa2b2dab7ea5ffce5960c6178a42",
+    "src/genmol/denoiser.py": "ca3b968b529eb08bb6d4f1ecbbad087ee4a5eae465c316634327746603f2b21b",
+    "src/genmol/diffusion.py": "07e7cc4f0a65b21224196341a1cd2460f146e3356e3c902f3dbca6cb2fc21a17"
+  },
+  "status": "passed",
+  "temperature_one_cases": 81
+}

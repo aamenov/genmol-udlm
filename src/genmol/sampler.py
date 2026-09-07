@@ -231,6 +231,7 @@ class Sampler:
         raw_loo_top_p=1.0,
         return_token_ids=False,
         gibbs_corrector=False,
+        temperature_space='raw_loo',
         **kwargs,
     ):
         """Generate molecules or raw IDs; ``randomness`` is MDLM-only.
@@ -239,6 +240,9 @@ class Sampler:
         opt-in Gibbs path uses half as many predictor transitions, each with
         one fresh-logit, single-coordinate corrector at the resulting time.
         The default path retains its original predictor-only sampling law.
+        ``temperature_space='x0_denoiser'`` instead tempers a clean CE denoiser
+        before LOO conversion and leaves bridge temperature at 1. This opt-in
+        hypothesis currently requires top-p 1 and no Gibbs corrector.
         """
         if type(gibbs_corrector) is not bool:
             raise ValueError('gibbs_corrector must be a boolean')
@@ -251,6 +255,23 @@ class Sampler:
             raw_loo_top_p,
             'raw_loo_top_p',
             at_most_one=True,
+        )
+        if not isinstance(temperature_space, str) or temperature_space not in {
+            'raw_loo', 'x0_denoiser'
+        }:
+            raise ValueError('temperature_space must be raw_loo or x0_denoiser')
+        if temperature_space == 'x0_denoiser' and (
+            self.diffusion_type != 'udlm'
+            or getattr(self.model, 'udlm_parameterization', 'raw_loo') != 'x0_denoiser'
+            or raw_loo_top_p != 1.0
+            or gibbs_corrector
+        ):
+            raise ValueError(
+                'temperature_space=x0_denoiser requires UDLM clean CE, '
+                'raw_loo_top_p=1 and no Gibbs corrector'
+            )
+        bridge_temperature = (
+            1.0 if temperature_space == 'x0_denoiser' else softmax_temp
         )
         x = x.to(self.model.device)
         attention_mask = x != self.pad_index
@@ -302,16 +323,22 @@ class Sampler:
                 s = timesteps[i + 1].expand(x.shape[0])
                 logits = self.model(x, attention_mask, t=t)
                 if getattr(self.model, 'udlm_parameterization', 'raw_loo') == 'x0_denoiser':
-                    logits = self.model.sampling_logits(
-                        logits, x, t, mutable_mask=editable_mask
-                    )
+                    if temperature_space == 'x0_denoiser':
+                        logits = self.model.sampling_logits(
+                            logits, x, t, mutable_mask=editable_mask,
+                            denoiser_temperature=softmax_temp,
+                        )
+                    else:
+                        logits = self.model.sampling_logits(
+                            logits, x, t, mutable_mask=editable_mask
+                        )
                 x = self.mdlm.step(
                     logits,
                     x,
                     t,
                     s,
                     mutable_mask=editable_mask,
-                    temperature=softmax_temp,
+                    temperature=bridge_temperature,
                     raw_loo_top_p=raw_loo_top_p,
                 )
                 if gibbs_corrector:

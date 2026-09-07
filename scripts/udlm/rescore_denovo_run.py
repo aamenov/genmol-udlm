@@ -184,6 +184,9 @@ GIBBS_CORRECTOR_PROTOCOL_FIELDS = frozenset(
         "corrector_steps_per_molecule",
     }
 )
+DENOISER_TEMPERATURE_PROTOCOL_FIELDS = frozenset(
+    benchmark.DENOISER_TEMPERATURE_PROTOCOL
+)
 HISTORICAL_MDLM_IMPLEMENTATION_INPUT_NAMES = frozenset(
     benchmark.IMPLEMENTATION_INPUT_PATHS
 ) - {"artifact_io_source"}
@@ -973,6 +976,10 @@ def _validate_summary_identity(
         if dict(sampling) != normalized_sampling:
             raise RescoreValidationError("sampling config is not canonical")
     x0_denoiser = sampling.get("parameterization", "raw_loo") == "x0_denoiser"
+    temperature_space = sampling.get("temperature_space", "raw_loo")
+    if source_config.get("temperature_space", "raw_loo") != temperature_space:
+        raise RescoreValidationError("source/sampling temperature_space differs")
+    denoiser_temperature = temperature_space == "x0_denoiser"
     if source_config.get("parameterization", "raw_loo") != sampling.get(
         "parameterization", "raw_loo"
     ):
@@ -1013,6 +1020,11 @@ def _validate_summary_identity(
             if historical_mdlm
             else GENERATION_PROTOCOL_FIELDS
             | (GIBBS_CORRECTOR_PROTOCOL_FIELDS if gibbs_corrector else frozenset())
+            | (
+                DENOISER_TEMPERATURE_PROTOCOL_FIELDS
+                if denoiser_temperature
+                else frozenset()
+            )
         ),
         "run.generation_protocol",
     )
@@ -1117,6 +1129,12 @@ def _validate_summary_identity(
     for key, expected in expected_common_protocol.items():
         if protocol.get(key) != expected:
             raise RescoreValidationError(f"generation_protocol.{key} differs")
+    if denoiser_temperature:
+        for key, expected in benchmark.DENOISER_TEMPERATURE_PROTOCOL.items():
+            if protocol.get(key) != expected or type(protocol.get(key)) is not type(
+                expected
+            ):
+                raise RescoreValidationError(f"generation_protocol.{key} differs")
     if gibbs_corrector:
         if protocol.get("gibbs_corrector") is not True:
             raise RescoreValidationError(
@@ -1376,6 +1394,11 @@ def _validate_summary_identity(
             "metric_branches": ["released_comparable", "strict"],
             "inference_weights": inference_weights,
             "raw_loo_top_p": protocol.get("raw_loo_top_p"),
+            **(
+                {key: protocol[key] for key in DENOISER_TEMPERATURE_PROTOCOL_FIELDS}
+                if denoiser_temperature
+                else {}
+            ),
             **(
                 {key: protocol[key] for key in GIBBS_CORRECTOR_PROTOCOL_FIELDS}
                 if gibbs_corrector

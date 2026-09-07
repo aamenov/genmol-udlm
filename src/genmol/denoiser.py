@@ -8,6 +8,9 @@ approximations. See docs/udlm_denoiser_ce_hypothesis.md for the derivation.
 
 from __future__ import annotations
 
+import math
+import numbers
+
 import torch
 
 from genmol.diffusion import ContinuousCategoricalDiffusion
@@ -50,8 +53,9 @@ def denoiser_to_loo_logits(
     t: torch.Tensor,
     *,
     mutable_mask: torch.Tensor | None = None,
+    denoiser_temperature: float = 1.0,
 ) -> torch.Tensor:
-    """Subtract local forward log likelihood before temperature or top-p.
+    """Subtract local forward log likelihood to recover raw LOO weights.
 
     Input/output logits are full-vocabulary [B,L,K]; xt is [B,L], and t is
     floating [B] with 0<t<=1. For active candidate j and observed token k,
@@ -59,7 +63,19 @@ def denoiser_to_loo_logits(
     softmax is proportional to D[j]/L[j]. No probability division is used.
     Excluded vocabulary columns and immutable positions retain their logits.
     Float64 stays float64; lower precision is promoted to float32 as in UDLM.
+
+    Optional ``denoiser_temperature`` scales selected active clean logits
+    before this conversion. Its caller must use reverse-bridge temperature 1
+    to obtain the posterior mixture of the directly tempered clean denoiser.
+    The default 1 performs the historical conversion without extra arithmetic.
     """
+    if (
+        isinstance(denoiser_temperature, bool)
+        or not isinstance(denoiser_temperature, numbers.Real)
+        or not math.isfinite(float(denoiser_temperature))
+        or denoiser_temperature <= 0
+    ):
+        raise ValueError("denoiser_temperature must be a finite positive real number")
     compact, mask = _validate_inputs(diffusion, logits, xt, mutable_mask)
     if (
         t.shape != (logits.shape[0],)
@@ -86,6 +102,12 @@ def denoiser_to_loo_logits(
     )
     log_likelihood.scatter_(-1, compact.unsqueeze(-1), current_log_likelihood)
     active_logits = result.index_select(-1, diffusion.diffusion_token_ids)
+    if denoiser_temperature != 1.0:
+        active_logits = torch.where(
+            mask.unsqueeze(-1),
+            active_logits / float(denoiser_temperature),
+            active_logits,
+        )
     converted = active_logits - torch.where(
         mask.unsqueeze(-1), log_likelihood, torch.zeros_like(log_likelihood)
     )
