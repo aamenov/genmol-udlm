@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import time
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -98,6 +99,18 @@ def main():
             or report["accounting"]["independently_rescored_requests"] != 800
             or len(report.get("resolution_contrasts", [])) != 16):
         raise ValueError("The complete independently rescored resolution comparison is required")
+    while True:
+        if engine.benchmark._require_clean_pushed_source() != source:
+            raise RuntimeError("Training source changed while waiting for GPUs")
+        inventory = engine.audited.probe_all_gpus()
+        eligible = [gpu for gpu in inventory if not gpu.rejection_reasons(
+            max_utilization_percent=10, min_free_memory_mib=30000)]
+        if len(eligible) >= args.gpu_count:
+            engine.select_gpus(inventory, args.gpu_count)
+            break
+        print(json.dumps({"event": "waiting_for_training_gpus", "time": engine.stamp(),
+                          "eligible": len(eligible), "requested": args.gpu_count}), flush=True)
+        time.sleep(15)
     return engine.execute(plan, source,
                           plan_builder=lambda count: build_plan(args.arm, count))
 
