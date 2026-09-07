@@ -79,6 +79,27 @@ exactly zero, even if a caller attempts to disable guidance through its scale.
 Implicit UDLM without a YAML fails before any score. Without the new option,
 MDLM keeps its existing configuration/artifact fields and constructor order.
 
+Opt-in scoring uses TDC's ordinary **singleton-list** dispatch, then requires
+exactly one finite real score. Successful normalization and unique-call
+accounting are unchanged; legitimate zero remains valid. This is an explicit
+error-handling repair: installed PyTDC 0.4.1's scalar dispatch catches evaluator
+failures and returns zero, while its ordinary list dispatch propagates them.
+The selected call protocol is recorded in the sampling receipt. The default
+MDLM scalar interface is unchanged. Failed evaluations never enter CachedOracle.
+
+Static inspection found the local `gsk3b_current.pkl` was serialized with
+scikit-learn 0.23.0 and lacks the tree node field required by installed 1.7.2;
+no model was unpickled or evaluated in this audit. Its SHA-256 is
+`d3a20701b80e5179c88c3ad4dc3483dd7ab35c50dc055c6773a7f5b63e89b6d5`.
+A filename containing `current` is not proof of compatibility. Cross-version
+pickle loading is unsupported by [scikit-learn's persistence documentation](https://scikit-learn.org/1.7/model_persistence.html).
+GSK3B needs a separately validated compatible runtime with unchanged model
+bytes; changing tree fields or retraining would require new equivalence evidence.
+Fexofenadine MPO is a deterministic gamma-zero alternative built from fixed
+atom-pair similarity, TPSA, logP and score modifiers, with no learned model or
+inner catch-to-zero in the installed evaluator. No replacement panel is executed
+by this adapter.
+
 The adapter calls the existing `mask_modification` with the declared NFE and
 temperature law. Backbone hooks record actual calls, including failed attempts;
 accepted candidate events retain that candidate's counts, while summary totals

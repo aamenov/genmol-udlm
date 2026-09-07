@@ -901,7 +901,12 @@ def _run_locked(
         manifest["extra"]["sampling"] = sampling_adapter.receipt
     # Opt-in identity is resolved before the oracle factory. Preserve the legacy
     # constructor order below when no explicit sampling contract is requested.
-    oracle = CachedOracle(TDCOracle(name=str(config["oracle"])), int(config["max_oracle_calls"]))
+    oracle_evaluator = TDCOracle(name=str(config["oracle"]))
+    if sampling_adapter is not None:
+        from scripts.exps.pmo.udlm_sampling import singleton_list_oracle
+
+        oracle_evaluator = singleton_list_oracle(oracle_evaluator)
+    oracle = CachedOracle(oracle_evaluator, int(config["max_oracle_calls"]))
     event_log = JsonlEventLog(events_path, durable=args.durable_events)
     start_iteration = 0
     event_count = 0
