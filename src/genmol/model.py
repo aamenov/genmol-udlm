@@ -1593,14 +1593,19 @@ class GenMol(L.LightningModule):
                 token_mask &= input_ids != token_id
         return token_mask
 
-    def sampling_logits(self, logits, xt, t, *, mutable_mask=None):
+    def sampling_logits(
+        self, logits, xt, t, *, mutable_mask=None, denoiser_temperature=1.0
+    ):
         """Interpret checkpoint logits before reverse-bridge/Gibbs controls."""
         if self.udlm_parameterization == 'raw_loo':
+            if isinstance(denoiser_temperature, bool) or denoiser_temperature != 1.0:
+                raise ValueError('denoiser_temperature requires a clean CE denoiser')
             return logits
         from genmol.denoiser import denoiser_to_loo_logits
 
         return denoiser_to_loo_logits(
-            self.mdlm, logits, xt, t, mutable_mask=mutable_mask
+            self.mdlm, logits, xt, t, mutable_mask=mutable_mask,
+            denoiser_temperature=denoiser_temperature,
         )
     
     def training_step(self, batch, batch_idx):
