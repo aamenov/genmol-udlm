@@ -1,0 +1,112 @@
+{
+  "artifact_files": {
+    "mask-rich-frozen-transfer-r2.json": {
+      "original_workspace_relative_path": "run_sources/udlm_objective_worktree/output/logs/mask-rich-frozen-transfer-r2.json",
+      "sha256": "b8b18e13df9fa31bc38291a5a6fe1425e010c6af61195a28303f83eef8193567",
+      "size_bytes": 11744
+    },
+    "mask-rich-frozen-transfer-r2.log": {
+      "original_workspace_relative_path": "run_sources/udlm_objective_worktree/output/logs/mask-rich-frozen-transfer-r2.log",
+      "sha256": "321cdd6883971343dd421ee12cb887349ed25e0109152f28090a97d9a4dc420d",
+      "size_bytes": 360
+    },
+    "mask-rich-frozen-transfer.json": {
+      "original_workspace_relative_path": "run_sources/udlm_objective_worktree/output/logs/mask-rich-frozen-transfer.json",
+      "sha256": "8519e646e0b35ad84c1e5b2bbeda451d96f61ba5c98df86fb2a23e73e65e00f6",
+      "size_bytes": 11985
+    },
+    "mask-rich-frozen-transfer.log": {
+      "original_workspace_relative_path": "run_sources/udlm_objective_worktree/output/logs/mask-rich-frozen-transfer.log",
+      "sha256": "436c875ffc203f486ced8ebe6139aa599b9e557e376f4b13d50f77263967b422",
+      "size_bytes": 118
+    }
+  },
+  "fields_excluded_from_exact_replay_comparison": [
+    "completed_at_utc",
+    "runtime_seconds",
+    "source_hashes",
+    "source_revision"
+  ],
+  "first_source_revision": "aab96a1a02c46e25e5dbeb9d9b3a44d07ad46a1e",
+  "first_stdout_json_offset_bytes": 242,
+  "first_stdout_prefix_sha256": "39b5f8ddd9ff6f872f8eafed45928a0fdf2fbfa80f086edc66f7ca7b76bbc179",
+  "limitations": [
+    "The six result rows are conditions on one frozen EMA model and reused16-row panel, not six trained models or independent trials.",
+    "Lower cross-prior CE changes corruption difficulty and does not demonstrate molecular quality.",
+    "Prior reconstruction here performs no token corruption, model forward pass, checkpoint load or optimizer step."
+  ],
+  "numeric_and_common_provenance_payloads_exactly_equal": true,
+  "prior_byte_encoding": {
+    "byteorder": "little",
+    "dtype": "IEEE754 float64",
+    "hash_type": "SHA-256 over native NumPy tobytes(), distinct from canonical JSON checkpoint metadata hashing",
+    "ordering": "full tokenizer ID order, 1880 entries",
+    "torch_version": "2.6.0+cu124"
+  },
+  "prior_reconstruction": [
+    {
+      "input_field_in_original": "stationary_probability_float64_bytes_sha256",
+      "input_prior_float64_native_bytes_sha256": "d1649a4bb9a9060e6ed12f612947f60f256a26d98a9249c81ef0fbc0a15ec1ae",
+      "input_prior_mask_probability": 1.0638297872340426e-07,
+      "input_prior_sum_float64": 1.0,
+      "mask_mixture_weight": 0.0,
+      "mask_token_id": 4,
+      "maximum_absolute_probability_change": 0.0,
+      "reconstruction": "Exact tensor operation order in audit_mask_rich_transfer.py; ContinuousCategoricalDiffusion constructor normalizes its float64 copy.",
+      "stored_process_mask_probability": 1.0638297872340426e-07,
+      "stored_process_prior_float64_native_bytes_sha256": "d1649a4bb9a9060e6ed12f612947f60f256a26d98a9249c81ef0fbc0a15ec1ae",
+      "stored_process_prior_sum_float64": 1.0
+    },
+    {
+      "input_field_in_original": "stationary_probability_float64_bytes_sha256",
+      "input_prior_float64_native_bytes_sha256": "4a311a0f9377c9b22f2d9969546412e51e19f99aee4c4cfae25f95d58c8d9d8b",
+      "input_prior_mask_probability": 0.9000000106382979,
+      "input_prior_sum_float64": 1.0000000000000002,
+      "mask_mixture_weight": 0.9,
+      "mask_token_id": 4,
+      "maximum_absolute_probability_change": 2.220446049250313e-16,
+      "reconstruction": "Exact tensor operation order in audit_mask_rich_transfer.py; ContinuousCategoricalDiffusion constructor normalizes its float64 copy.",
+      "stored_process_mask_probability": 0.9000000106382977,
+      "stored_process_prior_float64_native_bytes_sha256": "00b58728bbb71fc68a9768e418e2de1835f2392e30b195219b4155ec8c908769",
+      "stored_process_prior_sum_float64": 1.0
+    }
+  ],
+  "publication_base_difference_reason": "The publication base has since integrated the mask-rich model implementation; the recorded diagnostic source remains79ab550. The unchanged diffusion source is used only to reconstruct prior normalization.",
+  "publication_base_differences_from_second_run": {
+    "src/genmol/model.py": {
+      "publication_base_sha256": "a2b1fdac59648b2210410974c5775c8dd3eba18a1ae060bd17cb748f528487d0",
+      "recorded_second_run_sha256": "fb2b9f95ddedc583dc6cd0b12f476db4e934651a8771b19c4a6ad6afb6be5fd2"
+    }
+  },
+  "publication_base_revision": "d32ff53ead73a195569a498fb7a87c83e8891eb3",
+  "purpose": "Preserve original frozen-MDLM diagnostic outputs and clarify constructor-input versus stored-process prior hashes; no model reload or new denoising run.",
+  "run_runtime_seconds": [
+    19.99373100203229,
+    19.550524526042864
+  ],
+  "schema_version": 1,
+  "second_source_revision": "79ab55018e0e553a47f43bed3e5bc2be55458bdb",
+  "source_hashes_verified_against_recorded_git_revisions": {
+    "79ab55018e0e553a47f43bed3e5bc2be55458bdb": {
+      "scripts/udlm/audit_mask_rich_transfer.py": "ee40a539bfe3db99f196fa1cbe1e658a0501989c1507d3bde51e9a3ea6178713",
+      "src/genmol/backbone.py": "0961363a10717b8d4aa82bdb1ff150853f00fb34087d11f8fff7af6bd209b618",
+      "src/genmol/diffusion.py": "07e7cc4f0a65b21224196341a1cd2460f146e3356e3c902f3dbca6cb2fc21a17",
+      "src/genmol/model.py": "fb2b9f95ddedc583dc6cd0b12f476db4e934651a8771b19c4a6ad6afb6be5fd2",
+      "src/genmol/sampler.py": "6b9a89df059ac949771b0a4f25b58f07a2fcf58ced5e35de88801a0a038a5f32",
+      "src/genmol/utils/checkpoint_io.py": "80e22e83d4b6838697d06ab6f08880011f49cdc3f3384f7ed4392400abbf155a",
+      "src/genmol/utils/ema.py": "9b3fda01fe5f68d8e265a33423341d6bef460c480316ca8ee459151958efed49",
+      "src/genmol/utils/utils_data.py": "981bdc9c3b10b80ab113bcba0bc6709febcb2b9f3d4447a5c5291d6f9daaaee7"
+    },
+    "aab96a1a02c46e25e5dbeb9d9b3a44d07ad46a1e": {
+      "scripts/udlm/audit_mask_rich_transfer.py": "3235945cae31fd6c13c236f638f2812380daf2835cf1924dda581d7173f4fd87",
+      "src/genmol/backbone.py": "0961363a10717b8d4aa82bdb1ff150853f00fb34087d11f8fff7af6bd209b618",
+      "src/genmol/diffusion.py": "07e7cc4f0a65b21224196341a1cd2460f146e3356e3c902f3dbca6cb2fc21a17",
+      "src/genmol/model.py": "fb2b9f95ddedc583dc6cd0b12f476db4e934651a8771b19c4a6ad6afb6be5fd2",
+      "src/genmol/sampler.py": "6b9a89df059ac949771b0a4f25b58f07a2fcf58ced5e35de88801a0a038a5f32",
+      "src/genmol/utils/checkpoint_io.py": "80e22e83d4b6838697d06ab6f08880011f49cdc3f3384f7ed4392400abbf155a",
+      "src/genmol/utils/ema.py": "9b3fda01fe5f68d8e265a33423341d6bef460c480316ca8ee459151958efed49",
+      "src/genmol/utils/utils_data.py": "981bdc9c3b10b80ab113bcba0bc6709febcb2b9f3d4447a5c5291d6f9daaaee7"
+    }
+  },
+  "stream_repair": "79ab550 redirects import-time SAFE/Transformers stdout notices to stderr; original files are unchanged."
+}

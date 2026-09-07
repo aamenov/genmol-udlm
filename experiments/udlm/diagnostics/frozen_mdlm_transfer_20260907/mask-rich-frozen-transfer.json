@@ -1,0 +1,316 @@
+🚨 `inputs` is part of SAFEDoubleHeadsModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/safe/trainer/model.py.
+{
+  "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+  "clean_token_ids_int64_bytes_sha256": "0b4b1d74f1b03d741a6ca2e2abbdbbdcba5544f8c2e4eca1f1f1ee497093e8e7",
+  "completed_at_utc": "2026-09-07T11:42:49.271869+00:00",
+  "content_tokens": 814,
+  "device": "cpu",
+  "frequency_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+  "inference_weights": {
+    "ema_applied": true,
+    "source": "MDLM EMA"
+  },
+  "limitations": [
+    "All conditions use identical frozen MDLM EMA weights; this does not compare trained models.",
+    "Cross-prior CE also changes corruption difficulty and cannot select molecular quality.",
+    "Changed-nonmask includes any non-MASK replacement, potentially other special IDs.",
+    "Reported gradient norms are unreduced token CE gradients wrt logits, not backbone parameters.",
+    "One coupled corruption per time and16 validation rows is a small descriptive diagnostic.",
+    "No CE-to-LOO conversion, reverse-chain generation, chemistry metric or optimizer update occurs."
+  ],
+  "noise_eps": 0.001,
+  "panel_sha256": "e2493da4f3cb3217b48c78dc2901dc7524d7d90dc3959cffa87a1b6f8a9a7658",
+  "purpose": "Frozen MDLM EMA token-transfer diagnostic; no optimizer updates or generated molecules",
+  "results": [
+    {
+      "corrupted_token_ids_int64_bytes_sha256": "9cc133c0efa84f2993111e7c598c0d103ac6570640f5765bf29cfcb7dde7bce0",
+      "groups": {
+        "all_content": {
+          "ce_mean": 0.6769418120384216,
+          "ce_sum": 551.0306396484375,
+          "correct_top1": 685,
+          "mean_unreduced_ce_logit_gradient_l2": 0.25386229157447815,
+          "tokens": 814,
+          "top1_accuracy": 0.8415233415233415
+        },
+        "changed_nonmask": {
+          "ce_mean": 1.4168306589126587,
+          "ce_sum": 117.5969467163086,
+          "correct_top1": 56,
+          "mean_unreduced_ce_logit_gradient_l2": 0.43469110131263733,
+          "tokens": 83,
+          "top1_accuracy": 0.6746987951807228
+        },
+        "currently_mask": {
+          "ce_mean": null,
+          "ce_sum": 0.0,
+          "correct_top1": 0,
+          "mean_unreduced_ce_logit_gradient_l2": null,
+          "tokens": 0,
+          "top1_accuracy": null
+        },
+        "unchanged": {
+          "ce_mean": 0.5929324626922607,
+          "ce_sum": 433.4336242675781,
+          "correct_top1": 629,
+          "mean_unreduced_ce_logit_gradient_l2": 0.23333042860031128,
+          "tokens": 731,
+          "top1_accuracy": 0.8604651162790697
+        }
+      },
+      "mask_mixture_weight": 0.0,
+      "prior_mask_probability": 1.0638297872340426e-07,
+      "seed": 1900,
+      "stationary_probability_float64_bytes_sha256": "d1649a4bb9a9060e6ed12f612947f60f256a26d98a9249c81ef0fbc0a15ec1ae",
+      "time": 0.1
+    },
+    {
+      "corrupted_token_ids_int64_bytes_sha256": "56fd17714d9b910411cce161b822d8dbba5b34b99756cfb69f7a03813ea26561",
+      "groups": {
+        "all_content": {
+          "ce_mean": 2.341534376144409,
+          "ce_sum": 1906.009033203125,
+          "correct_top1": 386,
+          "mean_unreduced_ce_logit_gradient_l2": 0.7174123525619507,
+          "tokens": 814,
+          "top1_accuracy": 0.4742014742014742
+        },
+        "changed_nonmask": {
+          "ce_mean": 3.6216487884521484,
+          "ce_sum": 1296.55029296875,
+          "correct_top1": 79,
+          "mean_unreduced_ce_logit_gradient_l2": 0.9635633826255798,
+          "tokens": 358,
+          "top1_accuracy": 0.2206703910614525
+        },
+        "currently_mask": {
+          "ce_mean": null,
+          "ce_sum": 0.0,
+          "correct_top1": 0,
+          "mean_unreduced_ce_logit_gradient_l2": null,
+          "tokens": 0,
+          "top1_accuracy": null
+        },
+        "unchanged": {
+          "ce_mean": 1.3365321159362793,
+          "ce_sum": 609.4586181640625,
+          "correct_top1": 307,
+          "mean_unreduced_ce_logit_gradient_l2": 0.5241623520851135,
+          "tokens": 456,
+          "top1_accuracy": 0.6732456140350878
+        }
+      },
+      "mask_mixture_weight": 0.0,
+      "prior_mask_probability": 1.0638297872340426e-07,
+      "seed": 1901,
+      "stationary_probability_float64_bytes_sha256": "d1649a4bb9a9060e6ed12f612947f60f256a26d98a9249c81ef0fbc0a15ec1ae",
+      "time": 0.5
+    },
+    {
+      "corrupted_token_ids_int64_bytes_sha256": "26e4092420a77cd3e07a3e2f64539f5af4e83fd70910f51087a342adcdc83ae6",
+      "groups": {
+        "all_content": {
+          "ce_mean": 4.237881183624268,
+          "ce_sum": 3449.63525390625,
+          "correct_top1": 137,
+          "mean_unreduced_ce_logit_gradient_l2": 1.0128328800201416,
+          "tokens": 814,
+          "top1_accuracy": 0.1683046683046683
+        },
+        "changed_nonmask": {
+          "ce_mean": 4.650643825531006,
+          "ce_sum": 3162.437744140625,
+          "correct_top1": 72,
+          "mean_unreduced_ce_logit_gradient_l2": 1.064024567604065,
+          "tokens": 680,
+          "top1_accuracy": 0.10588235294117647
+        },
+        "currently_mask": {
+          "ce_mean": null,
+          "ce_sum": 0.0,
+          "correct_top1": 0,
+          "mean_unreduced_ce_logit_gradient_l2": null,
+          "tokens": 0,
+          "top1_accuracy": null
+        },
+        "unchanged": {
+          "ce_mean": 2.143263578414917,
+          "ce_sum": 287.19732666015625,
+          "correct_top1": 65,
+          "mean_unreduced_ce_logit_gradient_l2": 0.7530524134635925,
+          "tokens": 134,
+          "top1_accuracy": 0.48507462686567165
+        }
+      },
+      "mask_mixture_weight": 0.0,
+      "prior_mask_probability": 1.0638297872340426e-07,
+      "seed": 1902,
+      "stationary_probability_float64_bytes_sha256": "d1649a4bb9a9060e6ed12f612947f60f256a26d98a9249c81ef0fbc0a15ec1ae",
+      "time": 0.9
+    },
+    {
+      "corrupted_token_ids_int64_bytes_sha256": "5685744bdaf7d88a2d8aa54112c0daeefbd0cbeb550f0e4ae4e7c85b8181d253",
+      "groups": {
+        "all_content": {
+          "ce_mean": 0.4228738248348236,
+          "ce_sum": 344.21929931640625,
+          "correct_top1": 738,
+          "mean_unreduced_ce_logit_gradient_l2": 0.15881574153900146,
+          "tokens": 814,
+          "top1_accuracy": 0.9066339066339066
+        },
+        "changed_nonmask": {
+          "ce_mean": 0.07299470901489258,
+          "ce_sum": 0.6569523811340332,
+          "correct_top1": 9,
+          "mean_unreduced_ce_logit_gradient_l2": 0.07886380702257156,
+          "tokens": 9,
+          "top1_accuracy": 1.0
+        },
+        "currently_mask": {
+          "ce_mean": 0.7883681058883667,
+          "ce_sum": 60.704341888427734,
+          "correct_top1": 67,
+          "mean_unreduced_ce_logit_gradient_l2": 0.20166084170341492,
+          "tokens": 77,
+          "top1_accuracy": 0.8701298701298701
+        },
+        "unchanged": {
+          "ce_mean": 0.38854125142097473,
+          "ce_sum": 282.8580322265625,
+          "correct_top1": 662,
+          "mean_unreduced_ce_logit_gradient_l2": 0.1552724987268448,
+          "tokens": 728,
+          "top1_accuracy": 0.9093406593406593
+        }
+      },
+      "mask_mixture_weight": 0.9,
+      "prior_mask_probability": 0.9000000106382979,
+      "seed": 1900,
+      "stationary_probability_float64_bytes_sha256": "4a311a0f9377c9b22f2d9969546412e51e19f99aee4c4cfae25f95d58c8d9d8b",
+      "time": 0.1
+    },
+    {
+      "corrupted_token_ids_int64_bytes_sha256": "fcb16e99887f8affcfa61ba92c3e65da14b9bd44ac18e75c2753bf2e828a773b",
+      "groups": {
+        "all_content": {
+          "ce_mean": 1.319159984588623,
+          "ce_sum": 1073.7962646484375,
+          "correct_top1": 574,
+          "mean_unreduced_ce_logit_gradient_l2": 0.4267439544200897,
+          "tokens": 814,
+          "top1_accuracy": 0.7051597051597052
+        },
+        "changed_nonmask": {
+          "ce_mean": 3.0309174060821533,
+          "ce_sum": 124.26761627197266,
+          "correct_top1": 17,
+          "mean_unreduced_ce_logit_gradient_l2": 0.7789907455444336,
+          "tokens": 41,
+          "top1_accuracy": 0.4146341463414634
+        },
+        "currently_mask": {
+          "ce_mean": 1.822096586227417,
+          "ce_sum": 663.2431640625,
+          "correct_top1": 225,
+          "mean_unreduced_ce_logit_gradient_l2": 0.5420878529548645,
+          "tokens": 364,
+          "top1_accuracy": 0.6181318681318682
+        },
+        "unchanged": {
+          "ce_mean": 0.6999645829200745,
+          "ce_sum": 286.2855224609375,
+          "correct_top1": 332,
+          "mean_unreduced_ce_logit_gradient_l2": 0.2887798249721527,
+          "tokens": 409,
+          "top1_accuracy": 0.8117359413202934
+        }
+      },
+      "mask_mixture_weight": 0.9,
+      "prior_mask_probability": 0.9000000106382979,
+      "seed": 1901,
+      "stationary_probability_float64_bytes_sha256": "4a311a0f9377c9b22f2d9969546412e51e19f99aee4c4cfae25f95d58c8d9d8b",
+      "time": 0.5
+    },
+    {
+      "corrupted_token_ids_int64_bytes_sha256": "ecbc77d7299e9313bba740260d03487a1e0a0affa9137d2c7d9df2b3ad304e20",
+      "groups": {
+        "all_content": {
+          "ce_mean": 3.840301513671875,
+          "ce_sum": 3126.00537109375,
+          "correct_top1": 213,
+          "mean_unreduced_ce_logit_gradient_l2": 0.9285761713981628,
+          "tokens": 814,
+          "top1_accuracy": 0.2616707616707617
+        },
+        "changed_nonmask": {
+          "ce_mean": 4.99000883102417,
+          "ce_sum": 369.2606506347656,
+          "correct_top1": 8,
+          "mean_unreduced_ce_logit_gradient_l2": 1.1368348598480225,
+          "tokens": 74,
+          "top1_accuracy": 0.10810810810810811
+        },
+        "currently_mask": {
+          "ce_mean": 4.113841533660889,
+          "ce_sum": 2682.224609375,
+          "correct_top1": 134,
+          "mean_unreduced_ce_logit_gradient_l2": 0.978266716003418,
+          "tokens": 652,
+          "top1_accuracy": 0.20552147239263804
+        },
+        "unchanged": {
+          "ce_mean": 0.8468175530433655,
+          "ce_sum": 74.51994323730469,
+          "correct_top1": 71,
+          "mean_unreduced_ce_logit_gradient_l2": 0.38528841733932495,
+          "tokens": 88,
+          "top1_accuracy": 0.8068181818181818
+        }
+      },
+      "mask_mixture_weight": 0.9,
+      "prior_mask_probability": 0.9000000106382979,
+      "seed": 1902,
+      "stationary_probability_float64_bytes_sha256": "4a311a0f9377c9b22f2d9969546412e51e19f99aee4c4cfae25f95d58c8d9d8b",
+      "time": 0.9
+    }
+  ],
+  "runtime_seconds": 19.99373100203229,
+  "schema_version": 1,
+  "selection": "First16 rows of previously used frozen validation panel; no new held-out confirmation",
+  "shape": [
+    16,
+    106
+  ],
+  "source_hashes": {
+    "scripts/udlm/audit_mask_rich_transfer.py": "3235945cae31fd6c13c236f638f2812380daf2835cf1924dda581d7173f4fd87",
+    "src/genmol/backbone.py": "0961363a10717b8d4aa82bdb1ff150853f00fb34087d11f8fff7af6bd209b618",
+    "src/genmol/diffusion.py": "07e7cc4f0a65b21224196341a1cd2460f146e3356e3c902f3dbca6cb2fc21a17",
+    "src/genmol/model.py": "fb2b9f95ddedc583dc6cd0b12f476db4e934651a8771b19c4a6ad6afb6be5fd2",
+    "src/genmol/sampler.py": "6b9a89df059ac949771b0a4f25b58f07a2fcf58ced5e35de88801a0a038a5f32",
+    "src/genmol/utils/checkpoint_io.py": "80e22e83d4b6838697d06ab6f08880011f49cdc3f3384f7ed4392400abbf155a",
+    "src/genmol/utils/ema.py": "9b3fda01fe5f68d8e265a33423341d6bef460c480316ca8ee459151958efed49",
+    "src/genmol/utils/utils_data.py": "981bdc9c3b10b80ab113bcba0bc6709febcb2b9f3d4447a5c5291d6f9daaaee7"
+  },
+  "source_revision": "aab96a1a02c46e25e5dbeb9d9b3a44d07ad46a1e",
+  "source_row_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "torch_version": "2.6.0+cu124",
+  "uniform_floor": 0.0002
+}
