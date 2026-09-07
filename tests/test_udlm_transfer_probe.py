@@ -492,6 +492,9 @@ def test_execute_preserves_raw_rows_controls_and_observed_batch_nfe(
     )
     assert terminal["verification_status"] == "pending_independent_rescore"
     summary = json.loads((output / "summary.json").read_bytes())
+    assert summary["run"]["generation_protocol"]["model_use_bracket_safe"] is False
+    raw = json.loads((output / "raw_generation.json").read_bytes())
+    assert raw["generation_protocol"]["model_use_bracket_safe"] is False
     work = summary["observed_work"]
     assert work["backbone_batch_sizes"] == [2] * 4
     assert (
