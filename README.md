@@ -9,13 +9,21 @@ controls and molecular variants derived from the
 It is not NVIDIA's official repository and is not affiliated with NVIDIA or the
 UDLM authors.
 
-> **Research status.** The corrected one-GPU scale-up completed the matched
-> 1,000-update R/S/E chain, and its terminal E receipt passed the independent
-> panel validator. Training evidence alone does not measure molecular quality.
-> No registered v4 candidate molecule has been generated, no final benchmark
-> seed has run, and there is no UDLM-over-GenMol superiority result yet. The
-> next boundary is the separately reviewed v4 framework/config/registry Git
-> sequence, followed by the small-first registered generation campaign.
+> **Research status — 2026-09-07.** The temperature and fixed-budget Gibbs
+> studies completed 36 runs and independently rescored all 2,304 requested
+> samples. Best selected pilot quality is **57.03%**, versus **85.8%** for the
+> local MDLM baseline. **No superiority has been established.** Each exploratory
+> configuration used only two seeds of 64 requests; the baseline used three
+> seeds of 1,000. Final UDLM evaluation seeds remain reserved.
+>
+> See the [27-page study report](output/udlm/study_overview_20260907/study_overview.pdf),
+> [temperature results](experiments/udlm/results/engineering_v5.md), and
+> [Gibbs results](experiments/udlm/results/engineering_v6.md). All R/S/E
+> checkpoints received 1,000 batch-16 updates from the common MDLM EMA.
+> An opt-in [CE clean-denoiser adaptation](docs/udlm_ce_implementation.md) is
+> implemented and CPU-tested but has not trained a molecular model. A fresh
+> [20-update batch-128 resource pilot](experiments/udlm/results/engineering_v7_throughput.md)
+> passed; a larger matched CT/CE training comparison is the next experiment.
 
 The main educational implementation is
 [`genmol_from_scratch.ipynb`](genmol_from_scratch.ipynb); exact experiment
@@ -23,7 +31,13 @@ state, hashes, caveats, and the next safe action are in
 [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md). The standalone repository is
 [aamenov/genmol-udlm](https://github.com/aamenov/genmol-udlm).
 
-## Registered UDLM generation plan
+## Archived v4 generation plan
+
+The D diagnostic generated 32 rows and then failed completion validation due
+to a missing normalized top-p default in the expected configuration. Its
+failure and raw rows are preserved; no ranked stage followed. The design below
+is historical. V5 and V6 were separate engineering studies, not a reclassification
+or continuation of that failed campaign.
 
 Protocol v4 binds three immutable W=1 checkpoints: release-compatible uniform
 R (`d0310d2e…`), schedule-consistent uniform S (`100f467b…`), and
