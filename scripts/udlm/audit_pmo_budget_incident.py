@@ -86,7 +86,7 @@ def prefix_counts(data, config, population):
     """Validate complete lines; preserve an unterminated tail by hash and size."""
     boundary = data.rfind(b"\n") + 1
     prefix, tail = data[:boundary], data[boundary:]
-    lines = prefix.splitlines()
+    lines = prefix.split(b"\n")[:-1]
     result = {
         "status": "unvalidated_prefix",
         "complete_jsonl_lines": len(lines),

@@ -46,6 +46,21 @@ def test_unterminated_tail_is_excluded_and_hash_bound(tail):
     assert result["unterminated_tail_sha256"] == audit.historical.digest(tail)
 
 
+def test_carriage_return_cannot_create_an_extra_committed_event_record():
+    cfg = config(budget=5)
+    events, _scores = make_events(cfg)
+    data = (
+        audit.historical.encoded(events[0])
+        + b"\r"
+        + audit.historical.encoded(events[1])
+        + b"\n"
+    )
+    result = audit.prefix_counts(data, cfg, population())
+    assert result["complete_jsonl_lines"] == 1
+    assert result["status"] == "unvalidated_prefix"
+    assert result["durable_unique_charges"] is None
+
+
 @pytest.mark.parametrize(
     "corruption",
     [
