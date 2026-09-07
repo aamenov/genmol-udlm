@@ -12,10 +12,12 @@ import csv
 import hashlib
 import io
 import json
+import math
 import statistics
 import sys
 from collections import Counter
 from datetime import datetime, timezone
+from fractions import Fraction
 from html import escape
 from pathlib import Path
 from typing import Any, Callable
@@ -443,7 +445,178 @@ def build_report(
             "optimized objectives; training losses have different scales and targets.",
             *CAVEATS[3:],
         ]
+    contrasts = _paired_contrasts(protocol, runs)
+    if contrasts:
+        result["paired_contrasts"] = contrasts
+        result["caveats"] = [
+            *result["caveats"],
+            "Predeclared contrasts subtract CT from CE within the same seed and "
+            "decoding branch. Every declared contrast is retained, including negative "
+            "outcomes. Paired mean and sample SD are withheld unless all declared "
+            "seed pairs define that metric; unavailable pairs remain visible. "
+            "Sample SD describes seed spread, not a confidence interval. Pairing "
+            "seed labels does not imply coupled molecular trajectories.",
+        ]
     return result
+
+
+def _paired_contrasts(protocol: dict[str, Any], runs: list[dict]) -> list[dict]:
+    """Resolve declared objective contrasts, never subtract unpaired seed means."""
+    comparison = protocol.get("design", {}).get("objective_comparison", {})
+    if not isinstance(comparison, dict):
+        raise ValueError("objective_comparison must be an object")
+    declarations = [
+        (name, value)
+        for name, value in comparison.items()
+        if name in ("primary", "secondary")
+        or isinstance(value, dict)
+        and ("control_config" in value or "treatment_config" in value)
+    ]
+    results = []
+    for name, declaration in declarations:
+        if (
+            not isinstance(declaration, dict)
+            or not {"control_config", "treatment_config", "temperature"}
+            <= declaration.keys()
+        ):
+            raise ValueError(f"incomplete paired contrast declaration: {name}")
+        temperature = declaration["temperature"]
+        if (
+            type(temperature) not in (int, float)
+            or not math.isfinite(temperature)
+            or temperature <= 0
+        ):
+            raise ValueError("paired contrast temperature must be finite and positive")
+        entries = []
+        for role, parameterization in (
+            ("control", "raw_loo"),
+            ("treatment", "x0_denoiser"),
+        ):
+            selected = [
+                entry
+                for entry in protocol["entries"]
+                if entry.get("config_id") == declaration[f"{role}_config"]
+            ]
+            if len(selected) != 1:
+                raise ValueError(
+                    "paired contrast must resolve each config exactly once"
+                )
+            entry = selected[0]
+            if entry.get("parameterization", "raw_loo") != parameterization:
+                raise ValueError(
+                    "paired contrast must compare CE treatment minus CT control"
+                )
+            entries.append(entry)
+        if entries[0]["attempt_id"] == entries[1]["attempt_id"]:
+            raise ValueError("paired contrast requires distinct treatment and control")
+        selected_runs = []
+        for entry in entries:
+            by_seed = {}
+            for run in runs:
+                if run["attempt_id"] != entry["attempt_id"]:
+                    continue
+                if run["seed"] in by_seed:
+                    raise ValueError("duplicate seed in paired contrast")
+                if run["status"] == "completed":
+                    sampling = run["config"]["sampling"]
+                    if sampling["softmax_temp"] != temperature or sampling.get(
+                        "parameterization", "raw_loo"
+                    ) != entry.get("parameterization", "raw_loo"):
+                        raise ValueError(
+                            "observed paired config differs from declared contrast"
+                        )
+                by_seed[run["seed"]] = run
+            selected_runs.append(by_seed)
+        contrast = {
+            "contrast_id": name,
+            "direction": "CE_minus_CT",
+            **{
+                key: declaration[key]
+                for key in ("control_config", "treatment_config", "temperature")
+            },
+            "control_attempt_id": entries[0]["attempt_id"],
+            "treatment_attempt_id": entries[1]["attempt_id"],
+            "expected_seeds": protocol["seeds"],
+            "summary_policy": "all_declared_pairs_required_for_each_metric",
+            "metrics": {},
+        }
+        for branch in BRANCHES:
+            contrast["metrics"][branch] = {}
+            for metric in METRICS:
+                per_seed, differences = [], []
+                for seed in protocol["seeds"]:
+                    pair = [by_seed.get(seed) for by_seed in selected_runs]
+                    row = {
+                        "seed": seed,
+                        "requested_samples": protocol["num_samples"],
+                        "control_status": pair[0]["status"] if pair[0] else "missing",
+                        "treatment_status": pair[1]["status"] if pair[1] else "missing",
+                        "status": "unavailable",
+                        "control_value": None,
+                        "treatment_value": None,
+                        "difference": None,
+                    }
+                    values = []
+                    for role, run in zip(("control", "treatment"), pair):
+                        value = None
+                        if run is not None and run["status"] == "completed":
+                            if run["requested_samples"] != protocol["num_samples"]:
+                                raise ValueError(
+                                    "paired sample count differs from protocol"
+                                )
+                            scores = run["metrics"][branch]
+                            observed = scores[metric]
+                            if observed is not None:
+                                if type(observed) not in (int, float) or not (
+                                    math.isfinite(observed) and 0 <= observed <= 1
+                                ):
+                                    raise ValueError("paired metric is outside [0, 1]")
+                                value = Fraction(str(observed))
+                                if metric == "quality":
+                                    count, denominator = (
+                                        scores["quality_count"],
+                                        scores["quality_denominator"],
+                                    )
+                                    if (
+                                        type(count) is not int
+                                        or type(denominator) is not int
+                                        or denominator != protocol["num_samples"]
+                                        or not 0 <= count <= denominator
+                                        or observed != count / denominator
+                                    ):
+                                        raise ValueError(
+                                            "paired quality count/denominator is inconsistent"
+                                        )
+                                    value = Fraction(count, denominator)
+                                    row[f"{role}_quality_count"] = count
+                                row[f"{role}_value"] = observed
+                        values.append(value)
+                    if all(value is not None for value in values):
+                        difference = values[1] - values[0]
+                        row.update(status="completed", difference=float(difference))
+                        differences.append(difference)
+                    elif all(
+                        run is not None and run["status"] == "completed" for run in pair
+                    ):
+                        row["status"] = "undefined_metric"
+                    per_seed.append(row)
+                complete = len(differences) == len(protocol["seeds"])
+                contrast["metrics"][branch][metric] = {
+                    "complete": complete,
+                    "defined_seed_count": len(differences),
+                    "expected_seed_count": len(protocol["seeds"]),
+                    "per_seed": per_seed,
+                    "mean_difference": (
+                        float(statistics.mean(differences)) if complete else None
+                    ),
+                    "sample_sd": (
+                        statistics.stdev(differences)
+                        if complete and len(differences) > 1
+                        else None
+                    ),
+                }
+        results.append(contrast)
+    return results
 
 
 def _objective_training_description(protocol: dict[str, Any]) -> str:
@@ -504,9 +677,9 @@ def _objective_evidence(run: dict[str, Any]) -> dict[str, Any]:
     identity = run["independent_rescore"].get("identity", {})
     generation = identity.get("generation", {})
     evidence = {
-        "objective": "clean CE"
-        if parameterization == "x0_denoiser"
-        else "CT / raw-LOO",
+        "objective": (
+            "clean CE" if parameterization == "x0_denoiser" else "CT / raw-LOO"
+        ),
         "parameterization": parameterization,
         "inference_weights": generation.get("inference_weights"),
     }
@@ -640,6 +813,68 @@ def _csv_bytes(report: dict[str, Any]) -> bytes:
                 json.dumps(weights, sort_keys=True) if weights is not None else None
             )
         writer.writerow(row)
+    return stream.getvalue().encode("utf-8")
+
+
+def _paired_csv_bytes(report: dict[str, Any]) -> bytes:
+    fields = [
+        "row_type",
+        "contrast_id",
+        "control_config",
+        "treatment_config",
+        "temperature",
+        "branch",
+        "metric",
+        "status",
+        "seed",
+        "control_status",
+        "treatment_status",
+        "requested_samples",
+        "control_quality_count",
+        "treatment_quality_count",
+        "control_value",
+        "treatment_value",
+        "difference",
+        "defined_seed_count",
+        "expected_seed_count",
+        "mean_difference",
+        "sample_sd",
+    ]
+    stream = io.StringIO(newline="")
+    writer = csv.DictWriter(stream, fields, lineterminator="\n")
+    writer.writeheader()
+    for contrast in report["paired_contrasts"]:
+        identity = {
+            key: contrast[key]
+            for key in (
+                "contrast_id",
+                "control_config",
+                "treatment_config",
+                "temperature",
+            )
+        }
+        for branch in BRANCHES:
+            for metric in METRICS:
+                result = contrast["metrics"][branch][metric]
+                common = {**identity, "branch": branch, "metric": metric}
+                for pair in result["per_seed"]:
+                    writer.writerow({**common, "row_type": "seed", **pair})
+                writer.writerow(
+                    {
+                        **common,
+                        "row_type": "summary",
+                        "status": "completed" if result["complete"] else "incomplete",
+                        **{
+                            key: result[key]
+                            for key in (
+                                "defined_seed_count",
+                                "expected_seed_count",
+                                "mean_difference",
+                                "sample_sd",
+                            )
+                        },
+                    }
+                )
     return stream.getvalue().encode("utf-8")
 
 
@@ -795,6 +1030,69 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
                 ]
             )
         add_table(rows)
+    if report.get("paired_contrasts"):
+        story.append(
+            Paragraph("Predeclared paired CE minus CT contrasts", styles["Heading2"])
+        )
+        story.append(
+            Paragraph(
+                "Differences use the same seed and decoding branch, with equal seed "
+                "weights. Values are on the metric's 0-to-1 scale: 0.01 is one "
+                "percentage point for quality. All declared pairs must define a "
+                "metric before its mean and sample SD are shown. SD is seed spread, "
+                "not a confidence interval. Seed labels do not imply paired molecules.",
+                styles["BodyText"],
+            )
+        )
+        for contrast in report["paired_contrasts"]:
+            story.append(
+                Paragraph(
+                    escape(
+                        f"{contrast['contrast_id']} | temperature {contrast['temperature']}: "
+                        f"{contrast['treatment_config']} minus {contrast['control_config']}"
+                    ),
+                    styles["Heading3"],
+                )
+            )
+            for branch in BRANCHES:
+                story.append(Paragraph(escape(branch), styles["Heading3"]))
+                rows = [["Metric", "Seed", "CT", "CE", "CE minus CT", "Pair status"]]
+                summaries = [
+                    ["Metric", "Pairs defined", "Mean CE minus CT", "Sample SD"]
+                ]
+                for metric in METRICS:
+                    result = contrast["metrics"][branch][metric]
+                    for pair in result["per_seed"]:
+                        values = [
+                            "--" if pair[key] is None else f"{pair[key]:+.6f}"
+                            for key in (
+                                "control_value",
+                                "treatment_value",
+                                "difference",
+                            )
+                        ]
+                        status = pair["status"]
+                        if status == "unavailable":
+                            status += f" (CT {pair['control_status']}; CE {pair['treatment_status']})"
+                        rows.append([metric, pair["seed"], *values, status])
+                    summaries.append(
+                        [
+                            metric,
+                            f"{result['defined_seed_count']}/{result['expected_seed_count']}",
+                            (
+                                "--"
+                                if result["mean_difference"] is None
+                                else f"{result['mean_difference']:+.6f}"
+                            ),
+                            (
+                                "--"
+                                if result["sample_sd"] is None
+                                else f"{result['sample_sd']:.6f}"
+                            ),
+                        ]
+                    )
+                add_table(rows)
+                add_table(summaries)
     story.append(Paragraph("Every scheduled seed", styles["Heading2"]))
     rows = [
         [
@@ -902,19 +1200,28 @@ def write_report(
     directory.mkdir(parents=True, exist_ok=True)
     relative = directory.relative_to(root).as_posix()
     csv_payload, pdf_payload = _csv_bytes(report), _pdf_bytes(report)
+    items = [
+        artifact_io.PublishItem(f"{relative}/report.csv", csv_payload),
+        artifact_io.PublishItem(f"{relative}/report.pdf", pdf_payload),
+    ]
+    paired_hash = {}
+    if report.get("paired_contrasts"):
+        paired_payload = _paired_csv_bytes(report)
+        items.append(
+            artifact_io.PublishItem(f"{relative}/paired_contrasts.csv", paired_payload)
+        )
+        paired_hash["paired_contrasts_csv_sha256"] = _sha(paired_payload)
     report = {
         **report,
         "report_artifacts": {
             "csv_sha256": _sha(csv_payload),
             "pdf_sha256": _sha(pdf_payload),
+            **paired_hash,
         },
     }
     artifact_io.publish_bundle_exclusive(
         root,
-        [
-            artifact_io.PublishItem(f"{relative}/report.csv", csv_payload),
-            artifact_io.PublishItem(f"{relative}/report.pdf", pdf_payload),
-        ],
+        items,
         completion=artifact_io.PublishItem(
             f"{relative}/report.json",
             (
@@ -922,7 +1229,10 @@ def write_report(
             ).encode(),
         ),
     )
-    return {kind: str(directory / f"report.{kind}") for kind in ("json", "csv", "pdf")}
+    paths = {kind: str(directory / f"report.{kind}") for kind in ("json", "csv", "pdf")}
+    if paired_hash:
+        paths["paired_contrasts_csv"] = str(directory / "paired_contrasts.csv")
+    return paths
 
 
 def main(argv: list[str] | None = None) -> None:
