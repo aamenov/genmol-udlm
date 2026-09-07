@@ -2,8 +2,10 @@
 
 Original audit status: CPU algebra and gradient evidence only. The optional CE
 implementation is now documented in [the implementation note](udlm_ce_implementation.md).
-No CE model has been trained, and **no empirical improvement over UDLM or GenMol
-has been established**. Existing R/S/E training, v4's failed
+CE molecular benchmark results are pending, and **no empirical improvement
+over UDLM or GenMol has been established**. The V7 resource pilot passed and
+[the matched V8 study](../experiments/udlm/protocols/engineering_v8_objectives.json)
+is now implemented; check live status in `PROJECT_CONTEXT.md`. Existing R/S/E training, v4's failed
 diagnostic attempt, and the prospective v5 temperature screen retain their
 original identities and conclusions. This document does not reinterpret them.
 
@@ -280,17 +282,24 @@ First run a separate short, approximately 20-update throughput/memory pilot
 at the intended batch grouping. One GPU with microbatch 16 and accumulation 8,
 or two GPUs with microbatch 16 and accumulation 4, gives batch 128. Keep the
 same GPU count and grouping in both objective arms; equal global batch alone
-does not imply equal time-sampling and dropout RNG streams. That shape has not
-yet been shown to fit. Observe actual peak memory and examples/second
-before committing to the panel. Each launch must dynamically select at most
+does not imply equal time-sampling and dropout RNG streams. The subsequent
+[V7 pilot](../experiments/udlm/results/engineering_v7_throughput.md) verified
+the one-GPU grouping; the V8 launch also reached finite training on two GPUs.
+Recorded aggregate GPU usage is a sampled resource observation, not an
+allocator peak. Inspect the actual manifests before interpreting throughput. Each launch must dynamically select at most
 two GPUs below 10% utilization with sufficient free memory, preserve other
 processes, re-probe immediately before exposure, and use tmux plus persistent
 logs. Do not overlap with another job beyond the global two-GPU cap.
 
-Exact matching needs explicit post-initialization RNG reseeding for both arms;
-the manual entrypoint currently restricts that helper to registered pilots.
-Record or repair that prerequisite before claiming equal RNG streams. Hosted
-data resumes do not restore their cursor, so use fresh, disclosed data starts.
+The original proposal suggested explicit post-initialization reseeding to
+ensure matching. The implemented V8 pair instead keeps
+`reseed_after_model_initialization=false` in both arms. The CE metadata/state
+marker adds no random draws: focused tests verify identical constructor RNG
+states, A1 backbone weights, masks, times and corruptions for the matched CT/CE
+configurations. Thus reseeding is not a prerequisite for this implementation.
+Both arms retain the same seed and grouping; this does not assert bitwise
+identity of different objectives or GPU executions. Hosted data resumes do
+not restore their cursor, so V8 uses fresh, disclosed data starts.
 See [the direct-training plan](udlm_training_continuation.md) for initialization,
 scheduler, sharding, runtime and checkpoint-storage limitations.
 
