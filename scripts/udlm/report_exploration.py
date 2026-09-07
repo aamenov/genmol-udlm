@@ -436,6 +436,34 @@ def build_report(
     }
 
 
+def _has_gibbs_design(report: dict[str, Any]) -> bool:
+    protocol = report["protocol"]["configuration"]
+    return "gibbs_treatment" in protocol.get("design", {}) or any(
+        run.get("generation_protocol", {}).get("gibbs_corrector") is True
+        for run in report["runs"]
+    )
+
+
+def _sampling_budget(run: dict[str, Any]) -> dict[str, Any]:
+    """Expose certified NFE; recover unchanged predictor counts for old schemas."""
+    protocol = run.get("generation_protocol", {})
+    if run.get("status") != "completed" or protocol.get("diffusion_type") != "udlm":
+        return {}
+    corrector = protocol.get("gibbs_corrector", False)
+    return {
+        "nfe": protocol["nfe"],
+        "gibbs_corrector": corrector,
+        "predictor_transitions_per_molecule": (
+            protocol["predictor_transitions_per_molecule"]
+            if corrector
+            else protocol["nfe"]
+        ),
+        "corrector_steps_per_molecule": (
+            protocol["corrector_steps_per_molecule"] if corrector else 0
+        ),
+    }
+
+
 def _csv_bytes(report: dict[str, Any]) -> bytes:
     fields = [
         "attempt_id",
@@ -453,6 +481,20 @@ def _csv_bytes(report: dict[str, Any]) -> bytes:
         "raw_sha256",
         "failure_reason",
     ]
+    include_gibbs = _has_gibbs_design(report)
+    if include_gibbs:
+        fields.extend(
+            [
+                "nfe",
+                "gibbs_corrector",
+                "predictor_transitions_per_molecule",
+                "corrector_steps_per_molecule",
+                "generation_protocol",
+                "corrector_source_sha256",
+                "protocol_design",
+                "protocol_limitations",
+            ]
+        )
     stream = io.StringIO(newline="")
     writer = csv.DictWriter(stream, fields)
     writer.writeheader()
@@ -470,6 +512,20 @@ def _csv_bytes(report: dict[str, Any]) -> bytes:
             gpu_uuid=run.get("gpu_mapping", {}).get("cuda_visible_devices"),
             raw_sha256=run["artifacts"].get("raw_samples.csv", {}).get("sha256"),
         )
+        if include_gibbs:
+            protocol = report["protocol"]["configuration"]
+            source = run.get("independent_rescore", {}).get("identity", {}).get(
+                "source", {}
+            )
+            row.update(
+                **_sampling_budget(run),
+                generation_protocol=json.dumps(
+                    run.get("generation_protocol", {}), sort_keys=True
+                ),
+                corrector_source_sha256=source.get("corrector_source_sha256"),
+                protocol_design=json.dumps(protocol.get("design", {}), sort_keys=True),
+                protocol_limitations=json.dumps(protocol.get("limitations", [])),
+            )
         writer.writerow(row)
     return stream.getvalue().encode("utf-8")
 
@@ -503,6 +559,18 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
     ]
     for caveat in report["caveats"]:
         story.append(Paragraph(escape(caveat), styles["BodyText"]))
+    include_gibbs = _has_gibbs_design(report)
+    if include_gibbs:
+        protocol = report["protocol"]["configuration"]
+        story.append(Paragraph("Prospective sampling design", styles["Heading2"]))
+        story.append(
+            Paragraph(
+                escape(json.dumps(protocol.get("design", {}), sort_keys=True)),
+                styles["BodyText"],
+            )
+        )
+        for caveat in protocol.get("limitations", []):
+            story.append(Paragraph(escape(caveat), styles["BodyText"]))
     story.append(Paragraph("Reference means (context only)", styles["Heading2"]))
     rows = [["Reference", *METRICS]]
     for name, baseline in report["baselines"].items():
@@ -524,6 +592,29 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
         story.extend([table, Spacer(1, 10)])
 
     add_table(rows)
+    if include_gibbs:
+        story.append(Paragraph("Sampling evaluation budget", styles["Heading2"]))
+        story.append(
+            Paragraph(
+                "Counts are per molecule. Each predictor transition and each fresh "
+                "Gibbs correction consumes one backbone evaluation. Predictor-only "
+                "counts equal recorded NFE; missing runs have no observed budget.",
+                styles["BodyText"],
+            )
+        )
+        rows = [["Config", "Seed", "Total NFE", "Predictors", "Correctors"]]
+        for run in report["runs"]:
+            budget = _sampling_budget(run)
+            rows.append(
+                [
+                    run["config_id"],
+                    run["seed"],
+                    budget.get("nfe", "--"),
+                    budget.get("predictor_transitions_per_molecule", "--"),
+                    budget.get("corrector_steps_per_molecule", "--"),
+                ]
+            )
+        add_table(rows)
     story.append(
         Paragraph("Per-configuration mean, equal seed weights", styles["Heading2"])
     )
@@ -606,6 +697,14 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
                 "gpu": run["gpu_mapping"],
                 "raw": run["artifacts"]["raw_samples.csv"],
             }
+            if include_gibbs:
+                detail["generation_protocol"] = run["generation_protocol"]
+                detail["sampling_budget"] = _sampling_budget(run)
+                source = run.get("independent_rescore", {}).get("identity", {}).get(
+                    "source", {}
+                )
+                if "corrector_source_sha256" in source:
+                    detail["corrector_source_sha256"] = source["corrector_source_sha256"]
             story.append(
                 Paragraph(
                     escape(

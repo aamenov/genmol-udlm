@@ -1,11 +1,12 @@
 # Opt-in random-scan Gibbs corrector
 
-`src/genmol/corrector.py` provides a Gibbs kernel for a future sampling
-experiment. `Sampler.generate(..., gibbs_corrector=True)` opts into its use;
+`src/genmol/corrector.py` provides the Gibbs kernel for the prospective
+[v6 engineering comparison](../experiments/udlm/protocols/engineering_v6.json).
+`Sampler.generate(..., gibbs_corrector=True)` opts into its use;
 the argument defaults to `False` and requires a strict Boolean. Existing
-checkpoint, training, and default sampling behavior is unchanged. No frozen
-protocol enables the corrector and no molecular performance improvement has
-been established.
+checkpoint, training, and default sampling behavior is unchanged. V6 enables
+the corrector only in its specified treatment arms. No v6 outcome or molecular
+performance improvement is established here.
 
 The implementation follows the conditional identity discussed in Appendix E
 of [Uniform Diffusion Models Revisited](https://arxiv.org/abs/2605.22765) and its
@@ -51,11 +52,13 @@ fails stationarity, confirming that the fixture detects the difference.
 Separate tests cover framing, active-ID mapping, caller RNG reproducibility,
 uniform coordinate selection, empty editable sets, and small prior masses.
 
-A future engineering comparison can keep 128 network evaluations fixed and
-compare 128 predictor steps against 64 predictor plus 64 fresh-logit corrector
-steps. That experiment needs its own prospective specification and disclosed
-engineering seeds. The implementation alone does not authorize GPU generation
-or alter the active temperature screen.
+The prospective v6 specification keeps 128 network evaluations fixed and
+compares 128 predictor steps against 64 predictor plus 64 fresh-logit corrector
+steps for each R/S/E checkpoint at temperature 0.5 and top-p 1. Each of the six
+configurations requests 64 molecules for seeds 1300 and 1301; final evaluation
+seeds 0/1/2 remain reserved. This design is recorded at
+`experiments/udlm/protocols/engineering_v6.json` before v6 generation and makes
+no outcome or superiority claim.
 
 ## Reusable teaching stage: correction under a fixed computation budget
 
