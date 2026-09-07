@@ -10,13 +10,13 @@ It is not NVIDIA's official repository and is not affiliated with NVIDIA or the
 UDLM authors.
 
 > **Research status — 2026-09-07.** Temperature, fixed-budget Gibbs, training-objective
-> and predictor-resolution studies completed 52 runs and independently rescored all 3,904 requested
+> predictor-resolution and prior studies completed 60 runs and independently rescored all 4,704 requested
 > samples. Best selected pilot quality is **57.03%**, versus **85.8%** for the
 > local MDLM baseline. **No superiority has been established.** Each exploratory
 > configuration used only two seeds of 64 or 100 requests; the baseline used
 > three seeds of 1,000. Final UDLM evaluation seeds remain reserved.
 >
-> See the [43-page study report](output/udlm/study_overview_v9_20260907/study_overview.pdf),
+> See the [78-page study report](output/udlm/study_overview_v12_20260907/study_overview.pdf),
 > [temperature results](experiments/udlm/results/engineering_v5.md), and
 > [Gibbs results](experiments/udlm/results/engineering_v6.md). All R/S/E
 > checkpoints received 1,000 batch-16 updates from the common MDLM EMA.
@@ -44,9 +44,11 @@ UDLM authors.
 > difficulty and is not molecular evidence. [V11 stopped before training](experiments/udlm/results/engineering_v11_prelaunch_incident.md)
 > after GPU capacity changed. The separate [V11b arm completed](experiments/udlm/results/engineering_v11b_mask_training.md)
 > all 1,000 updates and passed CE, EMA, prior and finiteness validation. The
-> [prospective V12 comparison](experiments/udlm/designs/engineering_v12_mask_prior_evaluation.md)
-> fixes 800 fresh requests and both signed prior contrasts; it requires the
-> validated new checkpoint. No MASK-trained molecular result exists. Current
+> [completed V12 comparison](experiments/udlm/results/engineering_v12.md)
+> accepted all 800 requests. MASK-rich CE improved repaired quality by +7.5pp at
+> T1 and +5.5pp at T0.5; its best quality is 54.0%. All 38,504 final editable
+> token positions were free of MASK and other controls. The next fixed panel
+> tests temperature before versus after CE conversion on both checkpoints. Current
 > authorization is at most two dynamically selected GPUs below 10% utilization.
 
 The main educational implementation is

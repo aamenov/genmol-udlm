@@ -1,0 +1,68 @@
+{
+  "artifacts": {
+    "output/udlm/engineering_v12/v12-mask-ce-t050/seed_2000/raw_samples.csv": "2f7d7fc4d58888233de754024bc7d45cecb7ffa48d07747ac09c787ebcc884ce",
+    "output/udlm/engineering_v12/v12-mask-ce-t050/seed_2000/summary.json": "d75235310eaac63112caf547b221b5e6d1761e8844242339c49d5becd1f961a1",
+    "output/udlm/engineering_v12/v12-mask-ce-t050/seed_2001/raw_samples.csv": "c3790a6acb057432763d7b2d9ea1a09c2634f31a3338462a145399474c38f7a6",
+    "output/udlm/engineering_v12/v12-mask-ce-t050/seed_2001/summary.json": "284f8ae150eab44282d1e50a82d6a268e4596b6f9cd3aaf903ea37e0151e137b"
+  },
+  "command": [
+    "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/denovo/launch_benchmark.py",
+    "--checkpoint",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v11b/mask_ce_1000_b128_w2/checkpoints/1000.ckpt",
+    "--config",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v12_configs/mask_ce_t050.yaml",
+    "--pilot",
+    "--attempt-id",
+    "v12-mask-ce-t050",
+    "--candidate-id",
+    "v11b-mask-ce-62299de99d8c",
+    "--num-samples",
+    "100",
+    "--seeds",
+    "2000",
+    "2001",
+    "--gpu-count",
+    "2",
+    "--max-utilization-percent",
+    "10",
+    "--min-free-memory-mib",
+    "30000",
+    "--poll-seconds",
+    "10",
+    "--output-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v12",
+    "--log-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/logs/engineering_v12"
+  ],
+  "completed_at_utc": "2026-09-07T12:54:49.466834+00:00",
+  "identity": {
+    "entry": {
+      "arm_id": "MASK_CE",
+      "attempt_id": "v12-mask-ce-t050",
+      "candidate_id": "v11b-mask-ce-62299de99d8c",
+      "checkpoint": "output/udlm/engineering_v11b/mask_ce_1000_b128_w2/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "62299de99d8c003e3776215efce9643cca196091a6284f351de2b404a22c2e8d",
+      "config": "experiments/udlm/protocols/engineering_v12_configs/mask_ce_t050.yaml",
+      "config_id": "mask_ce_t050",
+      "config_sha256": "2cac4cc6569868c493a5d835b0a5ab5020583afa6c4e2463ef1354c7f88999c9",
+      "parameterization": "x0_denoiser",
+      "prior_metadata_sha256": "4e1febe2684beebdbf3d4c86aa01bc24ed1d3941af67b63473979e2ae810ee45",
+      "prior_variant": "mask_rich_empirical"
+    },
+    "num_samples": 100,
+    "protocol_sha256": "f4ea756fabb9e5133c72f302e8398bcbb8d0eabaa81f183b017af8c19b02cadd",
+    "seeds": [
+      2000,
+      2001
+    ],
+    "source": {
+      "head": "c61a1ef4b42fd2f8aba817e5e3e3554afc64eaa1",
+      "upstream": "c61a1ef4b42fd2f8aba817e5e3e3554afc64eaa1"
+    }
+  },
+  "process_return_code": 0,
+  "return_code": 0,
+  "started_at_utc": "2026-09-07T12:53:18.069333+00:00",
+  "validation_error": null
+}

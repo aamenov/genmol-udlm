@@ -1,6 +1,38 @@
 # GenMol-UDLM project context
 
-## Active continuation: MASK-rich CE follow-up and fixed prior comparison
+## Active continuation: V12 complete; temperature-space hypothesis next
+
+V12 generation and independent CPU reporting completed at 12:56:25.917740 UTC
+on 2026-09-07; all eight runs and 800 requests passed. Source remained frozen
+at `c61a1ef4b42fd2f8aba817e5e3e3554afc64eaa1`. Report JSON SHA-256 is
+`133311e81ca7154ab6d4569619ece75d36a8dc5a5ffe927d405d5fd69c3259b8`.
+Read `experiments/udlm/results/engineering_v12.md`; do not rerun V12.
+Repaired quality means: empirical T1 42.5%, MASK T1 50.0%, empirical T0.5
+48.5%, MASK T0.5 54.0%. Signed MASK-minus-empirical means are +7.5pp/+5.5pp;
+strict quality differences are +6.5pp/+4.5pp. No final editable control tokens
+occurred over 38,504 positions. Best V12 remains below local MDLM 85.8% and
+the earlier selected 57.03% pilot; no superiority or promotion.
+
+The complete combined PDF is now
+`output/udlm/study_overview_v12_20260907/study_overview.pdf`, 78 pages, SHA-256
+`b6be1949a3f163e90d4437e5e1f66c2a406839fe791fda6d97edc9f9af29e250`.
+It covers 30 configurations, 60 runs and 4,704 accepted requests, preserving
+all original appendices, failed incidents and 253 hashed inputs.
+
+A separate `codex/udlm-denoiser-temperature` feature is ready for integration:
+`run_sources/udlm_denoiser_temperature_worktree`. It proposes opt-in clean CE
+temperature before LOO conversion, then bridge temperature one; old/default
+raw-LOO temperature behavior remains unchanged. V13's prospective design was
+pushed as `b6f0358` before reading MASK-rich outcomes. It fixes both existing
+CE checkpoints crossed with raw/new temperature spaces at T0.5, 128 NFE,
+seeds 2100/2101 and 100 requests per seed (eight runs, 800 requests). New mode
+requires top-p one and no Gibbs. Merge reviewed implementation/report/notebook
+and concrete protocol, validate clean pushed dry-run, then launch once in its
+own tmux/output namespace. Do not reuse V12 or final seeds 0/1/2. Current
+authorization remains at most two dynamically chosen GPUs below 10% at launch.
+Check live state before acting; subsequent paragraphs preserve historical plans.
+
+### Completed V11b and V12 preparation
 
 V11b completed successfully at 12:36:31 UTC on 2026-09-07. The final checkpoint
 SHA-256 is `62299de99d8c003e3776215efce9643cca196091a6284f351de2b404a22c2e8d` (1,000 updates,
