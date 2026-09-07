@@ -35,6 +35,8 @@ POLICY = {
     "min_free_memory_mib": 30000,
     "active_compute_processes_allowed": True,
 }
+PROCESS_GROUP_EXIT_GRACE_SECONDS = 15.0
+PROCESS_GROUP_EXIT_POLL_SECONDS = 0.25
 for import_root in (ROOT, ROOT / "src"):
     sys.path.insert(0, str(import_root))
 
@@ -392,6 +394,41 @@ def process_group_exists(pid):
     return True
 
 
+def wait_for_process_group_exit(pid):
+    """Observe descendant teardown after the parent is reaped; never signal it."""
+    started_at = stamp()
+    start = time.monotonic()
+    deadline = start + PROCESS_GROUP_EXIT_GRACE_SECONDS
+    probes = 0
+    initially_present = None
+    while True:
+        present = process_group_exists(pid)
+        probes += 1
+        if initially_present is None:
+            initially_present = present
+        now = time.monotonic()
+        if not present or now >= deadline:
+            return {
+                "process_group_id": pid,
+                "started_at": started_at,
+                "finished_at": stamp(),
+                "grace_seconds": PROCESS_GROUP_EXIT_GRACE_SECONDS,
+                "poll_interval_seconds": PROCESS_GROUP_EXIT_POLL_SECONDS,
+                "elapsed_seconds": now - start,
+                "probe_count": probes,
+                "initially_present": initially_present,
+                "group_present_at_end": present,
+                "outcome": (
+                    "timed_out"
+                    if present
+                    else (
+                        "exited_during_grace" if initially_present else "already_exited"
+                    )
+                ),
+            }
+        time.sleep(min(PROCESS_GROUP_EXIT_POLL_SECONDS, deadline - now))
+
+
 def execute(plan, source, *, plan_builder=None):
     """Run the sole child and retain failure evidence before releasing resources."""
     output = plan["output_relative"]
@@ -419,6 +456,7 @@ def execute(plan, source, *, plan_builder=None):
         "source": source,
         "plan": plan,
         "training_return_code": None,
+        "process_group_exit_grace": None,
         "completed_example_exposures": None,
         "end_to_end_training_examples_per_second": None,
         "checkpoint": None,
@@ -536,10 +574,17 @@ def execute(plan, source, *, plan_builder=None):
             terminal["training_subprocess_seconds"] = time.monotonic() - training_start
             terminal["max_observed_aggregate_gpu_used_mib"] = maximum_used
             terminal["memory_measurement"] = plan["protocol"]["memory_measurement"]
-            if process_group_exists(process.pid):
+            # Lightning's rank/data-worker descendants can finish just after the
+            # reaped parent. Bound this observation window without releasing a
+            # lease, changing the process return code, or signaling descendants.
+            terminal["process_group_exit_grace"] = wait_for_process_group_exit(
+                process.pid
+            )
+            if terminal["process_group_exit_grace"]["group_present_at_end"]:
                 safe_to_release = False
                 raise RuntimeError(
-                    "child exited but its process group remains; leases retained"
+                    "child exited but its process group remains after cleanup grace; "
+                    "leases retained"
                 )
             if process.returncode != 0:
                 raise RuntimeError(
