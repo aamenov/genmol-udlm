@@ -1,0 +1,51 @@
+{
+  "artifact_byte_policy": "UTF-8 JSON with LF newlines; exact source/dependency/test/result hashes and byte sizes recorded.",
+  "audit": {
+    "relative_path": "experiments/udlm/diagnostics/v13_independent_audit_20260907/audit.json",
+    "sha256": "06b0d8fd1c7af0a6e37cf23c063af53e590fe8f71d895a29a8dbe09001cb5f45",
+    "size_bytes": 64851
+  },
+  "audit_source": {
+    "relative_path": "scripts/udlm/audit_v13_results.py",
+    "sha256": "948f5f76502ca1aed2f2641566fac86d982e98a1a5804235372fdd38e1a077bd",
+    "size_bytes": 16387
+  },
+  "command_argv": [
+    "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "scripts/udlm/audit_v13_results.py",
+    "--root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree",
+    "--report-sha256",
+    "7942486344669088179536dd12dc69d0aab91bede8920a68763a00522e23bb52"
+  ],
+  "environment_overrides": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "generation_source": "0fdc54d91baade2f84b48de9223ceb19696fadb7",
+  "protocol_sha256": "daf8c8108772e0ebcbdd39f15dab07478fe8945ba6b33f4b68858a8536ad7319",
+  "report_receipt_replay_source": {
+    "relative_path": "scripts/udlm/report_exploration.py",
+    "sha256": "6aaa5a1c6cfd93d0124ead48794ac9235d3497420f0c5a3e6dbcae14b0b7414b",
+    "size_bytes": 61287
+  },
+  "report_sha256": "7942486344669088179536dd12dc69d0aab91bede8920a68763a00522e23bb52",
+  "reused_v12_source": {
+    "relative_path": "scripts/udlm/audit_v12_results.py",
+    "sha256": "4c7f06b494ecf0a9b6822e8f9cea4be20434c7a6bc0e3cba7252da8115fb0634",
+    "size_bytes": 22494
+  },
+  "schema_version": 1,
+  "scope": "Independent CPU V13 receipt/arithmetic/token audit; saved exact independent chemistry acceptances retained, no new chemistry, model load or sampling.",
+  "shared_evidence_helper_source": {
+    "relative_path": "scripts/udlm/generate_study_overview_v9.py",
+    "sha256": "0571850da6f0280460ff555790909ed1e28978bb1957a29e972647a5a51d7e90",
+    "size_bytes": 43698
+  },
+  "test_source": {
+    "relative_path": "tests/test_udlm_v13_result_audit.py",
+    "sha256": "93e0fe2245e01aa8dc85648c7f3e39ee429a65e866364de6f6dfa299f1897763",
+    "size_bytes": 6947
+  },
+  "validation": "18 new plus 16 reused CPU tests passed independently twice; two complete actual audit executions produced identical JSON bytes. All 8 runs, 800 requests and 16 signed branch/metric contrasts accepted."
+}

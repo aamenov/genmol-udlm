@@ -1,0 +1,1851 @@
+{
+  "accounting": {
+    "independently_rescored_requests": 800,
+    "scheduled_requests": 800,
+    "scheduled_runs": 8,
+    "status_counts": {
+      "completed": 8
+    }
+  },
+  "aggregates": [
+    {
+      "arm_id": "E_CE",
+      "attempt_id": "v13-e-ce-raw-t050",
+      "candidate_id": "v8b-e-ce-b7d674ed5bdd",
+      "complete": true,
+      "completed_seeds": [
+        2100,
+        2101
+      ],
+      "config_id": "e_ce_raw_t050",
+      "expected_seeds": [
+        2100,
+        2101
+      ],
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8933895649645891,
+            "sample_sd": 0.005348727021420181
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.46499999999999997,
+            "sample_sd": 0.021213203435596406
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9797959183673469,
+            "sample_sd": 0.0002886150127292065
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.99,
+            "sample_sd": 0.014142135623730963
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8776957874939125,
+            "sample_sd": 0.002242526476524548
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.345,
+            "sample_sd": 0.021213203435596406
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.665,
+            "sample_sd": 0.04949747468305829
+          }
+        }
+      }
+    },
+    {
+      "arm_id": "E_CE",
+      "attempt_id": "v13-e-ce-clean-t050",
+      "candidate_id": "v8b-e-ce-b7d674ed5bdd",
+      "complete": true,
+      "completed_seeds": [
+        2100,
+        2101
+      ],
+      "config_id": "e_ce_clean_t050",
+      "expected_seeds": [
+        2100,
+        2101
+      ],
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.891433991251148,
+            "sample_sd": 0.0011447453754590334
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.52,
+            "sample_sd": 0.09899494936611662
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.975,
+            "sample_sd": 0.021213203435596444
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8761164713513093,
+            "sample_sd": 0.002398664557671349
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.345,
+            "sample_sd": 0.0636396103067893
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.64,
+            "sample_sd": 0.05656854249492385
+          }
+        }
+      }
+    },
+    {
+      "arm_id": "MASK_CE",
+      "attempt_id": "v13-mask-ce-raw-t050",
+      "candidate_id": "v11b-mask-ce-62299de99d8c",
+      "complete": true,
+      "completed_seeds": [
+        2100,
+        2101
+      ],
+      "config_id": "mask_ce_raw_t050",
+      "expected_seeds": [
+        2100,
+        2101
+      ],
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8816798121123821,
+            "sample_sd": 0.0006981558883883442
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.495,
+            "sample_sd": 0.03535533905932741
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.994949494949495,
+            "sample_sd": 0.007142492739258023
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.99,
+            "sample_sd": 0.0
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8728047333103933,
+            "sample_sd": 0.0033726915338804825
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.42000000000000004,
+            "sample_sd": 0.028284271247461888
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.8049999999999999,
+            "sample_sd": 0.021213203435596368
+          }
+        }
+      }
+    },
+    {
+      "arm_id": "MASK_CE",
+      "attempt_id": "v13-mask-ce-clean-t050",
+      "candidate_id": "v11b-mask-ce-62299de99d8c",
+      "complete": true,
+      "completed_seeds": [
+        2100,
+        2101
+      ],
+      "config_id": "mask_ce_clean_t050",
+      "expected_seeds": [
+        2100,
+        2101
+      ],
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8916427877246074,
+            "sample_sd": 0.009128099522603024
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.475,
+            "sample_sd": 0.021213203435596406
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9948979591836735,
+            "sample_sd": 0.007215375318230085
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.985,
+            "sample_sd": 0.007071067811865481
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8783352856548956,
+            "sample_sd": 0.004830358484920348
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.325,
+            "sample_sd": 0.007071067811865481
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.665,
+            "sample_sd": 0.04949747468305829
+          }
+        }
+      }
+    }
+  ],
+  "generation_source": "0fdc54d91baade2f84b48de9223ceb19696fadb7",
+  "inputs": [
+    {
+      "roles": [
+        "Frozen inference YAML"
+      ],
+      "sha256": "e87cc63fc1de833c8296e59bacb8d636016e983e0c70c41aa732c9390f2c36ef",
+      "size_bytes": 541,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v13_configs/e_ce_clean_t050.yaml"
+    },
+    {
+      "roles": [
+        "Frozen inference YAML"
+      ],
+      "sha256": "3c37178b971c7927bf19a8aa482e1713542426a151dcf581a2eb4ea09ae43e78",
+      "size_bytes": 490,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v13_configs/e_ce_raw_t050.yaml"
+    },
+    {
+      "roles": [
+        "Frozen inference YAML"
+      ],
+      "sha256": "550e0145bd4f1e99e606e74038ffb1f3fc34416020b2fa29566834cc8feb6a6d",
+      "size_bytes": 545,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v13_configs/mask_ce_clean_t050.yaml"
+    },
+    {
+      "roles": [
+        "Frozen inference YAML"
+      ],
+      "sha256": "2cac4cc6569868c493a5d835b0a5ab5020583afa6c4e2463ef1354c7f88999c9",
+      "size_bytes": 501,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v13_configs/mask_ce_raw_t050.yaml"
+    },
+    {
+      "roles": [
+        "Frozen V13 protocol"
+      ],
+      "sha256": "daf8c8108772e0ebcbdd39f15dab07478fe8945ba6b33f4b68858a8536ad7319",
+      "size_bytes": 19701,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v13_temperature_space.json"
+    },
+    {
+      "roles": [
+        "Original attempt controller"
+      ],
+      "sha256": "1af2bc0758a26b77f2ebbcc02096490d0d4c7d6e546b3a7182b1c1c7329f43f4",
+      "size_bytes": 3024,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/controller_receipts/v13-e-ce-clean-t050.json"
+    },
+    {
+      "roles": [
+        "Original attempt controller"
+      ],
+      "sha256": "0ea327b38cff7c08911adbf8d81d607d7142e6f992e0ebe9c29eefe1a2ba2594",
+      "size_bytes": 3002,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/controller_receipts/v13-e-ce-raw-t050.json"
+    },
+    {
+      "roles": [
+        "Original attempt controller"
+      ],
+      "sha256": "c59cdf9dc94404678690ddce2fe2e8769d5028dcace144460078322918af9107",
+      "size_bytes": 3070,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/controller_receipts/v13-mask-ce-clean-t050.json"
+    },
+    {
+      "roles": [
+        "Original attempt controller"
+      ],
+      "sha256": "d40f70cc4485021256179edeee1fe4fa494dcc969ed03abe34b3e3804f0f78e5",
+      "size_bytes": 3048,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/controller_receipts/v13-mask-ce-raw-t050.json"
+    },
+    {
+      "roles": [
+        "Original raw rows"
+      ],
+      "sha256": "598044d70dfcef4bc968f25dbfa7537f407c31806fa64c8003f72950ee3504a5",
+      "size_bytes": 32059,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-e-ce-clean-t050/seed_2100/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original seed summary"
+      ],
+      "sha256": "b60b4c60ce2af2bd11f456e3ab39b4e9c53be77d824199f37b31fdba62feb838",
+      "size_bytes": 76703,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-e-ce-clean-t050/seed_2100/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw rows"
+      ],
+      "sha256": "66b3a97cdbaa2571bb4b6fb3643d42b63f58d922d74947c40609e9e20f69e210",
+      "size_bytes": 33251,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-e-ce-clean-t050/seed_2101/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original seed summary"
+      ],
+      "sha256": "3ce6ea12323b3ffc338812a5221c6786ff5bc105b92f465327a4f8446f2f2561",
+      "size_bytes": 77842,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-e-ce-clean-t050/seed_2101/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw rows"
+      ],
+      "sha256": "f625f31422a820d1b9384b9b3fc38668b42a860f293132ae241de2233509362d",
+      "size_bytes": 32295,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-e-ce-raw-t050/seed_2100/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original seed summary"
+      ],
+      "sha256": "f8b18d609c68ded2059c4b197a8f2a13cda588a2e51b8aeca6002ab39064ea27",
+      "size_bytes": 76390,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-e-ce-raw-t050/seed_2100/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw rows"
+      ],
+      "sha256": "c235b82d57e6f54bdc28b304ec1f6a7c569dcf8b240a0694df52bd7c5727a70e",
+      "size_bytes": 33222,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-e-ce-raw-t050/seed_2101/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original seed summary"
+      ],
+      "sha256": "4489f509da089df7402c6e3cc31203b38ef6669aea331cd5ec965e5b6fe9755f",
+      "size_bytes": 77521,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-e-ce-raw-t050/seed_2101/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw rows"
+      ],
+      "sha256": "557a800a61fde29b1f4588a35aa923bd7090906aa886e5f8d3c5d2938775aef7",
+      "size_bytes": 32216,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-mask-ce-clean-t050/seed_2100/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original seed summary"
+      ],
+      "sha256": "07476652493a678b1afb499aff94bef78fe073728f8979433d3c1b1c73bfac0e",
+      "size_bytes": 77002,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-mask-ce-clean-t050/seed_2100/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw rows"
+      ],
+      "sha256": "763d698ec814de379f24772cd6c87d3323d921a0cee54f588ad7a711d3beb39c",
+      "size_bytes": 33316,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-mask-ce-clean-t050/seed_2101/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original seed summary"
+      ],
+      "sha256": "223111da0f1c6a592c96499d7350bc9f2aa385d7b82661ae41956b00fb229fea",
+      "size_bytes": 78125,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-mask-ce-clean-t050/seed_2101/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw rows"
+      ],
+      "sha256": "1eb3b11226c43e83db59ecc80c5bacc10051629d88f44c565b172e8d3dfbade9",
+      "size_bytes": 34211,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-mask-ce-raw-t050/seed_2100/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original seed summary"
+      ],
+      "sha256": "ed1f2fd60771d008391848cf5acf6a16f7168fc86447e581e672e9d3923789d4",
+      "size_bytes": 76664,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-mask-ce-raw-t050/seed_2100/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw rows"
+      ],
+      "sha256": "a872bdcac13280e7f805594abe6eafae6afe1d3b3f4289e0e82035bf60e8517d",
+      "size_bytes": 34038,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-mask-ce-raw-t050/seed_2101/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original seed summary"
+      ],
+      "sha256": "b275505d0408630f6798fd7b5049108b44f219f7a00f6b4395840b1e286733fa",
+      "size_bytes": 77819,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13/v13-mask-ce-raw-t050/seed_2101/summary.json"
+    },
+    {
+      "roles": [
+        "Original V13 companion"
+      ],
+      "sha256": "6384ce2a25e499ada66df46c27632f4646adac84057f2335b8af8c22f7c7555e",
+      "size_bytes": 9214,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13_reports/complete/paired_contrasts.csv"
+    },
+    {
+      "roles": [
+        "Original V13 companion"
+      ],
+      "sha256": "a5b35b7e4a30b518c9371be30518996caf2dfbaa21071cc757cd3edf2a718bab",
+      "size_bytes": 117118,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13_reports/complete/report.csv"
+    },
+    {
+      "roles": [
+        "Completed V13 report"
+      ],
+      "sha256": "7942486344669088179536dd12dc69d0aab91bede8920a68763a00522e23bb52",
+      "size_bytes": 325036,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13_reports/complete/report.json"
+    },
+    {
+      "roles": [
+        "Original V13 companion"
+      ],
+      "sha256": "b97233ad1b22f88d976d6f5a8bd83613212f17ddc5b291451044e8e2b8774463",
+      "size_bytes": 35951,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v13_reports/complete/report.pdf"
+    }
+  ],
+  "limits": "No new chemistry evaluation, model load or generation. Original exact independent chemistry acceptances are retained and replayed; metric fractions, seed arithmetic and token counts are checked separately. Two engineering seeds do not establish superiority. Runtime is descriptive on shared GPUs. Pooled controls are a heterogeneous census. Recovery means the saved released_was_recovered flag; component selection means released_largest_component_applied. Counts may overlap and each divides by all requests.",
+  "paired_contrasts": [
+    {
+      "contrast_id": "primary",
+      "control_attempt_id": "v13-e-ce-raw-t050",
+      "control_config": "e_ce_raw_t050",
+      "direction": "clean_temperature_minus_raw_loo_temperature",
+      "expected_seeds": [
+        2100,
+        2101
+      ],
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": -0.0019555737134411,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 0.897171686112151,
+                "difference": -0.006547152078722,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.890624534033429
+              },
+              {
+                "control_status": "completed",
+                "control_value": 0.8896074438170272,
+                "difference": 0.0026360046518398,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.892243448468867
+              }
+            ],
+            "sample_sd": 0.006493472396879134
+          },
+          "quality": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": 0.055,
+            "per_seed": [
+              {
+                "control_quality_count": 45,
+                "control_status": "completed",
+                "control_value": 0.45,
+                "difference": 0.0,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_quality_count": 45,
+                "treatment_status": "completed",
+                "treatment_value": 0.45
+              },
+              {
+                "control_quality_count": 48,
+                "control_status": "completed",
+                "control_value": 0.48,
+                "difference": 0.11,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_quality_count": 59,
+                "treatment_status": "completed",
+                "treatment_value": 0.59
+              }
+            ],
+            "sample_sd": 0.07778174593052023
+          },
+          "uniqueness": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": 0.02020408163265305,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 0.9795918367346939,
+                "difference": 0.0204081632653061,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 1.0
+              },
+              {
+                "control_status": "completed",
+                "control_value": 0.98,
+                "difference": 0.02,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 1.0
+              }
+            ],
+            "sample_sd": 0.0002886150127291872
+          },
+          "validity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": -0.015,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 0.98,
+                "difference": -0.02,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.96
+              },
+              {
+                "control_status": "completed",
+                "control_value": 1.0,
+                "difference": -0.01,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.99
+              }
+            ],
+            "sample_sd": 0.007071067811865475
+          }
+        },
+        "strict": {
+          "diversity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": -0.00157931614260315,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 0.8792814931724534,
+                "difference": -0.0048611337956653,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.8744203593767881
+              },
+              {
+                "control_status": "completed",
+                "control_value": 0.8761100818153716,
+                "difference": 0.001702501510459,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.8778125833258306
+              }
+            ],
+            "sample_sd": 0.004641191034195933
+          },
+          "quality": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": 0.0,
+            "per_seed": [
+              {
+                "control_quality_count": 33,
+                "control_status": "completed",
+                "control_value": 0.33,
+                "difference": -0.03,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_quality_count": 30,
+                "treatment_status": "completed",
+                "treatment_value": 0.3
+              },
+              {
+                "control_quality_count": 36,
+                "control_status": "completed",
+                "control_value": 0.36,
+                "difference": 0.03,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_quality_count": 39,
+                "treatment_status": "completed",
+                "treatment_value": 0.39
+              }
+            ],
+            "sample_sd": 0.042426406871192854
+          },
+          "uniqueness": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": 0.0,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 1.0,
+                "difference": 0.0,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 1.0
+              },
+              {
+                "control_status": "completed",
+                "control_value": 1.0,
+                "difference": 0.0,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 1.0
+              }
+            ],
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": -0.025,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 0.63,
+                "difference": -0.03,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.6
+              },
+              {
+                "control_status": "completed",
+                "control_value": 0.7,
+                "difference": -0.02,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.68
+              }
+            ],
+            "sample_sd": 0.007071067811865475
+          }
+        }
+      },
+      "summary_policy": "all_declared_pairs_required_for_each_metric",
+      "temperature": 0.5,
+      "treatment_attempt_id": "v13-e-ce-clean-t050",
+      "treatment_config": "e_ce_clean_t050"
+    },
+    {
+      "contrast_id": "secondary",
+      "control_attempt_id": "v13-mask-ce-raw-t050",
+      "control_config": "mask_ce_raw_t050",
+      "direction": "clean_temperature_minus_raw_loo_temperature",
+      "expected_seeds": [
+        2100,
+        2101
+      ],
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": 0.00996297561222525,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 0.8811861413493774,
+                "difference": 0.0169111874470083,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.8980973287963857
+              },
+              {
+                "control_status": "completed",
+                "control_value": 0.8821734828753869,
+                "difference": 0.0030147637774422,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.8851882466528291
+              }
+            ],
+            "sample_sd": 0.009826255410991436
+          },
+          "quality": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": -0.02,
+            "per_seed": [
+              {
+                "control_quality_count": 52,
+                "control_status": "completed",
+                "control_value": 0.52,
+                "difference": -0.06,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_quality_count": 46,
+                "treatment_status": "completed",
+                "treatment_value": 0.46
+              },
+              {
+                "control_quality_count": 47,
+                "control_status": "completed",
+                "control_value": 0.47,
+                "difference": 0.02,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_quality_count": 49,
+                "treatment_status": "completed",
+                "treatment_value": 0.49
+              }
+            ],
+            "sample_sd": 0.0565685424949238
+          },
+          "uniqueness": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": -5.153576582155e-05,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 1.0,
+                "difference": -0.0102040816326531,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.9897959183673469
+              },
+              {
+                "control_status": "completed",
+                "control_value": 0.98989898989899,
+                "difference": 0.01010101010101,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 1.0
+              }
+            ],
+            "sample_sd": 0.014357868057488088
+          },
+          "validity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": -0.005,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 0.99,
+                "difference": -0.01,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.98
+              },
+              {
+                "control_status": "completed",
+                "control_value": 0.99,
+                "difference": 0.0,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.99
+              }
+            ],
+            "sample_sd": 0.007071067811865475
+          }
+        },
+        "strict": {
+          "diversity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": 0.00553055234450225,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 0.8751895863648507,
+                "difference": 0.0065612785302941,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.8817508648951448
+              },
+              {
+                "control_status": "completed",
+                "control_value": 0.870419880255936,
+                "difference": 0.0044998261587104,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.8749197064146464
+              }
+            ],
+            "sample_sd": 0.0014576669510399248
+          },
+          "quality": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": -0.095,
+            "per_seed": [
+              {
+                "control_quality_count": 44,
+                "control_status": "completed",
+                "control_value": 0.44,
+                "difference": -0.12,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_quality_count": 32,
+                "treatment_status": "completed",
+                "treatment_value": 0.32
+              },
+              {
+                "control_quality_count": 40,
+                "control_status": "completed",
+                "control_value": 0.4,
+                "difference": -0.07,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_quality_count": 33,
+                "treatment_status": "completed",
+                "treatment_value": 0.33
+              }
+            ],
+            "sample_sd": 0.035355339059327376
+          },
+          "uniqueness": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": 0.0,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 1.0,
+                "difference": 0.0,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 1.0
+              },
+              {
+                "control_status": "completed",
+                "control_value": 1.0,
+                "difference": 0.0,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 1.0
+              }
+            ],
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean_difference": -0.14,
+            "per_seed": [
+              {
+                "control_status": "completed",
+                "control_value": 0.82,
+                "difference": -0.19,
+                "requested_samples": 100,
+                "seed": 2100,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.63
+              },
+              {
+                "control_status": "completed",
+                "control_value": 0.79,
+                "difference": -0.09,
+                "requested_samples": 100,
+                "seed": 2101,
+                "status": "completed",
+                "treatment_status": "completed",
+                "treatment_value": 0.7
+              }
+            ],
+            "sample_sd": 0.07071067811865475
+          }
+        }
+      },
+      "summary_policy": "all_declared_pairs_required_for_each_metric",
+      "temperature": 0.5,
+      "treatment_attempt_id": "v13-mask-ce-clean-t050",
+      "treatment_config": "mask_ce_clean_t050"
+    }
+  ],
+  "protocol_sha256": "daf8c8108772e0ebcbdd39f15dab07478fe8945ba6b33f4b68858a8536ad7319",
+  "report_sha256": "7942486344669088179536dd12dc69d0aab91bede8920a68763a00522e23bb52",
+  "runs": [
+    {
+      "config_id": "e_ce_raw_t050",
+      "denominators": {
+        "released_comparable": {
+          "diversity_input_count": 96,
+          "quality_count": 45,
+          "quality_denominator": 100,
+          "unique_count": 96,
+          "uniqueness_denominator": 98,
+          "valid_count": 98,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "diversity_input_count": 63,
+          "quality_count": 33,
+          "quality_denominator": 100,
+          "unique_count": 63,
+          "uniqueness_denominator": 63,
+          "valid_count": 63,
+          "validity_denominator": 100
+        }
+      },
+      "gpu_mapping": {
+        "existing_compute_process_count": 1,
+        "final_probe_free_memory_mib": 47553,
+        "final_probe_utilization_percent": 9,
+        "logical_index": 0,
+        "name": "NVIDIA RTX A6000",
+        "physical_index": 2,
+        "requested_gpu_count": 2,
+        "uuid": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece"
+      },
+      "metrics": {
+        "released_comparable": {
+          "definition": "Released GenMol path: SAFE fragment repair with fix=True, canonical decode, largest disconnected component, deduplicate before diversity and quality; validity and quality divide by requested samples, while uniqueness divides by released-valid samples.",
+          "diversity": 0.897171686112151,
+          "diversity_input_count": 96,
+          "diversity_undefined_reason": null,
+          "quality": 0.45,
+          "quality_count": 45,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 96,
+          "uniqueness": 0.9795918367346939,
+          "uniqueness_denominator": 98,
+          "valid_count": 98,
+          "validity": 0.98,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "definition": "Direct canonical sf.decode(raw_safe, fix=False, ignore_errors=True), followed by explicit RDKit parsing, sanitization, and canonicalization, without fragment repair or largest-component selection; other metric denominators mirror the released path.",
+          "diversity": 0.8792814931724534,
+          "diversity_input_count": 63,
+          "diversity_undefined_reason": null,
+          "quality": 0.33,
+          "quality_count": 33,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 63,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 63,
+          "valid_count": 63,
+          "validity": 0.63,
+          "validity_denominator": 100
+        }
+      },
+      "repair_counts": {
+        "largest_component_selected_requests": 29,
+        "recovered_requests": 35,
+        "request_denominator": 100
+      },
+      "runtime_seconds": {
+        "decode_and_metrics": 1.8834149609901942,
+        "generation": 17.68600158795016,
+        "model_load_and_device_move": 14.05363653897075,
+        "model_sampling_and_tokenizer": 16.918455055973027,
+        "released_postprocessing": 0.767546531977132,
+        "sampled_token_control_audit": 0.03601696097757667,
+        "total_before_summary_write": 56.36194161896128
+      },
+      "seed": 2100,
+      "tokens": {
+        "all_editable_control_counts": {
+          "bos": 0,
+          "eos": 0,
+          "mask": 0,
+          "pad": 0,
+          "unk": 0
+        },
+        "editable_positions": 4876,
+        "final_editable_mask": 0,
+        "mask_fraction_of_editable_positions": 0.0,
+        "requests": 100,
+        "row_fraction_with_editable_mask": 0.0,
+        "rows_with_editable_mask": 0
+      }
+    },
+    {
+      "config_id": "e_ce_raw_t050",
+      "denominators": {
+        "released_comparable": {
+          "diversity_input_count": 98,
+          "quality_count": 48,
+          "quality_denominator": 100,
+          "unique_count": 98,
+          "uniqueness_denominator": 100,
+          "valid_count": 100,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "diversity_input_count": 70,
+          "quality_count": 36,
+          "quality_denominator": 100,
+          "unique_count": 70,
+          "uniqueness_denominator": 70,
+          "valid_count": 70,
+          "validity_denominator": 100
+        }
+      },
+      "gpu_mapping": {
+        "existing_compute_process_count": 1,
+        "final_probe_free_memory_mib": 47275,
+        "final_probe_utilization_percent": 7,
+        "logical_index": 0,
+        "name": "NVIDIA RTX A6000",
+        "physical_index": 3,
+        "requested_gpu_count": 2,
+        "uuid": "GPU-2cd1aa5b-616e-e6d3-b54d-49241cc8f959"
+      },
+      "metrics": {
+        "released_comparable": {
+          "definition": "Released GenMol path: SAFE fragment repair with fix=True, canonical decode, largest disconnected component, deduplicate before diversity and quality; validity and quality divide by requested samples, while uniqueness divides by released-valid samples.",
+          "diversity": 0.8896074438170272,
+          "diversity_input_count": 98,
+          "diversity_undefined_reason": null,
+          "quality": 0.48,
+          "quality_count": 48,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 98,
+          "uniqueness": 0.98,
+          "uniqueness_denominator": 100,
+          "valid_count": 100,
+          "validity": 1.0,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "definition": "Direct canonical sf.decode(raw_safe, fix=False, ignore_errors=True), followed by explicit RDKit parsing, sanitization, and canonicalization, without fragment repair or largest-component selection; other metric denominators mirror the released path.",
+          "diversity": 0.8761100818153716,
+          "diversity_input_count": 70,
+          "diversity_undefined_reason": null,
+          "quality": 0.36,
+          "quality_count": 36,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 70,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 70,
+          "valid_count": 70,
+          "validity": 0.7,
+          "validity_denominator": 100
+        }
+      },
+      "repair_counts": {
+        "largest_component_selected_requests": 24,
+        "recovered_requests": 30,
+        "request_denominator": 100
+      },
+      "runtime_seconds": {
+        "decode_and_metrics": 1.4090372679638676,
+        "generation": 18.019941582984757,
+        "model_load_and_device_move": 13.602402986958623,
+        "model_sampling_and_tokenizer": 17.52184490999207,
+        "released_postprocessing": 0.4980966729926877,
+        "sampled_token_control_audit": 0.009655019035562873,
+        "total_before_summary_write": 54.09291852102615
+      },
+      "seed": 2101,
+      "tokens": {
+        "all_editable_control_counts": {
+          "bos": 0,
+          "eos": 0,
+          "mask": 0,
+          "pad": 0,
+          "unk": 0
+        },
+        "editable_positions": 4944,
+        "final_editable_mask": 0,
+        "mask_fraction_of_editable_positions": 0.0,
+        "requests": 100,
+        "row_fraction_with_editable_mask": 0.0,
+        "rows_with_editable_mask": 0
+      }
+    },
+    {
+      "config_id": "e_ce_clean_t050",
+      "denominators": {
+        "released_comparable": {
+          "diversity_input_count": 96,
+          "quality_count": 45,
+          "quality_denominator": 100,
+          "unique_count": 96,
+          "uniqueness_denominator": 96,
+          "valid_count": 96,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "diversity_input_count": 60,
+          "quality_count": 30,
+          "quality_denominator": 100,
+          "unique_count": 60,
+          "uniqueness_denominator": 60,
+          "valid_count": 60,
+          "validity_denominator": 100
+        }
+      },
+      "gpu_mapping": {
+        "existing_compute_process_count": 1,
+        "final_probe_free_memory_mib": 47275,
+        "final_probe_utilization_percent": 8,
+        "logical_index": 0,
+        "name": "NVIDIA RTX A6000",
+        "physical_index": 3,
+        "requested_gpu_count": 2,
+        "uuid": "GPU-2cd1aa5b-616e-e6d3-b54d-49241cc8f959"
+      },
+      "metrics": {
+        "released_comparable": {
+          "definition": "Released GenMol path: SAFE fragment repair with fix=True, canonical decode, largest disconnected component, deduplicate before diversity and quality; validity and quality divide by requested samples, while uniqueness divides by released-valid samples.",
+          "diversity": 0.890624534033429,
+          "diversity_input_count": 96,
+          "diversity_undefined_reason": null,
+          "quality": 0.45,
+          "quality_count": 45,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 96,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 96,
+          "valid_count": 96,
+          "validity": 0.96,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "definition": "Direct canonical sf.decode(raw_safe, fix=False, ignore_errors=True), followed by explicit RDKit parsing, sanitization, and canonicalization, without fragment repair or largest-component selection; other metric denominators mirror the released path.",
+          "diversity": 0.8744203593767881,
+          "diversity_input_count": 60,
+          "diversity_undefined_reason": null,
+          "quality": 0.3,
+          "quality_count": 30,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 60,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 60,
+          "valid_count": 60,
+          "validity": 0.6,
+          "validity_denominator": 100
+        }
+      },
+      "repair_counts": {
+        "largest_component_selected_requests": 31,
+        "recovered_requests": 36,
+        "request_denominator": 100
+      },
+      "runtime_seconds": {
+        "decode_and_metrics": 1.9025582760223188,
+        "generation": 19.791284809994977,
+        "model_load_and_device_move": 13.525252267019823,
+        "model_sampling_and_tokenizer": 19.22900659602601,
+        "released_postprocessing": 0.5622782139689662,
+        "sampled_token_control_audit": 0.008622434048447758,
+        "total_before_summary_write": 57.15173543000128
+      },
+      "seed": 2100,
+      "tokens": {
+        "all_editable_control_counts": {
+          "bos": 0,
+          "eos": 0,
+          "mask": 0,
+          "pad": 0,
+          "unk": 0
+        },
+        "editable_positions": 4876,
+        "final_editable_mask": 0,
+        "mask_fraction_of_editable_positions": 0.0,
+        "requests": 100,
+        "row_fraction_with_editable_mask": 0.0,
+        "rows_with_editable_mask": 0
+      }
+    },
+    {
+      "config_id": "e_ce_clean_t050",
+      "denominators": {
+        "released_comparable": {
+          "diversity_input_count": 99,
+          "quality_count": 59,
+          "quality_denominator": 100,
+          "unique_count": 99,
+          "uniqueness_denominator": 99,
+          "valid_count": 99,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "diversity_input_count": 68,
+          "quality_count": 39,
+          "quality_denominator": 100,
+          "unique_count": 68,
+          "uniqueness_denominator": 68,
+          "valid_count": 68,
+          "validity_denominator": 100
+        }
+      },
+      "gpu_mapping": {
+        "existing_compute_process_count": 1,
+        "final_probe_free_memory_mib": 47553,
+        "final_probe_utilization_percent": 9,
+        "logical_index": 0,
+        "name": "NVIDIA RTX A6000",
+        "physical_index": 2,
+        "requested_gpu_count": 2,
+        "uuid": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece"
+      },
+      "metrics": {
+        "released_comparable": {
+          "definition": "Released GenMol path: SAFE fragment repair with fix=True, canonical decode, largest disconnected component, deduplicate before diversity and quality; validity and quality divide by requested samples, while uniqueness divides by released-valid samples.",
+          "diversity": 0.892243448468867,
+          "diversity_input_count": 99,
+          "diversity_undefined_reason": null,
+          "quality": 0.59,
+          "quality_count": 59,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 99,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 99,
+          "valid_count": 99,
+          "validity": 0.99,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "definition": "Direct canonical sf.decode(raw_safe, fix=False, ignore_errors=True), followed by explicit RDKit parsing, sanitization, and canonicalization, without fragment repair or largest-component selection; other metric denominators mirror the released path.",
+          "diversity": 0.8778125833258306,
+          "diversity_input_count": 68,
+          "diversity_undefined_reason": null,
+          "quality": 0.39,
+          "quality_count": 39,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 68,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 68,
+          "valid_count": 68,
+          "validity": 0.68,
+          "validity_denominator": 100
+        }
+      },
+      "repair_counts": {
+        "largest_component_selected_requests": 28,
+        "recovered_requests": 31,
+        "request_denominator": 100
+      },
+      "runtime_seconds": {
+        "decode_and_metrics": 1.6177197629585862,
+        "generation": 20.84149493800942,
+        "model_load_and_device_move": 13.527305310999509,
+        "model_sampling_and_tokenizer": 20.144383466045838,
+        "released_postprocessing": 0.6971114719635807,
+        "sampled_token_control_audit": 0.014898802037350833,
+        "total_before_summary_write": 55.97435634897556
+      },
+      "seed": 2101,
+      "tokens": {
+        "all_editable_control_counts": {
+          "bos": 0,
+          "eos": 0,
+          "mask": 0,
+          "pad": 0,
+          "unk": 0
+        },
+        "editable_positions": 4944,
+        "final_editable_mask": 0,
+        "mask_fraction_of_editable_positions": 0.0,
+        "requests": 100,
+        "row_fraction_with_editable_mask": 0.0,
+        "rows_with_editable_mask": 0
+      }
+    },
+    {
+      "config_id": "mask_ce_raw_t050",
+      "denominators": {
+        "released_comparable": {
+          "diversity_input_count": 99,
+          "quality_count": 52,
+          "quality_denominator": 100,
+          "unique_count": 99,
+          "uniqueness_denominator": 99,
+          "valid_count": 99,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "diversity_input_count": 82,
+          "quality_count": 44,
+          "quality_denominator": 100,
+          "unique_count": 82,
+          "uniqueness_denominator": 82,
+          "valid_count": 82,
+          "validity_denominator": 100
+        }
+      },
+      "gpu_mapping": {
+        "existing_compute_process_count": 1,
+        "final_probe_free_memory_mib": 47275,
+        "final_probe_utilization_percent": 9,
+        "logical_index": 0,
+        "name": "NVIDIA RTX A6000",
+        "physical_index": 3,
+        "requested_gpu_count": 2,
+        "uuid": "GPU-2cd1aa5b-616e-e6d3-b54d-49241cc8f959"
+      },
+      "metrics": {
+        "released_comparable": {
+          "definition": "Released GenMol path: SAFE fragment repair with fix=True, canonical decode, largest disconnected component, deduplicate before diversity and quality; validity and quality divide by requested samples, while uniqueness divides by released-valid samples.",
+          "diversity": 0.8811861413493774,
+          "diversity_input_count": 99,
+          "diversity_undefined_reason": null,
+          "quality": 0.52,
+          "quality_count": 52,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 99,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 99,
+          "valid_count": 99,
+          "validity": 0.99,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "definition": "Direct canonical sf.decode(raw_safe, fix=False, ignore_errors=True), followed by explicit RDKit parsing, sanitization, and canonicalization, without fragment repair or largest-component selection; other metric denominators mirror the released path.",
+          "diversity": 0.8751895863648507,
+          "diversity_input_count": 82,
+          "diversity_undefined_reason": null,
+          "quality": 0.44,
+          "quality_count": 44,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 82,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 82,
+          "valid_count": 82,
+          "validity": 0.82,
+          "validity_denominator": 100
+        }
+      },
+      "repair_counts": {
+        "largest_component_selected_requests": 13,
+        "recovered_requests": 17,
+        "request_denominator": 100
+      },
+      "runtime_seconds": {
+        "decode_and_metrics": 1.4217203799635172,
+        "generation": 14.104724461969454,
+        "model_load_and_device_move": 13.119095822039526,
+        "model_sampling_and_tokenizer": 13.692122510983609,
+        "released_postprocessing": 0.4126019509858452,
+        "sampled_token_control_audit": 0.008165362989529967,
+        "total_before_summary_write": 50.85860026098089
+      },
+      "seed": 2100,
+      "tokens": {
+        "all_editable_control_counts": {
+          "bos": 0,
+          "eos": 0,
+          "mask": 0,
+          "pad": 0,
+          "unk": 0
+        },
+        "editable_positions": 4876,
+        "final_editable_mask": 0,
+        "mask_fraction_of_editable_positions": 0.0,
+        "requests": 100,
+        "row_fraction_with_editable_mask": 0.0,
+        "rows_with_editable_mask": 0
+      }
+    },
+    {
+      "config_id": "mask_ce_raw_t050",
+      "denominators": {
+        "released_comparable": {
+          "diversity_input_count": 98,
+          "quality_count": 47,
+          "quality_denominator": 100,
+          "unique_count": 98,
+          "uniqueness_denominator": 99,
+          "valid_count": 99,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "diversity_input_count": 79,
+          "quality_count": 40,
+          "quality_denominator": 100,
+          "unique_count": 79,
+          "uniqueness_denominator": 79,
+          "valid_count": 79,
+          "validity_denominator": 100
+        }
+      },
+      "gpu_mapping": {
+        "existing_compute_process_count": 1,
+        "final_probe_free_memory_mib": 47553,
+        "final_probe_utilization_percent": 9,
+        "logical_index": 0,
+        "name": "NVIDIA RTX A6000",
+        "physical_index": 2,
+        "requested_gpu_count": 2,
+        "uuid": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece"
+      },
+      "metrics": {
+        "released_comparable": {
+          "definition": "Released GenMol path: SAFE fragment repair with fix=True, canonical decode, largest disconnected component, deduplicate before diversity and quality; validity and quality divide by requested samples, while uniqueness divides by released-valid samples.",
+          "diversity": 0.8821734828753869,
+          "diversity_input_count": 98,
+          "diversity_undefined_reason": null,
+          "quality": 0.47,
+          "quality_count": 47,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 98,
+          "uniqueness": 0.98989898989899,
+          "uniqueness_denominator": 99,
+          "valid_count": 99,
+          "validity": 0.99,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "definition": "Direct canonical sf.decode(raw_safe, fix=False, ignore_errors=True), followed by explicit RDKit parsing, sanitization, and canonicalization, without fragment repair or largest-component selection; other metric denominators mirror the released path.",
+          "diversity": 0.870419880255936,
+          "diversity_input_count": 79,
+          "diversity_undefined_reason": null,
+          "quality": 0.4,
+          "quality_count": 40,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 79,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 79,
+          "valid_count": 79,
+          "validity": 0.79,
+          "validity_denominator": 100
+        }
+      },
+      "repair_counts": {
+        "largest_component_selected_requests": 15,
+        "recovered_requests": 20,
+        "request_denominator": 100
+      },
+      "runtime_seconds": {
+        "decode_and_metrics": 1.3518408269737847,
+        "generation": 14.954270438000094,
+        "model_load_and_device_move": 14.228536555019673,
+        "model_sampling_and_tokenizer": 14.566606921027415,
+        "released_postprocessing": 0.38766351697267964,
+        "sampled_token_control_audit": 0.008932202006690204,
+        "total_before_summary_write": 52.158570427971426
+      },
+      "seed": 2101,
+      "tokens": {
+        "all_editable_control_counts": {
+          "bos": 0,
+          "eos": 0,
+          "mask": 0,
+          "pad": 0,
+          "unk": 0
+        },
+        "editable_positions": 4944,
+        "final_editable_mask": 0,
+        "mask_fraction_of_editable_positions": 0.0,
+        "requests": 100,
+        "row_fraction_with_editable_mask": 0.0,
+        "rows_with_editable_mask": 0
+      }
+    },
+    {
+      "config_id": "mask_ce_clean_t050",
+      "denominators": {
+        "released_comparable": {
+          "diversity_input_count": 97,
+          "quality_count": 46,
+          "quality_denominator": 100,
+          "unique_count": 97,
+          "uniqueness_denominator": 98,
+          "valid_count": 98,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "diversity_input_count": 63,
+          "quality_count": 32,
+          "quality_denominator": 100,
+          "unique_count": 63,
+          "uniqueness_denominator": 63,
+          "valid_count": 63,
+          "validity_denominator": 100
+        }
+      },
+      "gpu_mapping": {
+        "existing_compute_process_count": 1,
+        "final_probe_free_memory_mib": 47553,
+        "final_probe_utilization_percent": 8,
+        "logical_index": 0,
+        "name": "NVIDIA RTX A6000",
+        "physical_index": 2,
+        "requested_gpu_count": 2,
+        "uuid": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece"
+      },
+      "metrics": {
+        "released_comparable": {
+          "definition": "Released GenMol path: SAFE fragment repair with fix=True, canonical decode, largest disconnected component, deduplicate before diversity and quality; validity and quality divide by requested samples, while uniqueness divides by released-valid samples.",
+          "diversity": 0.8980973287963857,
+          "diversity_input_count": 97,
+          "diversity_undefined_reason": null,
+          "quality": 0.46,
+          "quality_count": 46,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 97,
+          "uniqueness": 0.9897959183673469,
+          "uniqueness_denominator": 98,
+          "valid_count": 98,
+          "validity": 0.98,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "definition": "Direct canonical sf.decode(raw_safe, fix=False, ignore_errors=True), followed by explicit RDKit parsing, sanitization, and canonicalization, without fragment repair or largest-component selection; other metric denominators mirror the released path.",
+          "diversity": 0.8817508648951448,
+          "diversity_input_count": 63,
+          "diversity_undefined_reason": null,
+          "quality": 0.32,
+          "quality_count": 32,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 63,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 63,
+          "valid_count": 63,
+          "validity": 0.63,
+          "validity_denominator": 100
+        }
+      },
+      "repair_counts": {
+        "largest_component_selected_requests": 25,
+        "recovered_requests": 35,
+        "request_denominator": 100
+      },
+      "runtime_seconds": {
+        "decode_and_metrics": 1.3208617169875652,
+        "generation": 14.23765231098514,
+        "model_load_and_device_move": 12.869312258961145,
+        "model_sampling_and_tokenizer": 13.77083216101164,
+        "released_postprocessing": 0.4668201499735005,
+        "sampled_token_control_audit": 0.009696716035250574,
+        "total_before_summary_write": 49.302190885995515
+      },
+      "seed": 2100,
+      "tokens": {
+        "all_editable_control_counts": {
+          "bos": 0,
+          "eos": 0,
+          "mask": 0,
+          "pad": 0,
+          "unk": 0
+        },
+        "editable_positions": 4876,
+        "final_editable_mask": 0,
+        "mask_fraction_of_editable_positions": 0.0,
+        "requests": 100,
+        "row_fraction_with_editable_mask": 0.0,
+        "rows_with_editable_mask": 0
+      }
+    },
+    {
+      "config_id": "mask_ce_clean_t050",
+      "denominators": {
+        "released_comparable": {
+          "diversity_input_count": 99,
+          "quality_count": 49,
+          "quality_denominator": 100,
+          "unique_count": 99,
+          "uniqueness_denominator": 99,
+          "valid_count": 99,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "diversity_input_count": 70,
+          "quality_count": 33,
+          "quality_denominator": 100,
+          "unique_count": 70,
+          "uniqueness_denominator": 70,
+          "valid_count": 70,
+          "validity_denominator": 100
+        }
+      },
+      "gpu_mapping": {
+        "existing_compute_process_count": 1,
+        "final_probe_free_memory_mib": 47275,
+        "final_probe_utilization_percent": 8,
+        "logical_index": 0,
+        "name": "NVIDIA RTX A6000",
+        "physical_index": 3,
+        "requested_gpu_count": 2,
+        "uuid": "GPU-2cd1aa5b-616e-e6d3-b54d-49241cc8f959"
+      },
+      "metrics": {
+        "released_comparable": {
+          "definition": "Released GenMol path: SAFE fragment repair with fix=True, canonical decode, largest disconnected component, deduplicate before diversity and quality; validity and quality divide by requested samples, while uniqueness divides by released-valid samples.",
+          "diversity": 0.8851882466528291,
+          "diversity_input_count": 99,
+          "diversity_undefined_reason": null,
+          "quality": 0.49,
+          "quality_count": 49,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 99,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 99,
+          "valid_count": 99,
+          "validity": 0.99,
+          "validity_denominator": 100
+        },
+        "strict": {
+          "definition": "Direct canonical sf.decode(raw_safe, fix=False, ignore_errors=True), followed by explicit RDKit parsing, sanitization, and canonicalization, without fragment repair or largest-component selection; other metric denominators mirror the released path.",
+          "diversity": 0.8749197064146464,
+          "diversity_input_count": 70,
+          "diversity_undefined_reason": null,
+          "quality": 0.33,
+          "quality_count": 33,
+          "quality_denominator": 100,
+          "quality_thresholds": {
+            "qed_min_inclusive": 0.6,
+            "sa_max_inclusive": 4.0
+          },
+          "unique_count": 70,
+          "uniqueness": 1.0,
+          "uniqueness_denominator": 70,
+          "valid_count": 70,
+          "validity": 0.7,
+          "validity_denominator": 100
+        }
+      },
+      "repair_counts": {
+        "largest_component_selected_requests": 27,
+        "recovered_requests": 29,
+        "request_denominator": 100
+      },
+      "runtime_seconds": {
+        "decode_and_metrics": 1.371276282996405,
+        "generation": 16.00330754899187,
+        "model_load_and_device_move": 12.635466628009453,
+        "model_sampling_and_tokenizer": 15.6063538910239,
+        "released_postprocessing": 0.3969536579679698,
+        "sampled_token_control_audit": 0.008797783986665308,
+        "total_before_summary_write": 52.49612563702976
+      },
+      "seed": 2101,
+      "tokens": {
+        "all_editable_control_counts": {
+          "bos": 0,
+          "eos": 0,
+          "mask": 0,
+          "pad": 0,
+          "unk": 0
+        },
+        "editable_positions": 4944,
+        "final_editable_mask": 0,
+        "mask_fraction_of_editable_positions": 0.0,
+        "requests": 100,
+        "row_fraction_with_editable_mask": 0.0,
+        "rows_with_editable_mask": 0
+      }
+    }
+  ],
+  "status": "independent_evidence_checks_passed",
+  "total_editable_control_counts": {
+    "bos": 0,
+    "eos": 0,
+    "mask": 0,
+    "pad": 0,
+    "unk": 0
+  },
+  "total_editable_positions": 39280
+}
