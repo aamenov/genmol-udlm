@@ -235,10 +235,17 @@ IMPLEMENTATION_INPUT_PATHS = {
     "length_distribution": REPO_ROOT / "data/len.pk",
 }
 GIBBS_CORRECTOR_SOURCE_PATH = REPO_ROOT / "src/genmol/corrector.py"
-GIBBS_CORRECTOR_NUM_STEPS_SOURCE = "explicit UDLM total predictor-plus-corrector NFE budget"
-GIBBS_CORRECTOR_NFE_DEFINITION = (
-    "one full backbone forward evaluation per predictor transition and per fresh Gibbs corrector"
+DENOISER_SOURCE_PATH = REPO_ROOT / "src/genmol/denoiser.py"
+UDLM_DENOISER_METADATA = {
+    "schema_version": 1,
+    "parameterization": "x0_denoiser",
+    "objective": "clean_token_cross_entropy",
+    "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
+}
+GIBBS_CORRECTOR_NUM_STEPS_SOURCE = (
+    "explicit UDLM total predictor-plus-corrector NFE budget"
 )
+GIBBS_CORRECTOR_NFE_DEFINITION = "one full backbone forward evaluation per predictor transition and per fresh Gibbs corrector"
 
 RAW_SAMPLE_FIELDS = (
     "sample_index",
@@ -615,9 +622,7 @@ def validate_udlm_prior_metadata_record(
     expected_excluded = (
         list(SAFE_GPT_SPECIAL_TOKEN_IDS)
         if expected_exclude_special_tokens is True
-        else []
-        if expected_exclude_special_tokens is False
-        else None
+        else [] if expected_exclude_special_tokens is False else None
     )
     if expected_excluded is not None and excluded != expected_excluded:
         raise RuntimeError(
@@ -1297,6 +1302,7 @@ def generate_raw_model_text(
     prior_metadata_sha256: str | None,
     raw_loo_top_p: float | None = None,
     gibbs_corrector: bool = False,
+    parameterization: str = "raw_loo",
 ) -> tuple[list[str], dict[str, Any], Any, Any]:
     """Run either diffusion backend through the shared raw-token sampler API.
 
@@ -1322,6 +1328,11 @@ def generate_raw_model_text(
         raise BenchmarkConfigurationError(
             "Inference config requests diffusion_type="
             f"{diffusion_type!r}, but checkpoint loaded as {loaded_diffusion_type!r}"
+        )
+
+    if getattr(sampler.model, "udlm_parameterization", "raw_loo") != parameterization:
+        raise BenchmarkConfigurationError(
+            "loaded model parameterization differs from config"
         )
 
     # This is the body of Sampler.de_novo_generation up to the raw token
@@ -1449,7 +1460,9 @@ def _encoded_uint16_tensor(value: Any, *, label: str) -> dict[str, Any]:
     values = array("H", (int(item) for item in cpu.reshape(-1).tolist()))
     if values.itemsize != 2:  # pragma: no cover - CPython platform invariant
         raise RuntimeError("platform unsigned-short representation is not 16 bits")
-    if sys.byteorder != "little":  # pragma: no cover - current platform is little-endian
+    if (
+        sys.byteorder != "little"
+    ):  # pragma: no cover - current platform is little-endian
         values.byteswap()
     decoded = values.tobytes()
     return {
@@ -1468,7 +1481,11 @@ def _encoded_uint16_tensor(value: Any, *, label: str) -> dict[str, Any]:
 def _encoded_msb0_mask(value: Any, *, label: str) -> dict[str, Any]:
     import torch
 
-    if not isinstance(value, torch.Tensor) or value.ndim != 2 or value.dtype != torch.bool:
+    if (
+        not isinstance(value, torch.Tensor)
+        or value.ndim != 2
+        or value.dtype != torch.bool
+    ):
         raise RuntimeError(f"{label} must be a rank-two boolean Torch tensor")
     flattened = value.detach().to(device="cpu").reshape(-1).tolist()
     decoded = bytearray((len(flattened) + 7) // 8)
@@ -1581,13 +1598,15 @@ def build_sampled_token_control_audit(
         sampler_input_ids.masked_select(~editable_mask),
     ):
         raise RuntimeError("immutable sampled-token audit positions changed")
-    if torch.any(sampler_input_ids < 0).item() or torch.any(
-        sampler_input_ids >= tokenizer_effective_size
-    ).item():
+    if (
+        torch.any(sampler_input_ids < 0).item()
+        or torch.any(sampler_input_ids >= tokenizer_effective_size).item()
+    ):
         raise RuntimeError("sampler input contains an out-of-tokenizer-range ID")
-    if torch.any(final_sampled_ids < 0).item() or torch.any(
-        final_sampled_ids >= model_vocab_size
-    ).item():
+    if (
+        torch.any(final_sampled_ids < 0).item()
+        or torch.any(final_sampled_ids >= model_vocab_size).item()
+    ):
         raise RuntimeError("final sample contains an out-of-model-range ID")
     training = getattr(sampler.model.config, "training", {})
     if not isinstance(training, Mapping):
@@ -1607,9 +1626,7 @@ def build_sampled_token_control_audit(
             "excluded checkpoint sampled a control token at an editable position"
         )
 
-    decoded_again = tokenizer.batch_decode(
-        final_sampled_ids, skip_special_tokens=True
-    )
+    decoded_again = tokenizer.batch_decode(final_sampled_ids, skip_special_tokens=True)
     if [str(value) for value in decoded_again] != list(raw_model_texts):
         raise RuntimeError(
             "batch_decode(final_sampled_ids) disagrees with raw_model_text"
@@ -1630,12 +1647,8 @@ def build_sampled_token_control_audit(
         ),
         "editable_mask": _encoded_msb0_mask(editable_mask, label="editable_mask"),
         "control_token_counts": {
-            "sampler_input_all_positions": _control_token_count_map(
-                sampler_input_ids
-            ),
-            "final_sampled_all_positions": _control_token_count_map(
-                final_sampled_ids
-            ),
+            "sampler_input_all_positions": _control_token_count_map(sampler_input_ids),
+            "final_sampled_all_positions": _control_token_count_map(final_sampled_ids),
             "final_sampled_editable_positions": _control_token_count_map(
                 editable_final_ids
             ),
@@ -2006,9 +2019,7 @@ def atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
 
 def _csv_payload(records: Sequence[Mapping[str, Any]]) -> bytes:
     handle = io.StringIO(newline="")
-    writer = csv.DictWriter(
-        handle, fieldnames=RAW_SAMPLE_FIELDS, extrasaction="raise"
-    )
+    writer = csv.DictWriter(handle, fieldnames=RAW_SAMPLE_FIELDS, extrasaction="raise")
     writer.writeheader()
     writer.writerows(records)
     return handle.getvalue().encode("utf-8")
@@ -2170,13 +2181,11 @@ def _validate_generation_lease_payload(
     if (
         record["schema_version"] != 1
         or record["status"] != "held"
-        or record["purpose"]
-        != "enforce_one_repository_generation_controller_at_a_time"
+        or record["purpose"] != "enforce_one_repository_generation_controller_at_a_time"
         or record["source_revision"] != expected_source_revision
         or record["owner_token"] != expected_owner_token
         or record["owner_process_exit_does_not_make_lock_stale"] is not True
-        or record["stale_lock_policy"]
-        != "fail_closed_and_require_manual_review"
+        or record["stale_lock_policy"] != "fail_closed_and_require_manual_review"
         or record["release_policy"]
         != (
             "exact_owner_only_after_all_handed_off_children_terminal_and_required_"
@@ -2252,9 +2261,7 @@ def _load_candidate_execution_authority(
             "expected generation lease SHA-256",
         )
         owner_token = _sha256_identity(
-            _required_environment_text(
-                "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN"
-            ),
+            _required_environment_text("GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN"),
             "generation lease owner token",
         )
         authority_text = _required_environment_text(
@@ -2332,20 +2339,24 @@ def _load_candidate_execution_authority(
             )
         ).hexdigest()
         if authority["command_sha256"] != expected_command_sha256:
-            raise BenchmarkConfigurationError("launch authority command hash is invalid")
+            raise BenchmarkConfigurationError(
+                "launch authority command hash is invalid"
+            )
 
         lease_authority = _exact_mapping(
             authority["generation_lease"],
             {"path", "relative_path", "sha256", "device", "inode", "owner_token"},
             "launch authority generation_lease",
         )
-        if lease_authority["path"] != expected_lease_path or lease_authority[
-            "relative_path"
-        ] != GENERATION_LEASE_RELATIVE_PATH:
+        if (
+            lease_authority["path"] != expected_lease_path
+            or lease_authority["relative_path"] != GENERATION_LEASE_RELATIVE_PATH
+        ):
             raise BenchmarkConfigurationError("launch authority lease path is invalid")
-        if lease_authority["sha256"] != lease_sha256 or lease_authority[
-            "owner_token"
-        ] != owner_token:
+        if (
+            lease_authority["sha256"] != lease_sha256
+            or lease_authority["owner_token"] != owner_token
+        ):
             raise BenchmarkConfigurationError(
                 "launch authority lease hash or owner token disagrees with environment"
             )
@@ -2489,7 +2500,9 @@ def _revalidate_candidate_execution_authority(
         current_lease != authority.generation_lease_claim
         or lease_payload != authority.generation_lease_payload
     ):
-        raise RuntimeError("generation lease identity or bytes changed during benchmark")
+        raise RuntimeError(
+            "generation lease identity or bytes changed during benchmark"
+        )
     current_source, _ = artifact_io.snapshot_file(
         REPO_ROOT, ARTIFACT_IO_RELATIVE_PATH, capture_bytes=False
     )
@@ -2563,9 +2576,7 @@ def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
     if isinstance(config["softmax_temp"], bool) or not isinstance(
         config["softmax_temp"], numbers.Real
     ):
-        raise BenchmarkConfigurationError(
-            "softmax_temp must be a finite real number"
-        )
+        raise BenchmarkConfigurationError("softmax_temp must be a finite real number")
     try:
         softmax_temp = float(config["softmax_temp"])
         randomness = float(config["randomness"])
@@ -2694,6 +2705,21 @@ def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
     }
     if diffusion_type == "udlm":
         normalized["raw_loo_top_p"] = raw_loo_top_p
+    parameterization = config.get("parameterization", "raw_loo")
+    if not isinstance(parameterization, str) or parameterization not in {
+        "raw_loo",
+        "x0_denoiser",
+    }:
+        raise BenchmarkConfigurationError(
+            "parameterization must be raw_loo or x0_denoiser"
+        )
+    if parameterization == "x0_denoiser":
+        if (
+            diffusion_type != "udlm"
+            or prior_variant not in UDLM_CATEGORICAL_PRIOR_VARIANTS
+        ):
+            raise BenchmarkConfigurationError("x0_denoiser requires categorical UDLM")
+        normalized["parameterization"] = parameterization
     if gibbs_corrector:
         # Omit the inactive setting to preserve historical canonical identities.
         normalized["gibbs_corrector"] = True
@@ -2719,6 +2745,36 @@ def validate_device(device: str) -> None:
             raise BenchmarkConfigurationError(
                 "A CUDA device was requested but torch.cuda.is_available() is false"
             )
+
+
+def validate_denoiser_sampling_identity(checkpoint, sampling):
+    """Bind the requested logit semantics to the checkpoint's trained objective."""
+    record = checkpoint.get("udlm_denoiser_metadata")
+    if sampling.get("parameterization", "raw_loo") == "x0_denoiser":
+        if (
+            checkpoint.get("diffusion_type") != "udlm"
+            or checkpoint.get("udlm_prior_variant")
+            not in UDLM_CATEGORICAL_PRIOR_VARIANTS
+            or not isinstance(record, Mapping)
+            or _canonical_json_sha256(record)
+            != _canonical_json_sha256(UDLM_DENOISER_METADATA)
+        ):
+            raise BenchmarkConfigurationError(
+                "checkpoint CE denoiser identity differs from sampling config"
+            )
+    elif "udlm_denoiser_metadata" in checkpoint:
+        raise BenchmarkConfigurationError(
+            "raw-LOO config cannot sample a CE denoiser checkpoint"
+        )
+
+
+def sampling_implementation_options(sampling):
+    options = {}
+    if sampling.get("gibbs_corrector", False):
+        options["gibbs_corrector"] = True
+    if sampling.get("parameterization", "raw_loo") == "x0_denoiser":
+        options["x0_denoiser"] = True
+    return options
 
 
 def checkpoint_metadata(
@@ -2875,6 +2931,25 @@ def checkpoint_metadata(
         "udlm_prior_metadata": udlm_prior_metadata,
         "udlm_prior_metadata_sha256": udlm_prior_metadata_sha256,
     }
+    parameterization = checkpoint_udlm.get("parameterization", "raw_loo")
+    if parameterization not in ("raw_loo", "x0_denoiser"):
+        raise RuntimeError("unsupported checkpoint UDLM parameterization")
+    marker_name = "_udlm_denoiser_ce_version"
+    if parameterization == "x0_denoiser":
+        metadata["udlm_denoiser_metadata"] = checkpoint.get("udlm_denoiser_metadata")
+        validate_denoiser_sampling_identity(
+            metadata, {"parameterization": parameterization}
+        )
+        marker = state_dict.get(marker_name)
+        if (
+            not isinstance(marker, torch.Tensor)
+            or marker.dtype != torch.int64
+            or marker.shape != torch.Size([])
+            or marker.item() != 1
+        ):
+            raise RuntimeError("CE checkpoint lacks its denoiser state marker")
+    elif "udlm_denoiser_metadata" in checkpoint or marker_name in state_dict:
+        raise RuntimeError("raw-LOO checkpoint unexpectedly declares CE denoiser state")
     del checkpoint
     return metadata
 
@@ -3036,13 +3111,17 @@ def git_provenance() -> dict[str, Any]:
 
 
 def load_implementation_input_snapshot(
-    *, gibbs_corrector: bool = False,
+    *,
+    gibbs_corrector: bool = False,
+    x0_denoiser: bool = False,
 ) -> ImplementationInputSnapshot:
     """Fingerprint direct inputs and retain the exact generation-length values."""
     result: dict[str, Any] = {}
     input_paths = dict(IMPLEMENTATION_INPUT_PATHS)
     if gibbs_corrector:
         input_paths["corrector_source"] = GIBBS_CORRECTOR_SOURCE_PATH
+    if x0_denoiser:
+        input_paths["denoiser_source"] = DENOISER_SOURCE_PATH
     for name, path in input_paths.items():
         if not path.is_file():
             raise FileNotFoundError(f"Required benchmark input does not exist: {path}")
@@ -3091,12 +3170,17 @@ def load_implementation_input_snapshot(
     )
 
 
-def implementation_input_provenance(*, gibbs_corrector: bool = False) -> dict[str, Any]:
+def implementation_input_provenance(
+    *, gibbs_corrector: bool = False, x0_denoiser: bool = False
+) -> dict[str, Any]:
     """Fingerprint source/data inputs that directly define generation semantics."""
 
+    options = {}
     if gibbs_corrector:
-        return dict(load_implementation_input_snapshot(gibbs_corrector=True).provenance)
-    return dict(load_implementation_input_snapshot().provenance)
+        options["gibbs_corrector"] = True
+    if x0_denoiser:
+        options["x0_denoiser"] = True
+    return dict(load_implementation_input_snapshot(**options).provenance)
 
 
 def tokenizer_provenance(tokenizer: Any) -> dict[str, Any]:
@@ -3275,6 +3359,8 @@ def assert_runtime_module_provenance(
         modules["artifact_io_source"] = artifact_io
     if "corrector_source" in implementation_inputs:
         modules["corrector_source"] = importlib.import_module("genmol.corrector")
+    if "denoiser_source" in implementation_inputs:
+        modules["denoiser_source"] = importlib.import_module("genmol.denoiser")
     for source_name, module in modules.items():
         module_path = Path(module.__file__).resolve()
         recorded = implementation_inputs[source_name]
@@ -3409,7 +3495,9 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
         raise RuntimeError(f"Config changed while it was being read: {config_path}")
     sampling_config = validate_sampling_config(source_config)
     candidate_schema = sampling_config["diffusion_type"] == "udlm"
-    schema_version = SCHEMA_VERSION if candidate_schema else HISTORICAL_MDLM_SCHEMA_VERSION
+    schema_version = (
+        SCHEMA_VERSION if candidate_schema else HISTORICAL_MDLM_SCHEMA_VERSION
+    )
     if candidate_schema and args.num_samples > MAX_AUDIT_ROWS:
         raise BenchmarkConfigurationError(
             "schema-8 candidate sample count must not exceed 1000"
@@ -3441,10 +3529,8 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
         metric_inputs = dict(sa_metric_snapshot.provenance)
         # Capture every direct generation implementation before checkpoint metadata
         # imports the stable-descriptor helper or the sampler imports model code.
-        implementation_snapshot = (
-            load_implementation_input_snapshot(gibbs_corrector=True)
-            if sampling_config.get("gibbs_corrector", False)
-            else load_implementation_input_snapshot()
+        implementation_snapshot = load_implementation_input_snapshot(
+            **sampling_implementation_options(sampling_config)
         )
         implementation_inputs = dict(implementation_snapshot.provenance)
         if not candidate_schema:
@@ -3507,6 +3593,7 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
                 "Inference config prior_metadata_sha256 does not match checkpoint "
                 "metadata"
             )
+        validate_denoiser_sampling_identity(checkpoint_info, sampling_config)
         # Heavy imports are intentionally below argument/output validation.
         assert_local_genmol_import()
         from tdc import Evaluator, Oracle

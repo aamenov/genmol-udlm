@@ -1,8 +1,9 @@
 # CE denoiser adaptation: a prospective hypothesis
 
-Status: CPU algebra and gradient audit only. No CE objective has been added to
-training, no CE model has been trained, and **no empirical improvement over
-UDLM or GenMol has been established**. Existing R/S/E training, v4's failed
+Original audit status: CPU algebra and gradient evidence only. The optional CE
+implementation is now documented in [the implementation note](udlm_ce_implementation.md).
+No CE model has been trained, and **no empirical improvement over UDLM or GenMol
+has been established**. Existing R/S/E training, v4's failed
 diagnostic attempt, and the prospective v5 temperature screen retain their
 original identities and conclusions. This document does not reinterpret them.
 

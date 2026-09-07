@@ -190,6 +190,7 @@ class ExpectedRunIdentity:
     num_samples: int
     source_revision: str | None = None
     device: str = "cuda:0"
+    checkpoint_udlm_denoiser_metadata: Mapping[str, Any] | None = None
 
 
 def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
@@ -1858,11 +1859,12 @@ def _build_expected_run_identity(
                 "categorical checkpoint metadata inspection did not return the full "
                 "immutable prior record"
             )
+    benchmark_runner.validate_denoiser_sampling_identity(
+        checkpoint_info, sampling_config
+    )
     implementation_inputs = (
-        (
-            benchmark_runner.implementation_input_provenance(gibbs_corrector=True)
-            if sampling_config.get("gibbs_corrector", False)
-            else benchmark_runner.implementation_input_provenance()
+        benchmark_runner.implementation_input_provenance(
+            **benchmark_runner.sampling_implementation_options(sampling_config)
         )
         if implementation_inputs is None
         else dict(implementation_inputs)
@@ -1925,6 +1927,7 @@ def _build_expected_run_identity(
         effective_config=effective_config,
         effective_config_sha256=_canonical_json_sha256(effective_config),
         benchmark_runner_sha256=benchmark_runner_sha256,
+        checkpoint_udlm_denoiser_metadata=checkpoint_info.get("udlm_denoiser_metadata"),
         implementation_inputs=implementation_inputs,
         metric_inputs=metric_inputs,
         num_samples=num_samples,
@@ -2236,7 +2239,9 @@ def _completed(
             "corrector_steps_per_molecule",
         )
     ):
-        errors.append("run.generation_protocol declares an unconfigured Gibbs corrector")
+        errors.append(
+            "run.generation_protocol declares an unconfigured Gibbs corrector"
+        )
 
     checkpoint = _mapping(summary.get("checkpoint"))
     expect(
@@ -2294,6 +2299,18 @@ def _completed(
         checkpoint.get("udlm_prior_metadata_sha256"),
         expected.checkpoint_udlm_prior_metadata_sha256,
     )
+
+    expect(
+        "checkpoint.udlm_denoiser_metadata",
+        checkpoint.get("udlm_denoiser_metadata"),
+        expected.checkpoint_udlm_denoiser_metadata,
+    )
+    try:
+        benchmark_runner.validate_denoiser_sampling_identity(
+            checkpoint, expected.sampling_config
+        )
+    except ValueError as error:
+        errors.append(str(error))
 
     config = _mapping(summary.get("config"))
     expect("config.path", _recorded_path(config.get("path")), expected.config_path)

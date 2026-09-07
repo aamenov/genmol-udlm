@@ -1,0 +1,11 @@
+defaults:
+  - udlm_categorical
+  - _self_
+
+# Prospective clean-token CE adaptation. The checkpoint binds this interpretation.
+# Use prior_variant=empirical_frequency for the separately matched E treatment.
+training:
+  udlm:
+    parameterization: x0_denoiser
+    prior_variant: schedule_uniform
+    exclude_special_tokens: true

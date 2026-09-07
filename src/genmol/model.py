@@ -69,6 +69,14 @@ EMPIRICAL_FREQUENCY_ORDERED_TEXT_SHA256 = (
 )
 UDLM_PRIOR_CHECKPOINT_KEY = "udlm_prior_metadata"
 UDLM_CONDITIONING_CHECKPOINT_KEY = "udlm_conditioning_metadata"
+UDLM_DENOISER_CHECKPOINT_KEY = "udlm_denoiser_metadata"
+UDLM_DENOISER_STATE_KEY = "_udlm_denoiser_ce_version"
+UDLM_DENOISER_METADATA = {
+    "schema_version": 1,
+    "parameterization": "x0_denoiser",
+    "objective": "clean_token_cross_entropy",
+    "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
+}
 UDLM_CONDITIONING_METADATA_SCHEMA_VERSION = 1
 OFFICIAL_UDLM_REFERENCE_REVISION = "edb0f8c28b7caeb4ea7a06a2fee8d74ab6da1661"
 UDLM_PRIOR_VARIANTS = frozenset(
@@ -882,6 +890,25 @@ class GenMol(L.LightningModule):
         self.diffusion_type = str(self.config.training.get('diffusion', 'mdlm')).lower()
         if self.diffusion_type not in {'mdlm', 'udlm'}:
             raise ValueError("training.diffusion must be either 'mdlm' or 'udlm'")
+        udlm_config = self.config.training.get('udlm', {})
+        self.udlm_parameterization = udlm_config.get('parameterization', 'raw_loo')
+        if (
+            not isinstance(self.udlm_parameterization, str)
+            or self.udlm_parameterization not in {'raw_loo', 'x0_denoiser'}
+        ):
+            raise ValueError(
+                "training.udlm.parameterization must be raw_loo or x0_denoiser"
+            )
+        if self.udlm_parameterization == 'x0_denoiser':
+            if self.diffusion_type != 'udlm' or udlm_config.get('prior_variant') not in {
+                'schedule_uniform', 'empirical_frequency'
+            }:
+                raise ValueError(
+                    "x0_denoiser requires schedule-consistent categorical UDLM"
+                )
+            self.register_buffer(
+                UDLM_DENOISER_STATE_KEY, torch.tensor(1, dtype=torch.int64)
+            )
 
         backbone_config = BertConfig.from_dict(dict(self.config.model))
         if self.diffusion_type == 'udlm':
@@ -1207,6 +1234,7 @@ class GenMol(L.LightningModule):
     def load_state_dict(self, state_dict, strict=True, assign=False):
         """Load weights only when their process prior matches this model."""
 
+        self._validate_udlm_parameterization_state_dict(state_dict)
         self._validate_runtime_udlm_prior_identity()
         self._validate_runtime_udlm_conditioning_identity()
         self._validate_udlm_prior_state_dict(state_dict)
@@ -1215,6 +1243,38 @@ class GenMol(L.LightningModule):
         self._validate_runtime_udlm_prior_identity()
         self._validate_runtime_udlm_conditioning_identity()
         return result
+
+    def _validate_udlm_parameterization_state_dict(self, state_dict):
+        configured = self.config.training.get('udlm', {}).get(
+            'parameterization', 'raw_loo'
+        )
+        if configured != self.udlm_parameterization:
+            raise ValueError("runtime UDLM parameterization disagrees with construction")
+        marker = state_dict.get(UDLM_DENOISER_STATE_KEY)
+        if self.udlm_parameterization == 'x0_denoiser':
+            if (
+                not isinstance(marker, torch.Tensor)
+                or marker.shape != torch.Size([])
+                or marker.dtype != torch.int64
+                or marker.device.type == 'meta'
+                or marker.item() != 1
+            ):
+                raise ValueError(
+                    "CE denoiser checkpoint requires its parameterization state marker"
+                )
+        elif UDLM_DENOISER_STATE_KEY in state_dict:
+            raise ValueError("CE denoiser state cannot be loaded as raw_loo")
+
+    def _validate_udlm_parameterization_checkpoint(self, checkpoint):
+        metadata = checkpoint.get(UDLM_DENOISER_CHECKPOINT_KEY)
+        if self.udlm_parameterization == 'x0_denoiser':
+            if not _exact_nested_data_equal(metadata, UDLM_DENOISER_METADATA):
+                raise ValueError(
+                    "CE denoiser checkpoint is missing or has incompatible metadata"
+                )
+        elif UDLM_DENOISER_CHECKPOINT_KEY in checkpoint:
+            raise ValueError("CE denoiser checkpoint cannot be loaded as raw_loo")
+        self._validate_udlm_parameterization_state_dict(checkpoint.get('state_dict', {}))
 
     def initialize_from_mdlm_checkpoint(
         self,
@@ -1326,6 +1386,7 @@ class GenMol(L.LightningModule):
         return report
 
     def on_load_checkpoint(self, checkpoint):
+        self._validate_udlm_parameterization_checkpoint(checkpoint)
         self._validate_runtime_udlm_prior_identity()
         self._validate_udlm_prior_checkpoint(checkpoint)
         self._validate_udlm_conditioning_checkpoint(checkpoint)
@@ -1334,6 +1395,9 @@ class GenMol(L.LightningModule):
         self.fast_forward_epochs, self.fast_forward_batches = fast_forward_info(checkpoint)
         
     def on_save_checkpoint(self, checkpoint):
+        self._validate_udlm_parameterization_state_dict(self.state_dict())
+        if self.udlm_parameterization == 'x0_denoiser':
+            checkpoint[UDLM_DENOISER_CHECKPOINT_KEY] = dict(UDLM_DENOISER_METADATA)
         self._validate_runtime_udlm_prior_identity()
         self._validate_runtime_udlm_conditioning_identity()
         if type(self.mdlm) is ContinuousCategoricalDiffusion:
@@ -1403,10 +1467,27 @@ class GenMol(L.LightningModule):
         """Select molecular content positions while preserving sequence framing."""
 
         token_mask = attention_mask.to(dtype=torch.bool)
+        if self.diffusion_type == 'udlm' and self.udlm_parameterization == 'x0_denoiser':
+            # Boolean attention masks may alias the input after .to(bool).
+            # Selecting CE targets must not remove visible framing from BERT.
+            token_mask = token_mask.clone()
         for token_id in (self.pad_index, self.bos_index, self.eos_index):
             if token_id is not None:
                 token_mask &= input_ids != token_id
+        if self.diffusion_type == 'udlm' and self.udlm_parameterization == 'x0_denoiser':
+            for token_id in self.tokenizer.all_special_ids:
+                token_mask &= input_ids != token_id
         return token_mask
+
+    def sampling_logits(self, logits, xt, t, *, mutable_mask=None):
+        """Interpret checkpoint logits before reverse-bridge/Gibbs controls."""
+        if self.udlm_parameterization == 'raw_loo':
+            return logits
+        from genmol.denoiser import denoiser_to_loo_logits
+
+        return denoiser_to_loo_logits(
+            self.mdlm, logits, xt, t, mutable_mask=mutable_mask
+        )
     
     def training_step(self, batch, batch_idx):
         input_ids = batch['input_ids']
@@ -1424,7 +1505,17 @@ class GenMol(L.LightningModule):
             with torch.amp.autocast('cuda', dtype=torch.float32):
                 logits = self.backbone(xt, attention_mask)["logits"]
         # compute loss
-        if self.config.training.global_mean_loss:
+        if self.diffusion_type == 'udlm' and self.udlm_parameterization == 'x0_denoiser':
+            from genmol.denoiser import clean_denoiser_loss
+
+            loss = clean_denoiser_loss(
+                self.mdlm,
+                logits,
+                input_ids,
+                mask=loss_mask,
+                global_mean=self.config.training.global_mean_loss,
+            ).mean()
+        elif self.config.training.global_mean_loss:
             loss = self.mdlm.loss(
                 logits,
                 input_ids,

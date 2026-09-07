@@ -921,7 +921,10 @@ def _validate_summary_identity(
         raise RescoreValidationError("run.seed_configuration differs")
 
     checkpoint = _mapping(summary.get("checkpoint"), "benchmark checkpoint")
-    _exact_keys(checkpoint, CHECKPOINT_FIELDS, "benchmark checkpoint")
+    expected_checkpoint_fields = CHECKPOINT_FIELDS
+    if "udlm_denoiser_metadata" in checkpoint:
+        expected_checkpoint_fields |= {"udlm_denoiser_metadata"}
+    _exact_keys(checkpoint, expected_checkpoint_fields, "benchmark checkpoint")
     checkpoint_sha256 = _sha256(checkpoint.get("sha256"), "checkpoint.sha256")
     _assert_expected(checkpoint_sha256, expected_checkpoint_sha256, "checkpoint.sha256")
     checkpoint_size = _integer(
@@ -969,6 +972,17 @@ def _validate_summary_identity(
             ) from error
         if dict(sampling) != normalized_sampling:
             raise RescoreValidationError("sampling config is not canonical")
+    x0_denoiser = sampling.get("parameterization", "raw_loo") == "x0_denoiser"
+    if source_config.get("parameterization", "raw_loo") != sampling.get(
+        "parameterization", "raw_loo"
+    ):
+        raise RescoreValidationError(
+            "source/sampling denoiser parameterization differs"
+        )
+    try:
+        benchmark.validate_denoiser_sampling_identity(checkpoint, sampling)
+    except ValueError as error:
+        raise RescoreValidationError(str(error)) from error
     gibbs_corrector = sampling.get("gibbs_corrector", False)
     source_gibbs_corrector = source_config.get("gibbs_corrector", False)
     if (
@@ -1060,9 +1074,11 @@ def _validate_summary_identity(
     expected_num_steps_source = (
         benchmark.GIBBS_CORRECTOR_NUM_STEPS_SOURCE
         if gibbs_corrector
-        else "explicit UDLM reverse-transition count"
-        if diffusion_type == "udlm"
-        else "MDLM.get_num_steps_confidence on the single padded generation batch"
+        else (
+            "explicit UDLM reverse-transition count"
+            if diffusion_type == "udlm"
+            else "MDLM.get_num_steps_confidence on the single padded generation batch"
+        )
     )
     if protocol.get("num_steps_source") != expected_num_steps_source:
         raise RescoreValidationError("generation_protocol.num_steps_source differs")
@@ -1106,7 +1122,10 @@ def _validate_summary_identity(
             raise RescoreValidationError(
                 "generation_protocol.gibbs_corrector must be true"
             )
-        for key in ("predictor_transitions_per_molecule", "corrector_steps_per_molecule"):
+        for key in (
+            "predictor_transitions_per_molecule",
+            "corrector_steps_per_molecule",
+        ):
             count = _integer(protocol.get(key), f"generation_protocol.{key}", minimum=1)
             if count != nfe // 2:
                 raise RescoreValidationError(
@@ -1198,6 +1217,8 @@ def _validate_summary_identity(
     )
     if gibbs_corrector:
         expected_implementation_names |= {"corrector_source"}
+    if x0_denoiser:
+        expected_implementation_names |= {"denoiser_source"}
     if set(implementation_inputs) != expected_implementation_names:
         raise RescoreValidationError("implementation input map is incomplete")
     source_hashes: dict[str, str] = {}
@@ -1224,6 +1245,16 @@ def _validate_summary_identity(
         ):
             raise RescoreValidationError(
                 "implementation_inputs.corrector_source.path differs"
+            )
+    if x0_denoiser:
+        expected_denoiser_path = (
+            Path(str(git.get("repo_root"))) / "src/genmol/denoiser.py"
+        )
+        if implementation_inputs["denoiser_source"]["path"] != str(
+            expected_denoiser_path
+        ):
+            raise RescoreValidationError(
+                "implementation_inputs.denoiser_source.path differs"
             )
     _assert_expected(
         source_hashes["sampler_source"],
@@ -1337,6 +1368,11 @@ def _validate_summary_identity(
         },
         "generation": {
             "nfe": nfe,
+            **(
+                {"udlm_denoiser_metadata": dict(checkpoint["udlm_denoiser_metadata"])}
+                if x0_denoiser
+                else {}
+            ),
             "metric_branches": ["released_comparable", "strict"],
             "inference_weights": inference_weights,
             "raw_loo_top_p": protocol.get("raw_loo_top_p"),
@@ -1351,6 +1387,11 @@ def _validate_summary_identity(
             "runner_sha256": runner_sha256,
             "sampler_source_sha256": source_hashes["sampler_source"],
             "ema_source_sha256": source_hashes["ema_source"],
+            **(
+                {"denoiser_source_sha256": source_hashes["denoiser_source"]}
+                if x0_denoiser
+                else {}
+            ),
             **(
                 {"corrector_source_sha256": source_hashes["corrector_source"]}
                 if gibbs_corrector

@@ -1,4 +1,4 @@
-"""Idempotently align Stage 0, UDLM Stages 20--22, and final reporting."""
+"""Idempotently align Stage 0, UDLM Stages 20--23, and final reporting."""
 
 from __future__ import annotations
 
@@ -4770,6 +4770,161 @@ print(stage22_json.dumps(stage22_preview, indent=2))
     ]
 
 
+def _denoiser_ce_cells():
+    """Explain the denoiser objective and verify its bridge conversion on CPU."""
+    return [
+        _cell(
+            "markdown",
+            r"""
+# Stage 23 — Predicting clean tokens, then removing the local observation
+
+**Paper correspondence.** [D3PM](https://arxiv.org/abs/2107.03006) gives the
+forward posterior in Eq. 3 and clean-token prediction with auxiliary cross
+entropy (CE) in Sections 3.3–3.4. Our proposed pure-CE adaptation is a new
+objective choice, not a reproduction of D3PM's combined variational/CE loss.
+The original UDLM bridge in earlier stages consumes clean leave-one-out (LOO)
+probabilities. A clean denoiser conditions on an additional observation: the
+noisy token at its own position. We must convert between these meanings.
+
+**Intuition and motivation.** MDLM initialization already predicts clean tokens
+from corrupted context. CE may provide a useful adaptation objective under
+categorical replacement noise. This is an optimization hypothesis: no CE
+molecular result is established. Simply passing CE predictions into the old
+bridge would count the observed token's likelihood twice. Division removes
+that local evidence before the bridge incorporates it once.
+
+**Mathematics, with every symbol defined.** Let $j$ be a clean category and $i$
+an earlier noisy category in the active alphabet of size $K$. At the current
+position the observed category is $k$. Times satisfy $0<s<t$, with clean
+retention fractions $0<\alpha_t<\alpha_s\leq1$. The stationary prior is
+$\pi$, where $\pi_i>0$ and $\sum_i\pi_i=1$. Write $\delta_{ij}=1$ if $i=j$
+and zero otherwise. Define the local observation likelihood and the two
+forward factors by
+
+$$L_j=\alpha_t\delta_{jk}+(1-\alpha_t)\pi_k,\quad
+B_{ij}=\alpha_s\delta_{ij}+(1-\alpha_s)\pi_i,\quad
+A_i=(\alpha_t/\alpha_s)\delta_{ik}+(1-\alpha_t/\alpha_s)\pi_k.$$
+
+The denoiser probability $D_j=P(X_0^\ell=j\mid X_t)$ includes position
+$\ell$ in its context. The desired LOO probability $R_j$ omits that position:
+
+$$C=\sum_jD_j/L_j,\qquad R_j=D_j/(L_jC).$$
+
+Here $X_0$ and $X_t$ denote clean and noisy random sequences. Bayes' rule gives
+the LOO interpretation when $D$ is exact; an approximate network still yields
+a normalized derived vector. The bridge gives unnormalized weights
+$u_i=A_i\sum_jB_{ij}R_j$. Since $\sum_iA_iB_{ij}=L_j$, their sum is $1/C$,
+so the normalized bridge is
+
+$$p_i=\sum_jD_j\frac{A_iB_{ij}}{L_j}.$$
+
+This is a mixture of normalized forward posteriors. It gives exact coordinate
+marginals for an exact denoiser; independent draws at all positions generally
+approximate the correlated joint reverse transition. D3PM Eq. 4 instead sums
+joint kernels before normalization, so substituting $D$ directly there has
+different mixture weights. In production, subtract $\log L_j$ from denoiser
+logits before the existing raw-LOO temperature/top-p transformation. Never
+evaluate the division at $t=0$ where a likelihood can vanish.
+
+For a clean label $y$, CE is $-\log D_y$. With denoiser logits $h_j$ and
+$D=\operatorname{softmax}(h)$, its logit gradient is
+$D_j-\delta_{jy}$. The current CT objective targets $R$, so adding CE directly
+to raw-LOO logits generally asks them to represent different distributions.
+
+**Small concrete example.** Take $K=2$, $k=0$, $\pi=(1/2,1/2)$,
+$\alpha_t=1/2$, $\alpha_s=4/5$ and $D=(3/4,1/4)$. Then
+$L=(3/4,1/4)$, $C=2$, and $R=(1/2,1/2)$. Both the converted bridge and the
+explicit posterior mixture give $(13/16,3/16)$. Passing $D$ to the old bridge
+without conversion gives $(91/100,9/100)$, an absolute error of $39/400$.
+
+**Code below, tensor shapes, and invariants.** The independent cell uses exact
+fractions and two-element lists to check the example without a model, GPU,
+checkpoint, or file write. Production logits have shape $[B,L,K]$ for batch
+size $B$ and sequence length $L$; token IDs and editable masks have $[B,L]$.
+CE normalizes over the active vocabulary only and excludes fixed controls and
+padding from its token loss. Conversion uses the current IDs/time at every
+predictor and fresh Gibbs call. A checkpoint must explicitly identify the new
+parameterization; historical raw-LOO checkpoints keep their existing meaning.
+The longer exact and production-kernel audit is in
+`scripts/udlm/audit_denoiser_conversion.py`.
+
+**Differences from released implementations.** NVIDIA GenMol uses absorbing
+MDLM; this experiment retains categorical replacement and changes its training
+target. The initial CE option uses schedule-consistent uniform or empirical
+priors. It does not change the historical release-uniform arm. Temperature
+and top-p act on the converted LOO distribution, so they generally break exact
+posterior-mixture interpretation; Gibbs stationarity likewise requires exact,
+compatible, untempered conditionals. A matched training and generation study
+must assess usefulness, including repaired and strict molecular validity.
+
+**Comprehension checkpoint.** Why does $D$ differ from $R$? Expected reasoning:
+the current position contributes its own likelihood to $D$. Why divide by
+$L_j$ rather than the earlier-time prior? Expected reasoning: remove precisely
+the local observation at time $t$. Does the exact two-token calculation prove
+better molecules? Expected reasoning: it checks algebra, while network error,
+finite step size, factorized sampling and optimization remain empirical.
+Why cannot an existing raw-LOO checkpoint be relabeled as CE? Expected
+reasoning: its trained logits have a different probabilistic target.
+""",
+            "stage-23-denoiser-ce",
+        ),
+        _cell(
+            "code",
+            """
+from fractions import Fraction as Stage23Fraction
+
+stage23_pi = [Stage23Fraction(1, 2)] * 2
+stage23_d = [Stage23Fraction(3, 4), Stage23Fraction(1, 4)]
+stage23_alpha_t, stage23_alpha_s = Stage23Fraction(1, 2), Stage23Fraction(4, 5)
+stage23_k = 0
+stage23_likelihood = [
+    stage23_alpha_t * (j == stage23_k) + (1 - stage23_alpha_t) * stage23_pi[stage23_k]
+    for j in range(2)
+]
+stage23_c = sum(d / likelihood for d, likelihood in zip(stage23_d, stage23_likelihood))
+stage23_loo = [
+    d / likelihood / stage23_c
+    for d, likelihood in zip(stage23_d, stage23_likelihood)
+]
+stage23_ratio = stage23_alpha_t / stage23_alpha_s
+stage23_a = [
+    stage23_ratio * (i == stage23_k) + (1 - stage23_ratio) * stage23_pi[stage23_k]
+    for i in range(2)
+]
+stage23_b = [
+    [stage23_alpha_s * (i == j) + (1 - stage23_alpha_s) * stage23_pi[i]
+     for j in range(2)]
+    for i in range(2)
+]
+stage23_weights = [
+    stage23_a[i] * sum(stage23_b[i][j] * stage23_loo[j] for j in range(2))
+    for i in range(2)
+]
+stage23_bridge = [value / sum(stage23_weights) for value in stage23_weights]
+stage23_mixture = [
+    sum(stage23_d[j] * stage23_a[i] * stage23_b[i][j] / stage23_likelihood[j]
+        for j in range(2))
+    for i in range(2)
+]
+stage23_wrong_weights = [
+    stage23_a[i] * sum(stage23_b[i][j] * stage23_d[j] for j in range(2))
+    for i in range(2)
+]
+stage23_wrong = [value / sum(stage23_wrong_weights) for value in stage23_wrong_weights]
+assert stage23_loo == [Stage23Fraction(1, 2)] * 2
+assert stage23_bridge == stage23_mixture == [Stage23Fraction(13, 16), Stage23Fraction(3, 16)]
+assert sum(stage23_bridge) == 1 and all(value >= 0 for value in stage23_bridge)
+assert stage23_wrong == [Stage23Fraction(91, 100), Stage23Fraction(9, 100)]
+stage23_error = max(abs(a - b) for a, b in zip(stage23_wrong, stage23_bridge))
+assert stage23_error == Stage23Fraction(39, 400)
+print({"LOO": list(map(str, stage23_loo)), "reverse": list(map(str, stage23_bridge)),
+       "unconverted_error": str(stage23_error), "molecular_superiority_established": False})
+""",
+            "stage-23-denoiser-ce-code",
+        ),
+    ]
+
+
 def _replace_required(text: str, old: str, new: str, *, label: str) -> str:
     """Apply one migration exactly once while remaining idempotent."""
     if new in text:
@@ -5968,7 +6123,9 @@ def update_notebook(source: Path, destination: Path):
         *late_stage20_cells,
         *v4_campaign_cells,
     ]
-    engineering_cells = [*_engineering_v5_cells(), *_engineering_v6_cells()]
+    engineering_cells = [
+        *_engineering_v5_cells(), *_engineering_v6_cells(), *_denoiser_ce_cells()
+    ]
     engineering_ids = {cell["id"] for cell in engineering_cells}
     notebook["cells"] = [
         cell for cell in notebook["cells"] if cell.get("id") not in engineering_ids
