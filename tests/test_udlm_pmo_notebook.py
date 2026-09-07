@@ -163,12 +163,13 @@ def test_previous_152_cells_are_exactly_preserved_and_regeneration_is_idempotent
     current = json.loads(first.read_text())
     added = updater._pmo_optimization_cells()
     new_ids = {cell["id"] for cell in added}
-    assert [cell for cell in current["cells"] if cell["id"] not in new_ids] == previous[
+    previous_ids = {cell["id"] for cell in previous["cells"]}
+    assert [cell for cell in current["cells"] if cell["id"] in previous_ids] == previous[
         "cells"
     ]
     assert [cell for cell in current["cells"] if cell["id"] in new_ids] == added
-    assert len(current["cells"]) == 160
-    assert len({cell["id"] for cell in current["cells"]}) == 160
+    assert len(current["cells"]) >= 160  # Later teaching stages may append before the report.
+    assert len({cell["id"] for cell in current["cells"]}) == len(current["cells"])
     for index, cell in enumerate(current["cells"]):
         if cell["cell_type"] == "code":
             ast.parse("".join(cell["source"]), filename=cell["id"])
