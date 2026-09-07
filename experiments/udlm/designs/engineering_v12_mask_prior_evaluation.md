@@ -4,8 +4,9 @@ This design is fixed after observing V9, V10 and the frozen-MDLM transfer
 diagnostic, before observing any molecular output from a trained MASK-rich
 model. It is an exploratory prior comparison. The four accompanying inference
 YAMLs declare settings now; the executable protocol must wait for a successful
-V11 terminal receipt and an independently validated final checkpoint. The
-prospective V11 checkpoint path in those YAMLs is not evidence of completion.
+V11b terminal receipt and an independently validated final checkpoint. The
+prospective V11b checkpoint path in those YAMLs is not evidence of completion.
+The infrastructure amendment below preserves the original V11 failure.
 
 ## Question and training comparison
 
@@ -13,7 +14,7 @@ Does adding stationary MASK mass improve molecular generation after otherwise
 matched clean-token cross-entropy (CE) adaptation from the same MDLM EMA?
 
 The control is the completed V8b empirical-prior CE model. The treatment is
-the prospective V11 CE model with
+the prospective V11b CE model with
 `pi_mask = 0.9 * delta_MASK + 0.1 * pi_empirical`, where `pi_empirical` includes
 the existing 0.0002 uniform smoothing. Both priors have full support on all
 1,880 tokenizer IDs. Clean special-token positions remain immutable context
@@ -24,7 +25,7 @@ absorbing MDLM process or isolate an inference-only change.
 Both arms start fresh from the original 50,000-update MDLM EMA, use seed 1500,
 1,000 optimizer updates, global batch 128 = two GPUs x microbatch 16 x
 accumulation four, FiLM conditioning and the same learning-rate schedule.
-V11 must match V8b's complete resolved configuration except prior variant,
+V11b must match V8b's complete resolved configuration except prior variant,
 MASK weight and output namespace. The training sources differ to introduce
 the optional prior and its validation; retain both exact revisions. Equal
 configured exposures (128,000 per arm) are not necessarily distinct molecules
@@ -36,7 +37,7 @@ and do not imply equal stochastic corruptions, difficulty or runtime.
 | Completed V8b CE checkpoint SHA-256 | `b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1` |
 | Completed V8b terminal SHA-256 | `2dd0423257e8908548b69a28b8aa24b3cc956507944c343e24ef615253af2205` |
 | V8b empirical prior metadata SHA-256 | `f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612` |
-| Expected V11 MASK-rich prior metadata SHA-256 | `4e1febe2684beebdbf3d4c86aa01bc24ed1d3941af67b63473979e2ae810ee45` |
+| Expected V11b MASK-rich prior metadata SHA-256 | `4e1febe2684beebdbf3d4c86aa01bc24ed1d3941af67b63473979e2ae810ee45` |
 | Pinned frequency artifact SHA-256 | `088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed` |
 
 The original V8 CT controller and campaign remain failed; its checkpoint was
@@ -48,7 +49,7 @@ study rather than labeling V8 a successful campaign.
 
 | Setting | Value |
 | --- | --- |
-| Control / treatment | Completed V8b empirical CE / successfully validated V11 MASK-rich CE |
+| Control / treatment | Completed V8b empirical CE / successfully validated V11b MASK-rich CE |
 | Configurations | `e_ce_t100`, `mask_ce_t100`, `e_ce_t050`, `mask_ce_t050` |
 | Primary contrast | MASK-rich CE minus empirical CE at temperature 1.0 |
 | Secondary contrast | MASK-rich CE minus empirical CE at temperature 0.5 |
@@ -90,8 +91,8 @@ earlier engineering evidence.
 ## Checkpoint acceptance, execution and reporting
 
 Only materialize `experiments/udlm/protocols/engineering_v12_mask_prior.json`
-after V11 completes successfully with the intended 1,000-update checkpoint.
-Bind the actual V11 terminal, checkpoint SHA-256/size, training source,
+after V11b completes successfully with the intended 1,000-update checkpoint.
+Bind the actual V11b terminal, checkpoint SHA-256/size, training source,
 training protocol/configuration, CE metadata/state marker, EMA evidence and
 prior metadata/state marker. Validate the actual prior against the expected
 fingerprint above. Recheck the historical control checkpoint bytes, its
@@ -119,14 +120,51 @@ unless both declared seed pairs define that metric. Record generation runtime
 and disclose recovery/component-selection frequencies with denominators.
 
 The existing `objective_comparison` report feature specifically means CT
-versus CE and must not label this prior experiment. Use a distinct
-`design.prior_comparison` description in the eventual protocol; a small fixed
-V12 supplement can calculate the predeclared paired prior contrasts from the
-complete independently rescored report, preserving the original report.
-No general reporting framework change is required to launch the four settings.
+versus CE and must not label this prior experiment. Use distinct
+`design.prior_comparison` metadata and explicit entry `prior_variant` values
+in the eventual protocol. Report the paired prior contrasts with separately
+reviewed support for this comparison, or a small fixed V12 supplement derived
+from the complete independently rescored report. Preserve existing reports
+and use MASK-minus-empirical labels with both arms identified as clean CE.
 
 Local MDLM quality 85.8% (three seeds of 1,000 requests) and paper GenMol V1
 quality 84.6% are context, with different adaptation budgets and sample sizes.
 This small, adaptively motivated study cannot establish superiority over
 either comparator. Final benchmark seeds 0, 1 and 2 remain reserved. There is
 no automatic promotion, longer training or further generation after V12.
+
+## Infrastructure amendment before MASK-trained molecular generation
+
+The original design and four configurations were published in commit
+`de21ba62f52e7e5e7cff22a55da3d402fa995ba8`. Its checkpoint acceptance
+condition could not be fulfilled: V11's final capacity check found only one
+GPU satisfying the two-GPU policy at `2026-09-07T11:59:29.914397+00:00`.
+This occurred before
+any training subprocess was created. There was no training PID, launch
+manifest, checkpoint, optimizer update or example exposure. The terminal's
+checkpoint, return-code and completed-exposure fields remain null, and both
+exact leases were released. Preserve that failed attempt and its empty
+training log; do not relabel it as successful training.
+
+The original failed terminal is
+`output/udlm/engineering_v11/mask_ce_1000_b128_w2/terminal_manifest.json`,
+SHA-256 `6a4aa47e1f7b76ad5efc3ce03cd3e4a55c0db4d95778b0cf60cc55cab7207408`.
+Its source revision is `46ec3b0bc0c54208fd546af4b71108a3f1e31015`, and its
+training protocol SHA-256 is
+`29f46ec0f925eca992c3b9b2ed27386dcfacd6789076efe1840b14319d9d9198`.
+
+V12 will instead use a separately authorized **V11b** attempt in
+`output/udlm/engineering_v11b/mask_ce_1000_b128_w2`. It starts fresh from
+the same original MDLM EMA with exactly the V11 training settings and a new
+output namespace. Its controller may wait for eligible capacity before its
+first training subprocess; it must not retry or resume after that subprocess
+is created. Bind the new training protocol, actual successful completion
+receipt and validated checkpoint before materializing V12, alongside the
+unchanged V11 failed receipt above. A failed V11b attempt does not authorize
+automatic checkpoint substitution.
+
+Only the treatment checkpoint namespace and required completion evidence
+change. Both temperatures and their primary/secondary roles, both priors,
+128 predictor calls, all sampler controls, seeds 2000/2001, 100 requests per
+seed, all metrics/contrasts and reserved final seeds remain unchanged. No
+molecular output from any trained MASK-rich model informed this amendment.
