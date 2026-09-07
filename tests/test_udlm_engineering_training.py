@@ -6,6 +6,7 @@ from dataclasses import replace
 import json
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -333,6 +334,7 @@ print('CPU integration child completed')
     assert terminal["status"] == ("completed" if outcome == "valid" else "failed")
     assert terminal["training_return_code"] == (7 if outcome == "nonzero" else 0)
     assert terminal["training_subprocess_seconds"] > 0
+    assert terminal["process_group_exit_grace"]["group_present_at_end"] is False
     assert terminal["leases_release_authorized"] is True
     assert not (tmp_path / GENERATION_LEASE).exists()
     assert not (tmp_path / TRAINING_LEASE).exists()
@@ -360,3 +362,117 @@ print('CPU integration child completed')
         assert terminal["end_to_end_training_examples_per_second"] is None
     with pytest.raises(FileExistsError):
         launcher.execute(plan, source)
+
+
+class _GraceClock:
+    def __init__(self):
+        self.now = 0.0
+        self.sleeps = []
+
+    def monotonic(self):
+        return self.now
+
+    def sleep(self, seconds):
+        assert 0 < seconds <= launcher.PROCESS_GROUP_EXIT_POLL_SECONDS
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+@pytest.mark.parametrize(
+    "exit_after,outcome,probes,sleeps",
+    [
+        (0.0, "already_exited", 1, 0),
+        (0.5, "exited_during_grace", 3, 2),
+        (15.0, "exited_during_grace", 61, 60),
+        (float("inf"), "timed_out", 61, 60),
+    ],
+)
+def test_process_group_grace_is_bounded_observable_and_sleeps_between_probes(
+    monkeypatch, exit_after, outcome, probes, sleeps
+):
+    clock = _GraceClock()
+    monkeypatch.setattr(launcher, "time", clock)
+    inspected = []
+
+    def exists(pid):
+        inspected.append(pid)
+        return clock.now < exit_after
+
+    monkeypatch.setattr(launcher, "process_group_exists", exists)
+    result = launcher.wait_for_process_group_exit(12345)
+    assert result["process_group_id"] == 12345
+    assert result["outcome"] == outcome
+    assert result["probe_count"] == probes == len(inspected)
+    assert result["initially_present"] == (exit_after > 0)
+    assert result["group_present_at_end"] == (outcome == "timed_out")
+    assert result["elapsed_seconds"] == min(exit_after, 15.0)
+    assert result["grace_seconds"] == 15.0
+    assert result["poll_interval_seconds"] == 0.25
+    assert len(clock.sleeps) == sleeps
+    assert sum(clock.sleeps) == result["elapsed_seconds"]
+
+
+@pytest.mark.parametrize(
+    "exit_after,returncode,completed,release",
+    [(0.5, 0, True, True), (float("inf"), 0, False, False), (0.5, 7, False, True)],
+)
+def test_controller_grace_retains_live_group_and_preserves_failed_exit(
+    tmp_path, monkeypatch, exit_after, returncode, completed, release
+):
+    plan = launcher.build_plan(1)
+    source = {"head": "a" * 40, "upstream": "a" * 40}
+    clock = _GraceClock()
+    child = SimpleNamespace(pid=12345, returncode=returncode, poll=lambda: returncode)
+    monkeypatch.setattr(launcher, "ROOT", tmp_path)
+    monkeypatch.setattr(launcher, "time", clock)
+    monkeypatch.setattr(launcher, "build_plan", lambda count: plan)
+    monkeypatch.setattr(
+        launcher, "verify_checkpoint_input", lambda _plan: {"sha256": "b" * 64}
+    )
+    monkeypatch.setattr(
+        launcher.benchmark, "_require_clean_pushed_source", lambda: source
+    )
+    monkeypatch.setattr(launcher.audited, "probe_all_gpus", lambda: [_gpu()])
+    monkeypatch.setattr(launcher.audited, "probe_gpu_uuid", lambda _uuid: _gpu())
+
+    def launch(*args, **kwargs):
+        clock.now += 1.0
+        return child
+
+    monkeypatch.setattr(launcher.subprocess, "Popen", launch)
+    monkeypatch.setattr(
+        launcher, "process_group_exists", lambda pid: clock.now < 1.0 + exit_after
+    )
+
+    def forbidden_signal(*args):
+        raise AssertionError("cleanup observation must not signal a process group")
+
+    monkeypatch.setattr(launcher.os, "killpg", forbidden_signal)
+    validated = []
+
+    def validate(path, config, **kwargs):
+        validated.append(path)
+        return {"global_step": 20, "sha256": "c" * 64}
+
+    monkeypatch.setattr(launcher, "validate_checkpoint_output", validate)
+    assert launcher.execute(plan, source) == (0 if completed else 1)
+    terminal = json.loads(
+        (tmp_path / plan["output_relative"] / "terminal_manifest.json").read_text()
+    )
+    grace = terminal["process_group_exit_grace"]
+    assert grace["outcome"] == ("exited_during_grace" if release else "timed_out")
+    assert grace["elapsed_seconds"] == min(exit_after, 15.0)
+    assert terminal["status"] == ("completed" if completed else "failed")
+    assert terminal["training_return_code"] == returncode
+    assert terminal["leases_release_authorized"] is release
+    assert len(validated) == int(completed)
+    for relative in launcher.LEASE_PATHS:
+        assert (tmp_path / relative).exists() is not release
+    assert terminal["completed_example_exposures"] == (2560 if completed else None)
+    if completed:
+        assert terminal["end_to_end_training_examples_per_second"] == 2560.0
+    else:
+        assert terminal["end_to_end_training_examples_per_second"] is None
+        assert ("after cleanup grace" if not release else "status 7") in terminal[
+            "error"
+        ]
