@@ -1,1 +1,5 @@
 *.pdf binary
+
+# Evidence digests cover exact emitted bytes, including CSV record endings.
+output/** -text
+output/**/*.csv whitespace=cr-at-eol
