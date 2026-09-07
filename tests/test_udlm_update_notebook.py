@@ -663,8 +663,11 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
     assert ordered_ids.index("stage-26-mask-rich-prior") == (
         ordered_ids.index("stage-25-objective-evaluation-code") + 1
     )
-    assert ordered_ids.index("stage19-report-note") == (
+    assert ordered_ids.index("stage-27-denoiser-temperature") == (
         ordered_ids.index("stage-26-mask-rich-prior-code") + 1
+    )
+    assert ordered_ids.index("stage19-report-note") == (
+        ordered_ids.index("stage-27-denoiser-temperature-code") + 1
     )
 
 
