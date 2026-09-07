@@ -1,7 +1,7 @@
 """Launch reproducible de novo benchmark runs on dynamically selected GPUs.
 
 The controller is intended to run inside ``tmux``. The caller supplies only a
-GPU count of one or two. Before each child starts, the controller inventories
+GPU count from one through three. Before each child starts, the controller inventories
 every NVIDIA GPU and dynamically chooses a policy-eligible device under the configured
 utilization, memory, and compute-mode guards. It then re-probes that exact UUID
 and maps it into the child as logical ``cuda:0``. Active compute processes are
@@ -19,10 +19,10 @@ import json
 import math
 import os
 import re
+import secrets
 import stat
 import subprocess
 import sys
-import tempfile
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -37,6 +37,7 @@ for import_root in (REPOSITORY_ROOT, REPOSITORY_SRC):
         sys.path.remove(str(import_root))
     sys.path.insert(0, str(import_root))
 
+from scripts import artifact_io  # noqa: E402
 from scripts.exps.denovo import benchmark as benchmark_runner  # noqa: E402
 
 
@@ -49,10 +50,33 @@ PILOT_FAILURE_RECEIPT_SCHEMA_VERSION = 1
 PILOT_FAILURE_RECEIPT_KIND = "pilot_failure"
 PILOT_FAILURE_RECEIPT_FILENAME = "failure_receipt.json"
 PILOT_MODES = {"engineering", "registered_selection"}
+MAX_CONCURRENT_GENERATION_JOBS = 3
+GENERATION_LEASE_RELATIVE_PATH = "output/.single_generation_job.lock"
+GENERATION_LEASE_SCHEMA_VERSION = 1
+LAUNCH_AUTHORITY_SCHEMA_VERSION = 1
+ARTIFACT_IO_RELATIVE_PATH = "scripts/artifact_io.py"
+CANDIDATE_LOCK_RELATIVE_PATH = "experiments/udlm/candidates/candidate_lock.json"
+BENCHMARK_RUNNER_RELATIVE_PATH = "scripts/exps/denovo/benchmark.py"
+SAMPLER_SOURCE_RELATIVE_PATH = "src/genmol/sampler.py"
+FINAL_CONFIG_ID_PATTERN = re.compile(r"[rse]_t(?:050|070|085|100)_p(?:095|098|100)\Z")
+FINAL_CANDIDATE_ID_PATTERN = re.compile(r"[rse]-w1-1000u-dcb271453411\Z")
+FINAL_INFERENCE_WEIGHTS = {
+    "source": "ema",
+    "ema_applied": True,
+    "ema": {
+        "shadow_parameter_count": 230,
+        "decay": 0.9999,
+        "num_updates": 1_000,
+    },
+}
 
 
 class CompletionArtifactError(RuntimeError):
     """Raised when a seed directory cannot safely be skipped or relaunched."""
+
+
+class FinalCandidateLockError(RuntimeError):
+    """Raised when final-tier authority is absent, stale, or inconsistent."""
 
 
 @dataclass(frozen=True)
@@ -110,6 +134,32 @@ class RunningJob:
     log_path: Path
     command: tuple[str, ...]
     started_at_utc: str
+    log_owner: artifact_io.OwnedLog | None = None
+    log_context: Any | None = None
+    output_directory_owner: artifact_io.OwnedDirectory | None = None
+
+
+@dataclass(frozen=True)
+class GenerationLease:
+    """Exact-owner capability for the repository-global generation lease."""
+
+    claim: artifact_io.FileClaim
+    owner_token: str
+    payload: bytes
+    artifact_io_source: artifact_io.FileClaim
+
+
+@dataclass(frozen=True)
+class FinalCandidateAuthority:
+    """Retained identity and normalized contents of the pre-final lock."""
+
+    claim: artifact_io.FileClaim
+    payload: bytes
+    source_revision: str
+    normalized_lock: Mapping[str, Any]
+    candidate_id: str
+    config_id: str
+    output_root: Path
 
 
 @dataclass(frozen=True)
@@ -185,12 +235,20 @@ def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser.add_argument("--seeds", type=int, nargs="+", required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument(
+        "--candidate-lock",
+        type=Path,
+        help=(
+            "Required only for the final tier and required to name exactly "
+            f"{CANDIDATE_LOCK_RELATIVE_PATH}. Pilot modes forbid this option."
+        ),
+    )
+    parser.add_argument(
         "--gpu-count",
         type=int,
         required=True,
         help=(
             "Maximum concurrent benchmark GPUs, selected dynamically from the "
-            "full NVIDIA inventory; must be 1 or 2."
+            "full NVIDIA inventory; must be 1, 2, or 3."
         ),
     )
     parser.add_argument("--poll-seconds", type=int, default=30)
@@ -204,8 +262,13 @@ def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
 def _validate_gpu_count(gpu_count: int) -> int:
     """Validate the user-selected concurrency without accepting physical IDs."""
 
-    if type(gpu_count) is not int or not 1 <= gpu_count <= 2:
-        raise ValueError("gpu-count must be 1 or 2")
+    if (
+        type(gpu_count) is not int
+        or not 1 <= gpu_count <= MAX_CONCURRENT_GENERATION_JOBS
+    ):
+        raise ValueError(
+            f"gpu-count must be between 1 and {MAX_CONCURRENT_GENERATION_JOBS}"
+        )
     return gpu_count
 
 
@@ -307,6 +370,34 @@ def _validate_candidate_scope(
     return candidate_id
 
 
+def _validate_candidate_lock_scope(
+    candidate_lock: Path | None,
+    *,
+    pilot: bool,
+    selection_pilot: bool,
+) -> Path | None:
+    """Require the one fixed lock only for non-pilot final evaluation."""
+
+    if pilot or selection_pilot:
+        if candidate_lock is not None:
+            raise ValueError("candidate-lock is forbidden with either pilot mode")
+        return None
+    if candidate_lock is None:
+        raise ValueError(
+            "final benchmark runs require --candidate-lock "
+            f"{CANDIDATE_LOCK_RELATIVE_PATH}"
+        )
+    raw = os.fspath(candidate_lock)
+    fixed_relative = CANDIDATE_LOCK_RELATIVE_PATH
+    fixed_absolute = os.fspath(REPOSITORY_ROOT / fixed_relative)
+    if raw not in {fixed_relative, fixed_absolute}:
+        raise ValueError(
+            "candidate-lock must name the fixed canonical path exactly: "
+            f"{fixed_relative}"
+        )
+    return REPOSITORY_ROOT / fixed_relative
+
+
 def _resolve_attempt_keyed_roots(
     output_root: Path,
     log_root: Path,
@@ -351,22 +442,36 @@ def _require_fresh_pilot_attempt_paths(output_root: Path, log_root: Path) -> Non
 def _reserve_pilot_attempt_paths(output_root: Path, log_root: Path) -> None:
     """Atomically reserve the output identity before any GPU is queried."""
 
-    output_root.parent.mkdir(parents=True, exist_ok=True)
+    repository = Path(os.path.abspath(os.fspath(REPOSITORY_ROOT)))
+    if Path(os.path.abspath(os.fspath(output_root.parent))) != repository:
+        _ensure_repository_directory(output_root.parent, label="pilot output parent")
+    output_relative = _repository_relative(output_root, label="pilot output attempt")
     try:
-        output_root.mkdir(exist_ok=False)
+        output_owner = artifact_io.create_directory_exclusive(
+            REPOSITORY_ROOT, output_relative
+        )
     except FileExistsError as error:
         raise FileExistsError(
             "pilot output attempt was concurrently claimed; use a new "
             f"attempt-id: {output_root}"
         ) from error
-    log_root.parent.mkdir(parents=True, exist_ok=True)
     try:
-        log_root.mkdir(exist_ok=False)
-    except FileExistsError as error:
-        raise FileExistsError(
-            "pilot log attempt path already exists; use a new attempt-id: "
-            f"{log_root}"
-        ) from error
+        if Path(os.path.abspath(os.fspath(log_root.parent))) != repository:
+            _ensure_repository_directory(log_root.parent, label="pilot log parent")
+        log_relative = _repository_relative(log_root, label="pilot log attempt")
+        try:
+            artifact_io.create_directory_exclusive(REPOSITORY_ROOT, log_relative)
+        except FileExistsError as error:
+            raise FileExistsError(
+                "pilot log attempt path already exists; use a new attempt-id: "
+                f"{log_root}"
+            ) from error
+    except BaseException as error:
+        try:
+            artifact_io.remove_empty_directory_exact(REPOSITORY_ROOT, output_owner)
+        except BaseException as rollback_error:
+            raise artifact_io.RollbackError(error, [rollback_error]) from error
+        raise
 
 
 def _selection_policy(
@@ -663,6 +768,195 @@ def _sha256_file(path: Path, chunk_size: int = 8 * 1024 * 1024) -> str:
     return digest.hexdigest()
 
 
+def _repository_relative(path: Path, *, label: str) -> str:
+    """Return one canonical root-relative path without using it for mutation."""
+
+    root = Path(os.path.abspath(os.fspath(REPOSITORY_ROOT)))
+    absolute = Path(os.path.abspath(os.fspath(path)))
+    if absolute == root or root not in absolute.parents:
+        raise ValueError(f"{label} must be strictly inside the repository")
+    relative = absolute.relative_to(root).as_posix()
+    if str(root / relative) != str(absolute):
+        raise ValueError(f"{label} is not canonical")
+    return relative
+
+
+def _ensure_repository_directory(path: Path, *, label: str) -> None:
+    """Create missing directory components through ``artifact_io`` only."""
+
+    relative = _repository_relative(path, label=label)
+    parts = Path(relative).parts
+    for length in range(1, len(parts) + 1):
+        component = "/".join(parts[:length])
+        try:
+            artifact_io.create_directory_exclusive(REPOSITORY_ROOT, component)
+        except FileExistsError:
+            current = REPOSITORY_ROOT.joinpath(*parts[:length])
+            try:
+                state = current.stat(follow_symlinks=False)
+            except OSError as error:
+                raise RuntimeError(
+                    f"cannot verify existing {label} component: {current}"
+                ) from error
+            if not stat.S_ISDIR(state.st_mode) or stat.S_ISLNK(state.st_mode):
+                raise RuntimeError(
+                    f"existing {label} component is not a direct directory: "
+                    f"{current}"
+                )
+
+
+def _artifact_io_source_claim() -> artifact_io.FileClaim:
+    claim, _payload = artifact_io.snapshot_file(
+        REPOSITORY_ROOT, ARTIFACT_IO_RELATIVE_PATH, capture_bytes=False
+    )
+    return claim
+
+
+def _generation_lease_payload(
+    *, source_revision: str, owner_token: str, artifact_source: artifact_io.FileClaim
+) -> bytes:
+    if not re.fullmatch(r"[0-9a-f]{40}", source_revision):
+        raise ValueError("generation lease source revision must be 40 lowercase hex")
+    if not re.fullmatch(r"[0-9a-f]{64}", owner_token):
+        raise ValueError("generation lease owner token must be 64 lowercase hex")
+    record = {
+        "schema_version": GENERATION_LEASE_SCHEMA_VERSION,
+        "status": "held",
+        "purpose": "enforce_one_repository_generation_controller_at_a_time",
+        "source_revision": source_revision,
+        "owner_token": owner_token,
+        "launcher_pid_at_acquisition": os.getpid(),
+        "acquired_at_utc": datetime.now(timezone.utc).isoformat(),
+        "artifact_io": {
+            "relative_path": artifact_source.relative_path,
+            "device": artifact_source.device,
+            "inode": artifact_source.inode,
+            "sha256": artifact_source.sha256,
+        },
+        "owner_process_exit_does_not_make_lock_stale": True,
+        "stale_lock_policy": "fail_closed_and_require_manual_review",
+        "release_policy": (
+            "exact_owner_only_after_all_handed_off_children_terminal_and_required_"
+            "ignored_decisions_or_failure_receipts_are_durable"
+        ),
+    }
+    return (
+        json.dumps(record, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    ).encode("utf-8")
+
+
+def _acquire_generation_lease(*, source_revision: str) -> GenerationLease:
+    """Acquire the global lease; an existing or stale lease always blocks."""
+
+    artifact_source = _artifact_io_source_claim()
+    owner_token = secrets.token_hex(32)
+    payload = _generation_lease_payload(
+        source_revision=source_revision,
+        owner_token=owner_token,
+        artifact_source=artifact_source,
+    )
+    try:
+        claim = artifact_io.acquire_lock_exclusive(
+            REPOSITORY_ROOT, GENERATION_LEASE_RELATIVE_PATH, payload
+        )
+    except FileExistsError as error:
+        raise RuntimeError(
+            "another or stale generation lease exists; fail closed and review it "
+            f"manually: {REPOSITORY_ROOT / GENERATION_LEASE_RELATIVE_PATH}"
+        ) from error
+    return GenerationLease(
+        claim=claim,
+        owner_token=owner_token,
+        payload=payload,
+        artifact_io_source=artifact_source,
+    )
+
+
+def _revalidate_generation_lease(lease: GenerationLease) -> None:
+    """Revalidate lease bytes, token, hash, dev/inode, and implementation source."""
+
+    if not isinstance(lease, GenerationLease):
+        raise TypeError("generation lease capability is invalid")
+    try:
+        current, payload = artifact_io.snapshot_file(
+            REPOSITORY_ROOT,
+            GENERATION_LEASE_RELATIVE_PATH,
+            capture_bytes=True,
+        )
+    except (OSError, artifact_io.ArtifactIOError) as error:
+        raise RuntimeError("generation lease cannot be revalidated") from error
+    if current != lease.claim or payload != lease.payload:
+        raise RuntimeError("generation lease identity or bytes changed")
+    if hashlib.sha256(lease.payload).hexdigest() != lease.claim.sha256:
+        raise RuntimeError("generation lease payload hash changed")
+    try:
+        record = json.loads(lease.payload)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:  # pragma: no cover
+        raise RuntimeError("generation lease payload became unreadable") from error
+    if (
+        not isinstance(record, Mapping)
+        or record.get("owner_token") != lease.owner_token
+        or record.get("schema_version") != GENERATION_LEASE_SCHEMA_VERSION
+        or record.get("status") != "held"
+    ):
+        raise RuntimeError("generation lease owner token or schema changed")
+    try:
+        source_now, _payload = artifact_io.snapshot_file(
+            REPOSITORY_ROOT, ARTIFACT_IO_RELATIVE_PATH, capture_bytes=False
+        )
+    except (OSError, artifact_io.ArtifactIOError) as error:
+        raise RuntimeError("artifact_io source cannot be revalidated") from error
+    if source_now != lease.artifact_io_source:
+        raise RuntimeError("artifact_io source identity or bytes changed")
+
+
+def _release_generation_lease_exact(lease: GenerationLease) -> None:
+    _revalidate_generation_lease(lease)
+    artifact_io.release_lock_exact(REPOSITORY_ROOT, lease.claim)
+
+
+def _launch_authority(
+    *,
+    lease: GenerationLease,
+    output_directory: artifact_io.OwnedDirectory,
+    command: list[str],
+) -> dict[str, Any]:
+    """Build the child-verifiable authority record for one exact launch."""
+
+    _revalidate_generation_lease(lease)
+    if len(command) != 24:
+        raise ValueError("launch authority requires the exact 24-string child argv")
+    return {
+        "schema_version": LAUNCH_AUTHORITY_SCHEMA_VERSION,
+        "generation_lease": {
+            "path": str(REPOSITORY_ROOT / GENERATION_LEASE_RELATIVE_PATH),
+            "relative_path": GENERATION_LEASE_RELATIVE_PATH,
+            "sha256": lease.claim.sha256,
+            "device": lease.claim.device,
+            "inode": lease.claim.inode,
+            "owner_token": lease.owner_token,
+        },
+        "artifact_io_source": {
+            "path": str(REPOSITORY_ROOT / ARTIFACT_IO_RELATIVE_PATH),
+            "sha256": lease.artifact_io_source.sha256,
+            "device": lease.artifact_io_source.device,
+            "inode": lease.artifact_io_source.inode,
+        },
+        "output_directory": {
+            "path": str(REPOSITORY_ROOT / output_directory.relative_path),
+            "relative_path": output_directory.relative_path,
+            "device": output_directory.device,
+            "inode": output_directory.inode,
+        },
+        "command": command,
+        "command_sha256": hashlib.sha256(
+            json.dumps(command, separators=(",", ":"), ensure_ascii=True).encode(
+                "ascii"
+            )
+        ).hexdigest(),
+    }
+
+
 def _stable_file_reference(
     path: Path,
     *,
@@ -792,6 +1086,8 @@ def _build_pilot_failure_receipt(
         or any(not isinstance(value, str) or not value for value in job.command)
     ):
         raise ValueError("pilot failure command must be a nonempty string tuple")
+    if job.output_directory_owner is None:
+        raise ValueError("pilot failure lacks its controller-owned output directory")
     expected_command = tuple(
         _command(
             checkpoint=expected.checkpoint_path,
@@ -801,7 +1097,9 @@ def _build_pilot_failure_receipt(
             expected_config_sha256=expected.source_config_sha256,
             num_samples=expected.num_samples,
             seed=job.seed,
-            output_dir=output_root / f"seed_{job.seed}",
+            output_dir=Path(os.path.abspath(output_root / f"seed_{job.seed}")),
+            expected_output_directory_device=(job.output_directory_owner.device),
+            expected_output_directory_inode=(job.output_directory_owner.inode),
         )
     )
     if expected.source_revision is None or job.command != expected_command:
@@ -876,51 +1174,29 @@ def _build_pilot_failure_receipt(
 
 
 def _atomic_write_json_exclusive(path: Path, payload: Mapping[str, Any]) -> None:
-    """Publish complete JSON via a same-directory hard link without clobbering."""
+    """Publish complete JSON through the common no-clobber artifact primitive."""
 
     absolute = Path(os.path.abspath(os.fspath(path)))
-    repository_root = REPOSITORY_ROOT.resolve(strict=True)
+    repository_root = Path(os.path.abspath(os.fspath(REPOSITORY_ROOT)))
     if (
         absolute == repository_root
         or repository_root not in absolute.parents
         or absolute.suffix != ".json"
     ):
         raise ValueError("failure receipt must be an in-repository JSON path")
-    absolute.parent.mkdir(parents=True, exist_ok=True)
-    parent = absolute.parent.resolve(strict=True)
-    if parent != absolute.parent or not parent.is_dir():
-        raise RuntimeError("failure receipt parent must be a real directory")
-    if os.path.lexists(absolute):
-        raise FileExistsError(f"refusing to replace pilot failure receipt: {absolute}")
     encoded = (
         json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
     ).encode("utf-8")
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=parent,
-        prefix=f".{absolute.name}.",
-        suffix=".tmp",
-    )
-    temporary = Path(temporary_name)
     try:
-        with os.fdopen(descriptor, "wb") as handle:
-            os.fchmod(handle.fileno(), 0o644)
-            handle.write(encoded)
-            handle.flush()
-            os.fsync(handle.fileno())
-        try:
-            os.link(temporary, absolute, follow_symlinks=False)
-        except FileExistsError as error:
-            raise FileExistsError(
-                f"refusing to replace pilot failure receipt: {absolute}"
-            ) from error
-        temporary.unlink()
-        directory_descriptor = os.open(parent, os.O_RDONLY)
-        try:
-            os.fsync(directory_descriptor)
-        finally:
-            os.close(directory_descriptor)
-    finally:
-        temporary.unlink(missing_ok=True)
+        artifact_io.publish_bytes_exclusive(
+            REPOSITORY_ROOT,
+            _repository_relative(absolute, label="failure receipt"),
+            encoded,
+        )
+    except FileExistsError as error:
+        raise FileExistsError(
+            f"refusing to replace pilot failure receipt: {absolute}"
+        ) from error
 
 
 def _write_pilot_failure_receipt(
@@ -963,6 +1239,483 @@ def _git_text(*arguments: str) -> str:
         check=True,
     )
     return completed.stdout.strip()
+
+
+def _git_bytes(*arguments: str) -> bytes:
+    completed = subprocess.run(
+        ["git", "-C", str(REPOSITORY_ROOT), *arguments],
+        capture_output=True,
+        check=True,
+    )
+    return completed.stdout
+
+
+def _committed_regular_file_snapshot(
+    relative_path: str,
+    *,
+    source_revision: str,
+    label: str,
+    expected_sha256: str | None = None,
+) -> tuple[artifact_io.FileClaim, bytes]:
+    """Require stable live bytes to equal one non-executable regular Git blob."""
+
+    path = Path(relative_path)
+    if (
+        not relative_path
+        or path.is_absolute()
+        or path.as_posix() != relative_path
+        or any(part in {"", ".", ".."} for part in relative_path.split("/"))
+    ):
+        raise FinalCandidateLockError(f"{label} path is not canonical")
+    if re.fullmatch(r"[0-9a-f]{40}", source_revision) is None:
+        raise FinalCandidateLockError(
+            "benchmark source revision is not 40 lowercase hex"
+        )
+    if (
+        expected_sha256 is not None
+        and re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None
+    ):
+        raise FinalCandidateLockError(f"{label} expected SHA-256 is invalid")
+
+    try:
+        listing = _git_bytes(
+            "ls-tree", "-z", "--full-tree", source_revision, "--", relative_path
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise FinalCandidateLockError(
+            f"cannot inspect committed {label} at benchmark HEAD"
+        ) from error
+    records = [record for record in listing.split(b"\0") if record]
+    if len(records) != 1 or b"\t" not in records[0]:
+        raise FinalCandidateLockError(
+            f"benchmark HEAD does not contain exactly one {label} blob"
+        )
+    metadata, recorded_path = records[0].split(b"\t", 1)
+    fields = metadata.split(b" ")
+    if (
+        fields[:2] != [b"100644", b"blob"]
+        or len(fields) != 3
+        or recorded_path != relative_path.encode("utf-8")
+        or re.fullmatch(rb"[0-9a-f]{40,64}", fields[2]) is None
+    ):
+        raise FinalCandidateLockError(
+            f"committed {label} must be the exact non-executable regular file"
+        )
+    try:
+        committed_payload = _git_bytes("cat-file", "blob", fields[2].decode("ascii"))
+        claim, live_payload = artifact_io.snapshot_file(
+            REPOSITORY_ROOT, relative_path, capture_bytes=True
+        )
+    except (
+        OSError,
+        subprocess.CalledProcessError,
+        artifact_io.ArtifactIOError,
+    ) as error:
+        raise FinalCandidateLockError(f"cannot read stable {label} bytes") from error
+    if live_payload is None:  # pragma: no cover - artifact_io capture contract
+        raise AssertionError("stable artifact snapshot did not retain bytes")
+    if live_payload != committed_payload:
+        raise FinalCandidateLockError(
+            f"live {label} bytes differ from the exact benchmark HEAD blob"
+        )
+    if (
+        claim.size_bytes != len(live_payload)
+        or claim.sha256 != hashlib.sha256(live_payload).hexdigest()
+    ):
+        raise FinalCandidateLockError(f"stable {label} identity is inconsistent")
+    if expected_sha256 is not None and claim.sha256 != expected_sha256:
+        raise FinalCandidateLockError(f"{label} digest differs from locked authority")
+    return claim, live_payload
+
+
+def _require_exact_final_lock_commit(
+    *, source_revision: str, lock_payload: bytes
+) -> str:
+    """Require benchmark HEAD itself to be the one-path lock publication."""
+
+    try:
+        parent_record = (
+            _git_bytes("rev-list", "--parents", "-n", "1", source_revision)
+            .decode("ascii", errors="strict")
+            .strip()
+            .split()
+        )
+    except (OSError, subprocess.CalledProcessError, UnicodeDecodeError) as error:
+        raise FinalCandidateLockError(
+            "cannot inspect final candidate-lock publication commit"
+        ) from error
+    if (
+        len(parent_record) != 2
+        or parent_record[0] != source_revision
+        or re.fullmatch(r"[0-9a-f]{40}", parent_record[1]) is None
+    ):
+        raise FinalCandidateLockError(
+            "final benchmark HEAD must be the single-parent lock-only publication"
+        )
+    parent_revision = parent_record[1]
+    try:
+        changed = _git_bytes(
+            "diff-tree",
+            "--no-commit-id",
+            "--name-status",
+            "--no-renames",
+            "-r",
+            "-z",
+            parent_revision,
+            source_revision,
+            "--",
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise FinalCandidateLockError(
+            "cannot inspect final candidate-lock publication diff"
+        ) from error
+    expected_change = b"A\0" + CANDIDATE_LOCK_RELATIVE_PATH.encode("utf-8") + b"\0"
+    if changed != expected_change:
+        raise FinalCandidateLockError(
+            "final benchmark HEAD must add only the fixed candidate lock"
+        )
+    absence = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(REPOSITORY_ROOT),
+            "cat-file",
+            "-e",
+            f"{parent_revision}:{CANDIDATE_LOCK_RELATIVE_PATH}",
+        ],
+        capture_output=True,
+        check=False,
+    )
+    if absence.returncode == 0:
+        raise FinalCandidateLockError(
+            "candidate lock existed before the lock-only publication"
+        )
+    if absence.returncode not in {1, 128}:
+        raise FinalCandidateLockError(
+            "cannot prove candidate lock absent before publication"
+        )
+    try:
+        committed = _git_bytes(
+            "show", f"{source_revision}:{CANDIDATE_LOCK_RELATIVE_PATH}"
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise FinalCandidateLockError(
+            "cannot read final candidate lock from publication commit"
+        ) from error
+    if committed != lock_payload:
+        raise FinalCandidateLockError(
+            "candidate-lock publication bytes differ from retained lock"
+        )
+    return parent_revision
+
+
+def _implementation_source_digest(
+    expected: ExpectedRunIdentity,
+    *,
+    key: str,
+    relative_path: str,
+) -> str:
+    record = expected.implementation_inputs.get(key)
+    if not isinstance(record, Mapping):
+        raise FinalCandidateLockError(
+            f"implementation inputs lack locked {key} provenance"
+        )
+    digest = record.get("sha256")
+    size_bytes = record.get("size_bytes")
+    recorded_path = record.get("path")
+    if (
+        not isinstance(digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        or type(size_bytes) is not int
+        or size_bytes <= 0
+        or not isinstance(recorded_path, str)
+    ):
+        raise FinalCandidateLockError(f"{key} provenance is malformed")
+    expected_path = REPOSITORY_ROOT / relative_path
+    if Path(recorded_path) != expected_path:
+        raise FinalCandidateLockError(f"{key} provenance path is not the fixed source")
+    claim, _payload = _committed_regular_file_snapshot(
+        relative_path,
+        source_revision=str(expected.source_revision),
+        label=key.replace("_", " "),
+        expected_sha256=digest,
+    )
+    if claim.size_bytes != size_bytes:
+        raise FinalCandidateLockError(f"{key} size differs from generation provenance")
+    return digest
+
+
+def _bind_final_candidate_authority(
+    *,
+    normalized_lock: Mapping[str, Any],
+    expected: ExpectedRunIdentity,
+    checkpoint: Path,
+    config: Path,
+    seeds: list[int],
+    num_samples: int,
+    output_root: Path,
+    source_revision: str,
+) -> tuple[str, str, Path]:
+    """Bind CLI inputs and live generation inputs to one normalized lock."""
+
+    if seeds != [0, 1, 2]:
+        raise FinalCandidateLockError(
+            "final benchmark seeds must be exactly the ordered list 0 1 2"
+        )
+    if num_samples != FINAL_BENCHMARK_SAMPLES_PER_SEED:
+        raise FinalCandidateLockError("final benchmark requires exactly 1000 samples")
+    if expected.source_revision != source_revision:
+        raise FinalCandidateLockError(
+            "final run identity uses a different source revision"
+        )
+    candidate_id = normalized_lock.get("candidate_id")
+    if (
+        not isinstance(candidate_id, str)
+        or FINAL_CANDIDATE_ID_PATTERN.fullmatch(candidate_id) is None
+    ):
+        raise FinalCandidateLockError("candidate lock has an unregistered candidate ID")
+
+    locked_checkpoint = normalized_lock.get("checkpoint")
+    if not isinstance(locked_checkpoint, Mapping):
+        raise FinalCandidateLockError("candidate lock checkpoint is malformed")
+    locked_checkpoint_path = _resolve_in_repo(
+        REPOSITORY_ROOT / Path(str(locked_checkpoint.get("relative_path")))
+    )
+    if checkpoint != locked_checkpoint_path or expected.checkpoint_path != checkpoint:
+        raise FinalCandidateLockError("CLI checkpoint path differs from candidate lock")
+    locked_checkpoint_identity = {
+        "sha256": locked_checkpoint.get("sha256"),
+        "size_bytes": locked_checkpoint.get("size_bytes"),
+        "global_step": locked_checkpoint.get("global_step"),
+    }
+    observed_checkpoint_identity = {
+        "sha256": expected.checkpoint_sha256,
+        "size_bytes": expected.checkpoint_size_bytes,
+        "global_step": expected.checkpoint_global_step,
+    }
+    if locked_checkpoint_identity != observed_checkpoint_identity:
+        raise FinalCandidateLockError(
+            "checkpoint bytes or training step differ from lock"
+        )
+    if expected.checkpoint_diffusion_type != "udlm":
+        raise FinalCandidateLockError("final locked checkpoint must be UDLM")
+
+    locked_config_path = _resolve_in_repo(
+        REPOSITORY_ROOT
+        / Path(str(normalized_lock.get("evaluation_config_relative_path")))
+    )
+    if config != locked_config_path or expected.config_path != config:
+        raise FinalCandidateLockError("CLI evaluation config path differs from lock")
+    if expected.source_config_sha256 != normalized_lock.get("evaluation_config_sha256"):
+        raise FinalCandidateLockError("evaluation config bytes differ from lock")
+    if dict(expected.sampling_config) != normalized_lock.get("sampling_config"):
+        raise FinalCandidateLockError(
+            "normalized sampling configuration differs from lock"
+        )
+    if expected.sampling_config_sha256 != normalized_lock.get(
+        "sampling_sha256"
+    ) or expected.sampling_config_sha256 != _canonical_json_sha256(
+        expected.sampling_config
+    ):
+        raise FinalCandidateLockError("normalized sampling digest differs from lock")
+    if (
+        expected.sampling_config.get("diffusion_type") != "udlm"
+        or expected.sampling_config.get("num_steps") != 128
+        or normalized_lock.get("inference_weights") != FINAL_INFERENCE_WEIGHTS
+    ):
+        raise FinalCandidateLockError("final inference is not the locked EMA UDLM run")
+
+    if expected.benchmark_runner_sha256 != normalized_lock.get(
+        "benchmark_runner_sha256"
+    ):
+        raise FinalCandidateLockError("benchmark runner source differs from lock")
+    sampler_sha256 = _implementation_source_digest(
+        expected, key="sampler_source", relative_path=SAMPLER_SOURCE_RELATIVE_PATH
+    )
+    _implementation_source_digest(
+        expected, key="artifact_io_source", relative_path=ARTIFACT_IO_RELATIVE_PATH
+    )
+    if sampler_sha256 != normalized_lock.get("sampler_source_sha256"):
+        raise FinalCandidateLockError("sampler source differs from candidate lock")
+    if _canonical_json_sha256(expected.implementation_inputs) != normalized_lock.get(
+        "implementation_inputs_sha256"
+    ):
+        raise FinalCandidateLockError("implementation-input map differs from lock")
+    if _canonical_json_sha256(expected.metric_inputs) != normalized_lock.get(
+        "metric_inputs_sha256"
+    ):
+        raise FinalCandidateLockError("metric-input map differs from lock")
+
+    runner_path = Path(benchmark_runner.__file__).resolve()
+    if runner_path != REPOSITORY_ROOT / BENCHMARK_RUNNER_RELATIVE_PATH:
+        raise FinalCandidateLockError(
+            "benchmark runner was imported from outside the repo"
+        )
+    _committed_regular_file_snapshot(
+        BENCHMARK_RUNNER_RELATIVE_PATH,
+        source_revision=source_revision,
+        label="benchmark runner source",
+        expected_sha256=expected.benchmark_runner_sha256,
+    )
+
+    final_directories = normalized_lock.get("final_run_directories")
+    if not isinstance(final_directories, Mapping):
+        raise FinalCandidateLockError("candidate lock final directories are malformed")
+    directory_values = [final_directories.get(seed) for seed in (0, 1, 2)]
+    if any(not isinstance(value, Path) for value in directory_values):
+        raise FinalCandidateLockError("candidate lock lacks every final seed directory")
+    parents = {value.parent for value in directory_values if isinstance(value, Path)}
+    if len(parents) != 1:
+        raise FinalCandidateLockError("final seed directories do not share one root")
+    locked_output_relative = parents.pop()
+    parts = locked_output_relative.parts
+    if (
+        len(parts) != 5
+        or parts[:3] != ("output", "udlm", "final")
+        or parts[3] != candidate_id
+        or FINAL_CONFIG_ID_PATTERN.fullmatch(parts[4]) is None
+        or parts[4][0] != candidate_id[0]
+    ):
+        raise FinalCandidateLockError("locked final output root has invalid identity")
+    config_id = parts[4]
+    for seed in (0, 1, 2):
+        expected_directory = locked_output_relative / f"seed_{seed}"
+        if final_directories.get(seed) != expected_directory:
+            raise FinalCandidateLockError(
+                "candidate lock final seed directories are not the fixed layout"
+            )
+    locked_output_root = Path(
+        os.path.abspath(os.fspath(REPOSITORY_ROOT / locked_output_relative))
+    )
+    if output_root != locked_output_root:
+        raise FinalCandidateLockError("CLI output root differs from candidate lock")
+
+    temperature_code = int(config_id.split("_t", 1)[1].split("_p", 1)[0])
+    top_p_code = int(config_id.rsplit("_p", 1)[1])
+    if (
+        expected.sampling_config.get("softmax_temp") != temperature_code / 100
+        or expected.sampling_config.get("raw_loo_top_p") != top_p_code / 100
+    ):
+        raise FinalCandidateLockError("config ID disagrees with locked operating point")
+    return candidate_id, config_id, locked_output_root
+
+
+def _preflight_final_candidate_lock(
+    *,
+    candidate_lock: Path,
+    expected: ExpectedRunIdentity,
+    checkpoint: Path,
+    config: Path,
+    seeds: list[int],
+    num_samples: int,
+    output_root: Path,
+    source_revision: str,
+) -> FinalCandidateAuthority:
+    """Validate the committed schema-2 lock before any final-tier mutation/GPU use."""
+
+    from scripts.udlm import superiority_gate
+
+    if candidate_lock != REPOSITORY_ROOT / CANDIDATE_LOCK_RELATIVE_PATH:
+        raise FinalCandidateLockError("candidate lock path is not the fixed path")
+    lock_claim, lock_payload = _committed_regular_file_snapshot(
+        CANDIDATE_LOCK_RELATIVE_PATH,
+        source_revision=source_revision,
+        label="candidate lock",
+    )
+    _require_exact_final_lock_commit(
+        source_revision=source_revision, lock_payload=lock_payload
+    )
+    protocol_claim, protocol_payload = _committed_regular_file_snapshot(
+        superiority_gate.PROTOCOL_RELATIVE_PATH.as_posix(),
+        source_revision=source_revision,
+        label="superiority protocol",
+        expected_sha256=superiority_gate.PROTOCOL_SHA256,
+    )
+    del protocol_claim
+    try:
+        protocol = superiority_gate.strict_json_loads(
+            protocol_payload, label="superiority protocol"
+        )
+        lock = superiority_gate.strict_json_loads(lock_payload, label="candidate lock")
+        if not isinstance(protocol, Mapping) or not isinstance(lock, Mapping):
+            raise FinalCandidateLockError("protocol and candidate lock must be objects")
+        superiority_gate.validate_protocol(protocol)
+        normalized_lock = superiority_gate.validate_candidate_lock(lock, protocol)
+    except FinalCandidateLockError:
+        raise
+    except (OSError, TypeError, ValueError) as error:
+        raise FinalCandidateLockError(
+            "candidate lock fails the frozen protocol/schema-2 contract"
+        ) from error
+
+    candidate_id, config_id, locked_output_root = _bind_final_candidate_authority(
+        normalized_lock=normalized_lock,
+        expected=expected,
+        checkpoint=checkpoint,
+        config=config,
+        seeds=seeds,
+        num_samples=num_samples,
+        output_root=output_root,
+        source_revision=source_revision,
+    )
+    analysis_sources = {
+        "scripts/udlm/superiority_gate.py": normalized_lock["gate_source_sha256"],
+        "scripts/exps/denovo/report.py": normalized_lock["report_source_sha256"],
+        "scripts/udlm/rescore_denovo_run.py": normalized_lock["rescore_source_sha256"],
+        "scripts/udlm/rescore_mdlm_baseline.py": normalized_lock[
+            "rescore_dependency_sha256"
+        ],
+        "scripts/exps/denovo/launch_benchmark.py": normalized_lock[
+            "benchmark_launcher_source_sha256"
+        ],
+        "scripts/udlm/write_pilot_evidence.py": normalized_lock[
+            "pilot_evidence_writer_source_sha256"
+        ],
+    }
+    for relative_path, digest in analysis_sources.items():
+        _committed_regular_file_snapshot(
+            relative_path,
+            source_revision=source_revision,
+            label=f"locked analysis source {relative_path}",
+            expected_sha256=digest,
+        )
+    artifact_source = expected.implementation_inputs.get("artifact_io_source")
+    if not isinstance(artifact_source, Mapping):
+        raise FinalCandidateLockError("artifact_io generation provenance is absent")
+    try:
+        superiority_gate.validate_analysis_runtime(
+            normalized_lock,
+            expected_artifact_io_source_sha256=str(artifact_source.get("sha256")),
+        )
+    except (OSError, TypeError, ValueError) as error:
+        raise FinalCandidateLockError(
+            "runtime analysis sources differ from candidate lock"
+        ) from error
+    return FinalCandidateAuthority(
+        claim=lock_claim,
+        payload=lock_payload,
+        source_revision=source_revision,
+        normalized_lock=normalized_lock,
+        candidate_id=candidate_id,
+        config_id=config_id,
+        output_root=locked_output_root,
+    )
+
+
+def _revalidate_final_candidate_lock(authority: FinalCandidateAuthority) -> None:
+    """Fail closed if the retained lock path, bytes, or committed blob changes."""
+
+    if not isinstance(authority, FinalCandidateAuthority):
+        raise TypeError("final candidate authority capability is invalid")
+    claim, payload = _committed_regular_file_snapshot(
+        CANDIDATE_LOCK_RELATIVE_PATH,
+        source_revision=authority.source_revision,
+        label="candidate lock",
+    )
+    if claim != authority.claim or payload != authority.payload:
+        raise FinalCandidateLockError(
+            "candidate lock identity or bytes changed after final preflight"
+        )
 
 
 def _require_clean_pushed_source() -> dict[str, str]:
@@ -1013,13 +1766,25 @@ def _build_expected_run_identity(
     num_samples: int,
     *,
     source_revision: str | None = None,
+    checkpoint_info: Mapping[str, Any] | None = None,
+    metric_inputs: Mapping[str, Any] | None = None,
+    implementation_inputs: Mapping[str, Any] | None = None,
+    benchmark_runner_sha256: str | None = None,
 ) -> ExpectedRunIdentity:
     """Resolve and fingerprint the exact inputs passed to every child run."""
 
     # Quality depends on this ignored binary artifact. Verify it before the
     # checkpoint inspection and well before any GPU selection/model startup.
-    metric_inputs = benchmark_runner.metric_input_provenance()
-    checkpoint_info = benchmark_runner.checkpoint_metadata(checkpoint)
+    metric_inputs = (
+        benchmark_runner.metric_input_provenance()
+        if metric_inputs is None
+        else dict(metric_inputs)
+    )
+    checkpoint_info = (
+        benchmark_runner.checkpoint_metadata(checkpoint)
+        if checkpoint_info is None
+        else dict(checkpoint_info)
+    )
     source_config_sha256 = _sha256_file(config)
     config_git_tracking = (
         benchmark_runner.tracked_source_file_provenance(
@@ -1093,8 +1858,17 @@ def _build_expected_run_identity(
                 "categorical checkpoint metadata inspection did not return the full "
                 "immutable prior record"
             )
-    implementation_inputs = benchmark_runner.implementation_input_provenance()
+    implementation_inputs = (
+        benchmark_runner.implementation_input_provenance()
+        if implementation_inputs is None
+        else dict(implementation_inputs)
+    )
     benchmark_runner_path = Path(benchmark_runner.__file__).resolve()
+    benchmark_runner_sha256 = (
+        _sha256_file(benchmark_runner_path)
+        if benchmark_runner_sha256 is None
+        else benchmark_runner_sha256
+    )
     effective_config = dict(source_config)
     effective_config.update(
         {
@@ -1142,7 +1916,7 @@ def _build_expected_run_identity(
         sampling_config_sha256=_canonical_json_sha256(sampling_config),
         effective_config=effective_config,
         effective_config_sha256=_canonical_json_sha256(effective_config),
-        benchmark_runner_sha256=_sha256_file(benchmark_runner_path),
+        benchmark_runner_sha256=benchmark_runner_sha256,
         implementation_inputs=implementation_inputs,
         metric_inputs=metric_inputs,
         num_samples=num_samples,
@@ -1291,6 +2065,19 @@ def _completed(
         if actual != wanted:
             errors.append(f"{label}={actual!r}; expected {wanted!r}")
 
+    summary_schema_version = summary.get("schema_version")
+    supported_schema_versions = {7, benchmark_runner.SCHEMA_VERSION}
+    if summary_schema_version not in supported_schema_versions:
+        errors.append(
+            "schema_version is neither historical schema 7 nor the current child "
+            f"schema: {summary_schema_version!r}"
+        )
+    if (
+        expected.num_samples == FINAL_BENCHMARK_SAMPLES_PER_SEED
+        and expected.checkpoint_diffusion_type == "udlm"
+        and summary_schema_version != benchmark_runner.SCHEMA_VERSION
+    ):
+        errors.append("locked UDLM final evidence must use current benchmark schema 8")
     expected_top_level = {
         "schema_version",
         "status",
@@ -1309,15 +2096,14 @@ def _completed(
         "tokenizer",
         "artifacts",
     }
+    if summary_schema_version != 7:
+        expected_top_level.add("sampled_token_control_audit")
     if set(summary) != expected_top_level:
         errors.append(
             "summary top-level fields differ from the current child contract: "
             f"found {sorted(summary)}, expected {sorted(expected_top_level)}"
         )
 
-    expect(
-        "schema_version", summary.get("schema_version"), benchmark_runner.SCHEMA_VERSION
-    )
     expect("status", summary.get("status"), "completed")
     expect("seed", summary.get("seed"), seed)
     expect("num_samples", summary.get("num_samples"), expected.num_samples)
@@ -1366,16 +2152,42 @@ def _completed(
                 errors.append(f"run.{timestamp_field} lacks a timezone")
 
     if expected.source_revision is not None:
-        expected_command = _command(
-            checkpoint=expected.checkpoint_path,
-            expected_checkpoint_sha256=expected.checkpoint_sha256,
-            expected_source_revision=expected.source_revision,
-            config=expected.config_path,
-            expected_config_sha256=expected.source_config_sha256,
-            num_samples=expected.num_samples,
-            seed=seed,
-            output_dir=run_dir.resolve(),
-        )
+        if summary_schema_version == 7:
+            expected_command = _legacy_schema7_command(
+                checkpoint=expected.checkpoint_path,
+                expected_checkpoint_sha256=expected.checkpoint_sha256,
+                expected_source_revision=expected.source_revision,
+                config=expected.config_path,
+                expected_config_sha256=expected.source_config_sha256,
+                num_samples=expected.num_samples,
+                seed=seed,
+                output_dir=run_dir.resolve(),
+            )
+        else:
+            try:
+                output_state = run_dir.stat(follow_symlinks=False)
+            except OSError as error:
+                errors.append(f"run output directory cannot be inspected: {error}")
+                output_state = None
+            if output_state is not None and not stat.S_ISDIR(output_state.st_mode):
+                errors.append("run output directory is not a direct directory")
+                output_state = None
+            expected_command = (
+                None
+                if output_state is None
+                else _command(
+                    checkpoint=expected.checkpoint_path,
+                    expected_checkpoint_sha256=expected.checkpoint_sha256,
+                    expected_source_revision=expected.source_revision,
+                    config=expected.config_path,
+                    expected_config_sha256=expected.source_config_sha256,
+                    num_samples=expected.num_samples,
+                    seed=seed,
+                    output_dir=Path(os.path.abspath(run_dir)),
+                    expected_output_directory_device=int(output_state.st_dev),
+                    expected_output_directory_inode=int(output_state.st_ino),
+                )
+            )
         expect("run.command", run.get("command"), expected_command)
     protocol = _mapping(run.get("generation_protocol"))
     sampling = expected.sampling_config
@@ -1539,6 +2351,8 @@ def _completed(
         "decode_and_metrics",
         "total_before_summary_write",
     }
+    if summary_schema_version != 7:
+        expected_runtime_fields.add("sampled_token_control_audit")
     runtime = _mapping(summary.get("runtime_seconds"))
     if set(runtime) != expected_runtime_fields or any(
         isinstance(value, bool)
@@ -1693,8 +2507,18 @@ def _command(
     num_samples: int,
     seed: int,
     output_dir: Path,
+    expected_output_directory_device: int,
+    expected_output_directory_inode: int,
 ) -> list[str]:
-    return [
+    if not output_dir.is_absolute():
+        raise ValueError("benchmark child output directory must be absolute")
+    for label, value in (
+        ("output directory device", expected_output_directory_device),
+        ("output directory inode", expected_output_directory_inode),
+    ):
+        if type(value) is not int or value < 0:
+            raise ValueError(f"expected {label} must be a nonnegative integer")
+    command = [
         str(_project_venv_python()),
         str(REPOSITORY_ROOT / "scripts/exps/denovo/benchmark.py"),
         "--checkpoint",
@@ -1715,7 +2539,92 @@ def _command(
         "cuda:0",
         "--output-dir",
         str(output_dir),
+        "--expected-output-directory-device",
+        str(expected_output_directory_device),
+        "--expected-output-directory-inode",
+        str(expected_output_directory_inode),
     ]
+    if len(command) != 24 or any(not isinstance(value, str) for value in command):
+        raise AssertionError("benchmark child argv must contain exactly 24 strings")
+    return command
+
+
+def _legacy_schema7_command(
+    *,
+    checkpoint: Path,
+    expected_checkpoint_sha256: str,
+    expected_source_revision: str,
+    config: Path,
+    expected_config_sha256: str,
+    num_samples: int,
+    seed: int,
+    output_dir: Path,
+) -> list[str]:
+    """Reconstruct only the historical schema-7 exact-20 provenance argv."""
+
+    command = _command(
+        checkpoint=checkpoint,
+        expected_checkpoint_sha256=expected_checkpoint_sha256,
+        expected_source_revision=expected_source_revision,
+        config=config,
+        expected_config_sha256=expected_config_sha256,
+        num_samples=num_samples,
+        seed=seed,
+        output_dir=output_dir,
+        expected_output_directory_device=0,
+        expected_output_directory_inode=0,
+    )[:20]
+    if len(command) != 20:
+        raise AssertionError("historical schema-7 argv must contain 20 strings")
+    return command
+
+
+def _reserve_child_paths(
+    *, output_dir: Path, log_path: Path
+) -> tuple[artifact_io.OwnedDirectory, artifact_io.OwnedLog]:
+    """Exclusively reserve the exact child output directory and log."""
+
+    output_owner = artifact_io.create_directory_exclusive(
+        REPOSITORY_ROOT,
+        _repository_relative(output_dir, label="benchmark child output directory"),
+    )
+    try:
+        log_owner = artifact_io.reserve_log_exclusive(
+            REPOSITORY_ROOT,
+            _repository_relative(log_path, label="benchmark child log"),
+        )
+    except BaseException as error:
+        try:
+            artifact_io.remove_empty_directory_exact(REPOSITORY_ROOT, output_owner)
+        except BaseException as rollback_error:
+            raise artifact_io.RollbackError(error, [rollback_error]) from error
+        raise
+    return output_owner, log_owner
+
+
+def _open_job_log(
+    owner: artifact_io.OwnedLog, selection: Mapping[str, Any]
+) -> tuple[Any, Any]:
+    context = artifact_io.open_log_append_exact(REPOSITORY_ROOT, owner)
+    handle = context.__enter__()
+    try:
+        handle.write(
+            (json.dumps(selection, sort_keys=True, allow_nan=False) + "\n").encode(
+                "utf-8"
+            )
+        )
+    except BaseException:
+        context.__exit__(*sys.exc_info())
+        raise
+    return context, handle
+
+
+def _close_job_log(job: RunningJob) -> None:
+    if job.log_context is not None:
+        job.log_context.__exit__(None, None, None)
+    elif job.log_handle is not None and not job.log_handle.closed:
+        # Compatibility for synthetic/historical RunningJob instances.
+        job.log_handle.close()
 
 
 def _snapshot_signature(states: list[GPUState]) -> str:
@@ -1757,14 +2666,22 @@ def _child_environment(
     gpu: GPUState,
     selection: Mapping[str, Any],
     run_label: str,
+    generation_lease: GenerationLease,
+    launch_authority: Mapping[str, Any],
 ) -> dict[str, str]:
     """Map the verified physical GPU UUID into the child environment."""
 
     environment = os.environ.copy()
     required_python_paths = [str(REPOSITORY_ROOT / "src"), str(REPOSITORY_ROOT)]
     for inherited_key in tuple(environment):
-        if inherited_key.startswith("PYTHON"):
+        if inherited_key.startswith("PYTHON") or inherited_key.startswith(
+            "GENMOL_BENCHMARK_"
+        ):
             environment.pop(inherited_key)
+    _revalidate_generation_lease(generation_lease)
+    authority = dict(launch_authority)
+    if authority.get("schema_version") != LAUNCH_AUTHORITY_SCHEMA_VERSION:
+        raise ValueError("child launch authority has an invalid schema")
     environment.update(
         {
             "CUDA_DEVICE_ORDER": "PCI_BUS_ID",
@@ -1789,6 +2706,18 @@ def _child_environment(
                 selection, separators=(",", ":"), sort_keys=True
             ),
             "GENMOL_BENCHMARK_RUN_LABEL": run_label,
+            "GENMOL_BENCHMARK_GENERATION_LEASE_PATH": str(
+                REPOSITORY_ROOT / GENERATION_LEASE_RELATIVE_PATH
+            ),
+            "GENMOL_BENCHMARK_EXPECTED_GENERATION_LEASE_SHA256": (
+                generation_lease.claim.sha256
+            ),
+            "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN": (
+                generation_lease.owner_token
+            ),
+            "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON": json.dumps(
+                authority, separators=(",", ":"), sort_keys=True
+            ),
         }
     )
     return environment
@@ -1887,6 +2816,11 @@ def main(argv: Optional[list[str]] = None) -> None:
         pilot=args.pilot,
         selection_pilot=args.selection_pilot,
     )
+    candidate_lock = _validate_candidate_lock_scope(
+        args.candidate_lock,
+        pilot=args.pilot,
+        selection_pilot=args.selection_pilot,
+    )
     pilot_mode = (
         "registered_selection"
         if args.selection_pilot
@@ -1936,6 +2870,20 @@ def main(argv: Optional[list[str]] = None) -> None:
         args.num_samples,
         source_revision=source_revision["head"],
     )
+    final_authority = (
+        _preflight_final_candidate_lock(
+            candidate_lock=candidate_lock,
+            expected=expected,
+            checkpoint=checkpoint,
+            config=config,
+            seeds=args.seeds,
+            num_samples=args.num_samples,
+            output_root=output_root,
+            source_revision=source_revision["head"],
+        )
+        if candidate_lock is not None
+        else None
+    )
     pending = []
     completed_at_start = []
     for seed in args.seeds:
@@ -1943,6 +2891,8 @@ def main(argv: Optional[list[str]] = None) -> None:
             completed_at_start.append(seed)
         else:
             pending.append(seed)
+    if final_authority is not None:
+        _revalidate_final_candidate_lock(final_authority)
     print(
         json.dumps(
             {
@@ -1972,7 +2922,24 @@ def main(argv: Optional[list[str]] = None) -> None:
                     else ("generic_pilot" if args.pilot else "final")
                 ),
                 "attempt_id": attempt_id,
-                "candidate_id": candidate_id,
+                "candidate_id": (
+                    final_authority.candidate_id
+                    if final_authority is not None
+                    else candidate_id
+                ),
+                "candidate_config_id": (
+                    final_authority.config_id if final_authority is not None else None
+                ),
+                "candidate_lock": (
+                    {
+                        "relative_path": CANDIDATE_LOCK_RELATIVE_PATH,
+                        "sha256": final_authority.claim.sha256,
+                        "size_bytes": final_authority.claim.size_bytes,
+                        "exact_regular_blob_at_source_revision": True,
+                    }
+                    if final_authority is not None
+                    else None
+                ),
                 "pilot_mode": pilot_mode,
                 "seeds": args.seeds,
                 "completed_seeds": completed_at_start,
@@ -1993,37 +2960,15 @@ def main(argv: Optional[list[str]] = None) -> None:
         )
         return
     if args.dry_run:
-        states = _snapshot()
-        eligible = sorted(
-            (
-                state
-                for state in states
-                if _eligible(
-                    state,
-                    max_utilization_percent=args.max_utilization_percent,
-                    min_free_memory_mib=args.min_free_memory_mib,
-                )
-            ),
-            key=lambda state: (
-                -(state.memory_total_mib - state.memory_used_mib),
-                state.utilization_percent,
-                state.index,
-            ),
-        )
-        requested_now = min(gpu_count, len(pending))
-        if len(eligible) < requested_now:
-            raise RuntimeError(
-                f"dry-run requested {requested_now} concurrent GPU(s), but only "
-                f"{len(eligible)} satisfy the GPU safety policy"
-            )
         print(
             json.dumps(
                 {
-                    "event": "dry_run_gpu_inventory",
-                    "gpu_states": [state.as_dict() for state in states],
-                    "dynamically_selected_gpu_states": [
-                        state.as_dict() for state in eligible[:gpu_count]
-                    ],
+                    "event": "dry_run_preflight_completed_no_launch",
+                    "generation_lease_acquired": False,
+                    "gpu_query_performed": False,
+                    "artifact_mutation_performed": False,
+                    "tmux_operation_performed": False,
+                    "child_argv_deferred_until_output_directory_reservation": True,
                 },
                 sort_keys=True,
             )
@@ -2031,7 +2976,206 @@ def main(argv: Optional[list[str]] = None) -> None:
         for seed in pending:
             print(
                 "DRY RUN",
-                _command(
+                json.dumps(
+                    {
+                        "seed": seed,
+                        "predicted_output_directory": str(output_root / f"seed_{seed}"),
+                        "checkpoint": str(checkpoint),
+                        "checkpoint_sha256": expected.checkpoint_sha256,
+                        "config": str(config),
+                        "config_sha256": expected.source_config_sha256,
+                        "num_samples": args.num_samples,
+                    },
+                    sort_keys=True,
+                ),
+            )
+        return
+
+    if final_authority is not None:
+        _revalidate_final_candidate_lock(final_authority)
+    _require_tmux_for_execution()
+    if final_authority is not None:
+        _revalidate_final_candidate_lock(final_authority)
+    global_output = REPOSITORY_ROOT / "output"
+    if not global_output.is_dir():
+        _ensure_repository_directory(global_output, label="global output directory")
+    lease = _acquire_generation_lease(source_revision=source_revision["head"])
+    running: dict[str, RunningJob] = {}
+    release_authorized = True
+    try:
+        if pilot_mode is not None:
+            _reserve_pilot_attempt_paths(output_root, log_root)
+        else:
+            _ensure_repository_directory(output_root, label="benchmark output root")
+            _ensure_repository_directory(log_root, label="benchmark log root")
+
+        failure_seen = False
+        failure_details: list[str] = []
+        last_signature: Optional[str] = None
+        unchanged_polls = 0
+
+        while pending or running:
+            for gpu_uuid, job in list(running.items()):
+                return_code = job.process.poll()
+                if return_code is None:
+                    continue
+                del running[gpu_uuid]
+                try:
+                    _close_job_log(job)
+                except BaseException as error:
+                    release_authorized = False
+                    failure_seen = True
+                    failure_details.append(
+                        f"seed {job.seed} log finalization failed: {error}"
+                    )
+                print(
+                    f"FINISHED seed={job.seed} physical_gpu={job.gpu.index} "
+                    f"uuid={gpu_uuid} exit={return_code} log={job.log_path}",
+                    flush=True,
+                )
+                job_failed, job_failure_details = _finalize_finished_job(
+                    job=job,
+                    return_code=return_code,
+                    output_root=output_root,
+                    expected=expected,
+                    pilot_mode=pilot_mode,
+                    attempt_id=attempt_id,
+                    candidate_id=candidate_id,
+                    source_revision=source_revision,
+                )
+                failure_seen = failure_seen or job_failed
+                failure_details.extend(job_failure_details)
+                if final_authority is not None:
+                    _revalidate_final_candidate_lock(final_authority)
+                if any(
+                    "failure receipt could not be published" in detail
+                    for detail in job_failure_details
+                ):
+                    release_authorized = False
+                try:
+                    _revalidate_generation_lease(lease)
+                except BaseException:
+                    release_authorized = False
+                    raise
+
+            if failure_seen:
+                if not running:
+                    details = "\n  - ".join(failure_details)
+                    raise RuntimeError(
+                        "A benchmark child failed completion validation; no further "
+                        f"seeds were launched:\n  - {details}"
+                    )
+                time.sleep(args.poll_seconds)
+                continue
+
+            # Every inventory and every launch is independently authorized by
+            # the exact lease.  A new inventory is used after each child launch.
+            if final_authority is not None:
+                _revalidate_final_candidate_lock(final_authority)
+            _revalidate_generation_lease(lease)
+            states = _snapshot()
+            inventory_snapshot_completed_at_utc = datetime.now(timezone.utc).isoformat()
+            signature = _snapshot_signature(states)
+            unchanged_polls = unchanged_polls + 1 if signature == last_signature else 0
+            last_signature = signature
+            if unchanged_polls == 0 or unchanged_polls % 20 == 0:
+                eligible_uuids = [
+                    state.uuid
+                    for state in states
+                    if _eligible(
+                        state,
+                        max_utilization_percent=args.max_utilization_percent,
+                        min_free_memory_mib=args.min_free_memory_mib,
+                    )
+                ]
+                print(
+                    json.dumps(
+                        {
+                            "event": "gpu_poll",
+                            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                            "eligible_gpu_uuids": eligible_uuids,
+                            "pending_seeds": pending,
+                            "running_seeds": [job.seed for job in running.values()],
+                            "gpu_states": [state.as_dict() for state in states],
+                        },
+                        sort_keys=True,
+                    ),
+                    flush=True,
+                )
+
+            free_slots = gpu_count - len(running)
+            candidates = (
+                sorted(
+                    (
+                        state
+                        for state in states
+                        if state.uuid not in running
+                        and _eligible(
+                            state,
+                            max_utilization_percent=args.max_utilization_percent,
+                            min_free_memory_mib=args.min_free_memory_mib,
+                        )
+                    ),
+                    key=lambda state: (
+                        -(state.memory_total_mib - state.memory_used_mib),
+                        state.utilization_percent,
+                        state.uuid,
+                    ),
+                )[:1]
+                if free_slots > 0
+                else []
+            )
+
+            launched_job = False
+            for candidate in candidates:
+                if not pending:
+                    break
+                seed = pending[0]
+                output_dir = Path(os.path.abspath(output_root / f"seed_{seed}"))
+                run_label = benchmark_runner.benchmark_run_label(
+                    expected.checkpoint_global_step,
+                    expected.checkpoint_sha256,
+                    seed,
+                )
+                log_path = Path(os.path.abspath(log_root / f"{run_label}.log"))
+                if _completed(output_root, seed, expected):
+                    pending.pop(0)
+                    print(
+                        f"SKIPPED seed={seed}; matching artifacts appeared while "
+                        "waiting",
+                        flush=True,
+                    )
+                    continue
+
+                rechecked, rejection_reasons = _recheck_gpu_for_launch(
+                    candidate,
+                    max_utilization_percent=args.max_utilization_percent,
+                    min_free_memory_mib=args.min_free_memory_mib,
+                )
+                if rechecked is None:
+                    print(
+                        json.dumps(
+                            {
+                                "event": "gpu_final_probe_rejected",
+                                "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                                "physical_index": candidate.index,
+                                "initial_uuid": candidate.uuid,
+                                "reasons": rejection_reasons,
+                            },
+                            sort_keys=True,
+                        ),
+                        flush=True,
+                    )
+                    continue
+                if final_authority is not None:
+                    _revalidate_final_candidate_lock(final_authority)
+                final_uuid_probe_completed_at_utc = datetime.now(
+                    timezone.utc
+                ).isoformat()
+                output_owner, log_owner = _reserve_child_paths(
+                    output_dir=output_dir, log_path=log_path
+                )
+                command = _command(
                     checkpoint=checkpoint,
                     expected_checkpoint_sha256=expected.checkpoint_sha256,
                     expected_source_revision=source_revision["head"],
@@ -2039,238 +3183,96 @@ def main(argv: Optional[list[str]] = None) -> None:
                     expected_config_sha256=expected.source_config_sha256,
                     num_samples=args.num_samples,
                     seed=seed,
-                    output_dir=output_root / f"seed_{seed}",
-                ),
-            )
-        return
-
-    _require_tmux_for_execution()
-    if pilot_mode is not None:
-        _reserve_pilot_attempt_paths(output_root, log_root)
-    else:
-        output_root.mkdir(parents=True, exist_ok=True)
-        log_root.mkdir(parents=True, exist_ok=True)
-
-    running: dict[int, RunningJob] = {}
-    failure_seen = False
-    failure_details: list[str] = []
-    last_signature: Optional[str] = None
-    unchanged_polls = 0
-
-    while pending or running:
-        for gpu_index, job in list(running.items()):
-            return_code = job.process.poll()
-            if return_code is None:
-                continue
-            job.log_handle.close()
-            del running[gpu_index]
-            print(
-                f"FINISHED seed={job.seed} physical_gpu={gpu_index} "
-                f"exit={return_code} log={job.log_path}",
-                flush=True,
-            )
-            job_failed, job_failure_details = _finalize_finished_job(
-                job=job,
-                return_code=return_code,
-                output_root=output_root,
-                expected=expected,
-                pilot_mode=pilot_mode,
-                attempt_id=attempt_id,
-                candidate_id=candidate_id,
-                source_revision=source_revision,
-            )
-            failure_seen = failure_seen or job_failed
-            failure_details.extend(job_failure_details)
-
-        if failure_seen:
-            if not running:
-                details = "\n  - ".join(failure_details)
-                raise RuntimeError(
-                    "A benchmark child failed completion validation; no further seeds "
-                    f"were launched:\n  - {details}"
+                    output_dir=output_dir,
+                    expected_output_directory_device=output_owner.device,
+                    expected_output_directory_inode=output_owner.inode,
                 )
-            time.sleep(args.poll_seconds)
-            continue
-
-        # Every launch opportunity starts from a fresh enumeration of the full
-        # NVIDIA inventory. When multiple slots are free, the inventory is
-        # queried again after each child launch rather than reusing stale data.
-        states = _snapshot()
-        inventory_snapshot_completed_at_utc = datetime.now(timezone.utc).isoformat()
-        signature = _snapshot_signature(states)
-        unchanged_polls = unchanged_polls + 1 if signature == last_signature else 0
-        last_signature = signature
-        if unchanged_polls == 0 or unchanged_polls % 20 == 0:
-            eligible_indices = [
-                state.index
-                for state in states
-                if _eligible(
-                    state,
-                    max_utilization_percent=args.max_utilization_percent,
-                    min_free_memory_mib=args.min_free_memory_mib,
+                authority = _launch_authority(
+                    lease=lease,
+                    output_directory=output_owner,
+                    command=command,
                 )
-            ]
-            print(
-                json.dumps(
-                    {
-                        "event": "gpu_poll",
-                        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-                        "eligible_physical_indices": eligible_indices,
-                        "pending_seeds": pending,
-                        "running_seeds": [job.seed for job in running.values()],
-                        "gpu_states": [state.as_dict() for state in states],
-                    },
-                    sort_keys=True,
-                ),
-                flush=True,
-            )
-
-        free_slots = gpu_count - len(running)
-        candidates = (
-            sorted(
-                (
-                    state
-                    for state in states
-                    if state.index not in running
-                    and _eligible(
-                        state,
-                        max_utilization_percent=args.max_utilization_percent,
-                        min_free_memory_mib=args.min_free_memory_mib,
-                    )
-                ),
-                key=lambda state: (
-                    -(state.memory_total_mib - state.memory_used_mib),
-                    state.utilization_percent,
-                    state.index,
-                ),
-            )[:1]
-            if free_slots > 0
-            else []
-        )
-
-        launched_job = False
-        for candidate in candidates:
-            if not pending:
-                break
-            seed = pending[0]
-            output_dir = output_root / f"seed_{seed}"
-            command = _command(
-                checkpoint=checkpoint,
-                expected_checkpoint_sha256=expected.checkpoint_sha256,
-                expected_source_revision=source_revision["head"],
-                config=config,
-                expected_config_sha256=expected.source_config_sha256,
-                num_samples=args.num_samples,
-                seed=seed,
-                output_dir=output_dir,
-            )
-            run_label = benchmark_runner.benchmark_run_label(
-                expected.checkpoint_global_step,
-                expected.checkpoint_sha256,
-                seed,
-            )
-            log_path = log_root / f"{run_label}.log"
-            # Catch artifacts created by another controller before the final GPU
-            # probe so that the exact-UUID check remains as close to launch as
-            # possible.
-            if _completed(output_root, seed, expected):
-                pending.pop(0)
-                print(
-                    f"SKIPPED seed={seed}; matching artifacts appeared while waiting",
-                    flush=True,
-                )
-                continue
-
-            # This exact-UUID query is the final substantive safety guard before
-            # the child is constructed and launched.
-            rechecked, rejection_reasons = _recheck_gpu_for_launch(
-                candidate,
-                max_utilization_percent=args.max_utilization_percent,
-                min_free_memory_mib=args.min_free_memory_mib,
-            )
-            if rechecked is None:
-                print(
-                    json.dumps(
-                        {
-                            "event": "gpu_final_probe_rejected",
-                            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-                            "physical_index": candidate.index,
-                            "initial_uuid": candidate.uuid,
-                            "reasons": rejection_reasons,
-                        },
-                        sort_keys=True,
+                selection = {
+                    "event": "launch",
+                    "gpu_selection_schema_version": 3,
+                    "timestamp_utc": final_uuid_probe_completed_at_utc,
+                    "inventory_snapshot_completed_at_utc": (
+                        inventory_snapshot_completed_at_utc
                     ),
+                    "final_uuid_probe_completed_at_utc": (
+                        final_uuid_probe_completed_at_utc
+                    ),
+                    "source_revision": source_revision,
+                    "gpu_inventory_at_selection": [state.as_dict() for state in states],
+                    "running_gpu_uuids_at_selection": sorted(running),
+                    "physical_gpu_at_final_uuid_probe": rechecked.as_dict(),
+                    "policy": selection_policy,
+                    "launch_authority": authority,
+                    "command": command,
+                }
+                log_context, log_handle = _open_job_log(log_owner, selection)
+                environment = _child_environment(
+                    seed=seed,
+                    gpu=rechecked,
+                    selection=selection,
+                    run_label=run_label,
+                    generation_lease=lease,
+                    launch_authority=authority,
+                )
+                _revalidate_generation_lease(lease)
+                pending.pop(0)
+                started_at_utc = datetime.now(timezone.utc).isoformat()
+                try:
+                    process = subprocess.Popen(
+                        command,
+                        cwd=REPOSITORY_ROOT,
+                        env=environment,
+                        stdout=log_handle,
+                        stderr=subprocess.STDOUT,
+                    )
+                except BaseException:
+                    log_context.__exit__(*sys.exc_info())
+                    raise
+                running[rechecked.uuid] = RunningJob(
+                    seed=seed,
+                    gpu=rechecked,
+                    process=process,
+                    log_handle=log_handle,
+                    log_path=log_path,
+                    command=tuple(command),
+                    started_at_utc=started_at_utc,
+                    log_owner=log_owner,
+                    log_context=log_context,
+                    output_directory_owner=output_owner,
+                )
+                launched_job = True
+                print(
+                    f"LAUNCHED seed={seed} pid={process.pid} "
+                    f"physical_gpu={rechecked.index} uuid={rechecked.uuid} "
+                    f"log={log_path}",
                     flush=True,
                 )
+                break
+
+            if launched_job and pending and len(running) < gpu_count:
                 continue
-            final_uuid_probe_completed_at_utc = datetime.now(timezone.utc).isoformat()
+            if pending or running:
+                time.sleep(args.poll_seconds)
 
-            pending.pop(0)
-            log_handle = log_path.open("a", encoding="utf-8", buffering=1)
-            selection = {
-                "event": "launch",
-                "gpu_selection_schema_version": 2,
-                "timestamp_utc": final_uuid_probe_completed_at_utc,
-                "inventory_snapshot_completed_at_utc": (
-                    inventory_snapshot_completed_at_utc
-                ),
-                "final_uuid_probe_completed_at_utc": (
-                    final_uuid_probe_completed_at_utc
-                ),
-                "source_revision": source_revision,
-                "gpu_inventory_at_selection": [state.as_dict() for state in states],
-                "running_physical_indices_at_selection": sorted(running),
-                "physical_gpu_at_final_uuid_probe": rechecked.as_dict(),
-                "policy": selection_policy,
-                "command": command,
-            }
-            log_handle.write(json.dumps(selection, sort_keys=True) + "\n")
-            environment = _child_environment(
-                seed=seed,
-                gpu=rechecked,
-                selection=selection,
-                run_label=run_label,
-            )
-            started_at_utc = datetime.now(timezone.utc).isoformat()
-            process = subprocess.Popen(
-                command,
-                cwd=REPOSITORY_ROOT,
-                env=environment,
-                stdout=log_handle,
-                stderr=subprocess.STDOUT,
-            )
-            running[rechecked.index] = RunningJob(
-                seed=seed,
-                gpu=rechecked,
-                process=process,
-                log_handle=log_handle,
-                log_path=log_path,
-                command=tuple(command),
-                started_at_utc=started_at_utc,
-            )
-            launched_job = True
-            print(
-                f"LAUNCHED seed={seed} pid={process.pid} "
-                f"physical_gpu={rechecked.index} uuid={rechecked.uuid} log={log_path}",
-                flush=True,
-            )
-
-            # Do not choose another GPU from the pre-launch inventory snapshot.
-            # The next outer iteration re-enumerates all devices before the next
-            # child and provides its own exact-UUID final probe.
-            break
-
-        if launched_job and pending and len(running) < gpu_count:
-            continue
-        if pending or running:
-            time.sleep(args.poll_seconds)
-
-    for seed in args.seeds:
-        if not _completed(output_root, seed, expected):
-            raise RuntimeError(
-                f"Seed {seed} is missing completion artifacts after the controller "
-                "finished"
-            )
+        for seed in args.seeds:
+            if not _completed(output_root, seed, expected):
+                raise RuntimeError(
+                    f"Seed {seed} is missing completion artifacts after the "
+                    "controller finished"
+                )
+        if final_authority is not None:
+            _revalidate_final_candidate_lock(final_authority)
+    except BaseException:
+        if release_authorized and not running:
+            _release_generation_lease_exact(lease)
+        raise
+    else:
+        _release_generation_lease_exact(lease)
     print("All de novo benchmark seeds completed.", flush=True)
 
 

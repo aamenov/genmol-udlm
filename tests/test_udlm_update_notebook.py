@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import copy
 import csv
+import hashlib
 import io
 import json
 import subprocess
@@ -40,6 +41,7 @@ def test_update_replaces_generated_cells_and_preserves_stages_20_6_through_20_8(
     }
     generated = updater.stage_cells()
     late_generated = updater._selection_bound_scale_up_cells()  # noqa: SLF001
+    campaign_generated = updater._v4_candidate_campaign_cells()  # noqa: SLF001
     before[generated[0]["id"]]["source"] = "corrupt generated source\n"
     before[late_generated[0]["id"]]["source"] = "corrupt late source\n"
 
@@ -52,6 +54,7 @@ def test_update_replaces_generated_cells_and_preserves_stages_20_6_through_20_8(
     updated_by_id = _cells_by_id(updated)
     assert updated_by_id[generated[0]["id"]] == generated[0]
     assert updated_by_id[late_generated[0]["id"]] == late_generated[0]
+    assert updated_by_id[campaign_generated[0]["id"]] == campaign_generated[0]
     assert {
         cell_id: updated_by_id[cell_id]
         for cell_id in updater.PRESERVED_STAGE20_TAGS_BY_ID
@@ -66,6 +69,7 @@ def test_update_replaces_generated_cells_and_preserves_stages_20_6_through_20_8(
         *(cell["id"] for cell in generated),
         *updater.PRESERVED_STAGE20_TAGS_BY_ID,
         *(cell["id"] for cell in late_generated),
+        *(cell["id"] for cell in campaign_generated),
     ]
 
 
@@ -131,8 +135,8 @@ def test_generated_stage0_uses_utilization_based_shared_gpu_policy(
     assert "a nonempty inventory is allowed" in markdown
     assert "card at exactly 10% is rejected" in markdown
     assert "never interrupts or kills" in markdown
-    assert "1 <= NUM_GPUS <= 4" in count_code
-    assert "hard ceiling: 4" in count_code
+    assert "1 <= NUM_GPUS <= 3" in count_code
+    assert "user-authorized hard ceiling: 3" in count_code
     compile(code, "stage0-setup", "exec")
 
 
@@ -143,13 +147,9 @@ def test_later_notebook_gpu_rechecks_reuse_stage0_policy_and_allow_processes(
     updater.update_notebook(SOURCE_NOTEBOOK, destination)
     cells = _cells_by_id(json.loads(destination.read_text()))
 
-    stage5_note = " ".join(
-        "".join(cells["stage5-forward-note"]["source"]).split()
-    )
+    stage5_note = " ".join("".join(cells["stage5-forward-note"]["source"]).split())
     stage5_code = "".join(cells["f4963b0c"]["source"])
-    stage6_note = " ".join(
-        "".join(cells["stage6-bert-update-note"]["source"]).split()
-    )
+    stage6_note = " ".join("".join(cells["stage6-bert-update-note"]["source"]).split())
     stage6_code = "".join(cells["stage6-bert-update"]["source"])
 
     assert "foreign_compute_processes" not in stage5_code
@@ -273,9 +273,7 @@ def test_generated_math_teaches_plugin_output_as_loo_predictor(tmp_path: Path):
     destination = tmp_path / "updated.ipynb"
     updater.update_notebook(SOURCE_NOTEBOOK, destination)
     cells = _cells_by_id(json.loads(destination.read_text()))
-    markdown = " ".join(
-        "".join(cells["stage-20-udlm-math"]["source"]).split()
-    )
+    markdown = " ".join("".join(cells["stage-20-udlm-math"]["source"]).split())
 
     for fragment in (
         "https://arxiv.org/abs/2605.22765",
@@ -352,8 +350,9 @@ def test_generated_health_teaching_binds_exact_gate_and_later_diagnostic(
     assert "at exactly 10% is rejected" in compact_all_markdown
     assert "never interrupts or kills" in compact_all_markdown
     assert "deterministic `health-w{W}-{r,s,e}-{H}` names" in compact_all_markdown
-    assert "Only after all three training receipts pass may seed 1100 x 32 requests" in (
-        compact_all_markdown
+    assert (
+        "Only after all three training receipts pass may seed 1100 x 32 requests"
+        in (compact_all_markdown)
     )
     compile(code, "stage-20-udlm-evidence-code", "exec")
 
@@ -366,9 +365,7 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
     markdown = " ".join(
         "".join(cells["stage-20-udlm-selection-bound-scale-up"]["source"]).split()
     )
-    code = "".join(
-        cells["stage-20-udlm-selection-bound-scale-up-code"]["source"]
-    )
+    code = "".join(cells["stage-20-udlm-selection-bound-scale-up-code"]["source"])
 
     for fragment in (
         "https://arxiv.org/abs/2412.10193",
@@ -381,12 +378,12 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
         "Comprehension checkpoint",
         "conditional on E-tuned optimization and conditioning",
         "adds 14,962,176 conditioning parameters",
-        "first scale-up rung will use one GPU",
+        "first scale-up rung used one GPU",
         "no molecular benchmark or superiority result",
         "[B,L,1880]",
         "[B,1,H]",
         "utilization strictly below 10%",
-        "up to four",
+        "at most three",
     ):
         assert fragment in markdown
     for fragment in (
@@ -404,7 +401,9 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
         '"final_generation_seeds_used"] == []',
         '"screen_selection_artifacts_alone_authorize_scale_up": False',
         '"supported_gpu_counts": [1, 2, 3, 4]',
-        '"planned_first_registered_gpu_count": 1',
+        '"maximum_user_authorized_gpu_count_without_additional_permission": 3',
+        '"completed_first_registered_gpu_count": 1',
+        '"terminal_panel_bound_by_protocol_v4": True',
         '"reseed_after_model_initialization_each": True',
     ):
         assert fragment in code
@@ -418,5 +417,240 @@ def test_stage20_9_teaches_and_verifies_selection_bound_scale_up(tmp_path: Path)
         ordered_ids.index("stage-20-udlm-selection-bound-scale-up") + 1
     )
     assert ordered_ids.index("stage19-report-note") == (
-        ordered_ids.index("stage-20-udlm-selection-bound-scale-up-code") + 1
+        ordered_ids.index("stage-20-udlm-publication-runbook-code") + 1
     )
+
+
+def test_generated_stage20_binds_v4_protocol_and_preserves_v3_decision_subtrees(
+    tmp_path: Path,
+) -> None:
+    destination = tmp_path / "updated.ipynb"
+    updater.update_notebook(SOURCE_NOTEBOOK, destination)
+    cells = _cells_by_id(json.loads(destination.read_text()))
+    evidence_code = "".join(cells["stage-20-udlm-evidence-code"]["source"])
+    protocol_path = (
+        REPOSITORY_ROOT / "experiments/udlm/protocols/de_novo_superiority_v4.json"
+    )
+    protocol_bytes = protocol_path.read_bytes()
+    protocol = json.loads(protocol_bytes)
+    canonical = json.dumps(
+        protocol,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+
+    assert hashlib.sha256(protocol_bytes).hexdigest() == (
+        updater.SUPERIORITY_V4_RAW_SHA256
+    )
+    assert hashlib.sha256(canonical).hexdigest() == (
+        updater.SUPERIORITY_V4_CANONICAL_SHA256
+    )
+    for fragment in (
+        "de_novo_superiority_v4.json",
+        updater.SUPERIORITY_V4_RAW_SHA256,
+        updater.SUPERIORITY_V4_CANONICAL_SHA256,
+        'stage20_superiority_protocol["schema_version"] == 4',
+        '"genmol_udlm_de_novo_superiority_v4"',
+        '"de_novo_superiority_v3.json"',
+        '"candidate_lock_requirements"',
+        'stage20_terminal_scale_up["status"] == "validated"',
+        '"83c92963690aa0c41fa4d86dcc69fa0f692f656a"',
+        '"r-w1-1000u-dcb271453411"',
+        '"e-w1-1000u-dcb271453411"',
+        '"completed_terminal_scale_up_bound_by_protocol_v4"',
+        '"scale_up_registry_required": False',
+    ):
+        assert fragment in evidence_code
+    compile(evidence_code, "stage-20-udlm-evidence-code", "exec")
+
+
+def test_v4_raw_loo_top_p_stage_is_taught_and_executable(tmp_path: Path) -> None:
+    destination = tmp_path / "updated.ipynb"
+    updater.update_notebook(SOURCE_NOTEBOOK, destination)
+    cells = _cells_by_id(json.loads(destination.read_text()))
+    markdown = " ".join("".join(cells["stage-20-udlm-raw-loo-top-p"]["source"]).split())
+    code = "".join(cells["stage-20-udlm-raw-loo-top-p-code"]["source"])
+    for fragment in (
+        "LOO analysis",
+        "Intuition and motivation",
+        "Mathematics and symbols",
+        "Concrete example",
+        "Code below, shapes, and invariants",
+        "Difference from released implementations",
+        "Comprehension checkpoint",
+        "retain the crossing token",
+        "reverse posterior itself",
+        "torch.equal",
+        "cloned RNG states",
+        "[B,L,K]",
+    ):
+        assert fragment in markdown
+
+    protocol = json.loads(
+        (
+            REPOSITORY_ROOT / "experiments/udlm/protocols/de_novo_superiority_v4.json"
+        ).read_text()
+    )
+    namespace = {"stage20_superiority_protocol": protocol}
+    exec(compile(code, "stage-20-udlm-raw-loo-top-p-code", "exec"), namespace)
+    assert namespace["stage210_example"]["retained_positions_at_p_0_7"] == [0, 1]
+    assert all(
+        value > 0
+        for value in namespace["stage210_example"]["untruncated_reverse_posterior"]
+    )
+    assert namespace["stage210_example"]["p_1_literal_identity"] is True
+
+
+def test_v4_schema8_stage_decodes_normative_vector_and_teaches_publication(
+    tmp_path: Path,
+) -> None:
+    destination = tmp_path / "updated.ipynb"
+    updater.update_notebook(SOURCE_NOTEBOOK, destination)
+    cells = _cells_by_id(json.loads(destination.read_text()))
+    markdown = " ".join("".join(cells["stage-20-udlm-schema8-audit"]["source"]).split())
+    code = "".join(cells["stage-20-udlm-schema8-audit-code"]["source"])
+    for fragment in (
+        "Paper correspondence",
+        "Intuition and motivation",
+        "Mathematics and symbols",
+        "Concrete example",
+        "Code below, shapes, and invariants",
+        "Difference from released implementations",
+        "Comprehension checkpoint",
+        "unsigned 16-bit little-endian",
+        "MSB-first bit packing",
+        "summary.json",
+        "linked last",
+        "retains its descriptor",
+        "2 MiB",
+    ):
+        assert fragment in markdown
+
+    protocol = json.loads(
+        (
+            REPOSITORY_ROOT / "experiments/udlm/protocols/de_novo_superiority_v4.json"
+        ).read_text()
+    )
+    namespace = {"stage20_superiority_protocol": protocol}
+    exec(compile(code, "stage-20-udlm-schema8-audit-code", "exec"), namespace)
+    example = namespace["stage211_audit_example"]
+    assert example["shape"] == [2, 5]
+    assert example["editable_flat_indices"] == [1, 2, 6]
+    assert example["completion_member"] == "summary.json"
+
+
+def test_v4_campaign_stage_verifies_small_first_accounting_and_gpu_policy(
+    tmp_path: Path,
+) -> None:
+    destination = tmp_path / "updated.ipynb"
+    updater.update_notebook(SOURCE_NOTEBOOK, destination)
+    cells = _cells_by_id(json.loads(destination.read_text()))
+    markdown = " ".join(
+        "".join(cells["stage-20-udlm-candidate-campaign"]["source"]).split()
+    )
+    code = "".join(cells["stage-20-udlm-candidate-campaign-code"]["source"])
+    for fragment in (
+        "Paper correspondence",
+        "Intuition and motivation",
+        "Mathematics and symbols",
+        "Concrete staged example",
+        "Code below, shapes, and invariants",
+        "released-code difference",
+        "Comprehension checkpoint",
+        "3\\times4\\times3=36",
+        "3,680",
+        "6,680",
+        "*strictly* below 10%",
+        "exactly 10% is rejected",
+        "maximum is three GPUs",
+        "candidate-decision-only",
+        "retry and substitution are forbidden",
+    ):
+        assert fragment in markdown
+
+    protocol = json.loads(
+        (
+            REPOSITORY_ROOT / "experiments/udlm/protocols/de_novo_superiority_v4.json"
+        ).read_text()
+    )
+    namespace = {"stage20_superiority_protocol": protocol}
+    exec(compile(code, "stage-20-udlm-candidate-campaign-code", "exec"), namespace)
+    summary = namespace["stage212_campaign_summary"]
+    assert summary["universe_config_count"] == 36
+    assert summary["prefinal"] == {
+        "stage_config_entries": 40,
+        "generation_children": 43,
+        "requested_molecules": 3680,
+        "molecule_nfe": 471040,
+    }
+    assert summary["including_final"]["requested_molecules"] == 6680
+    assert summary["maximum_gpus_without_additional_permission"] == 3
+    assert summary["exactly_10_percent_idle"] is False
+
+
+def test_v4_publication_runbook_teaches_exact_cli_and_executes_cpu_oracle(
+    tmp_path: Path,
+) -> None:
+    destination = tmp_path / "updated.ipynb"
+    updater.update_notebook(SOURCE_NOTEBOOK, destination)
+    cells = _cells_by_id(json.loads(destination.read_text()))
+    markdown = " ".join(
+        "".join(cells["stage-20-udlm-publication-runbook"]["source"]).split()
+    )
+    code = "".join(cells["stage-20-udlm-publication-runbook-code"]["source"])
+    for fragment in (
+        "Paper correspondence",
+        "Intuition and motivation",
+        "Mathematics and symbols",
+        "Concrete runbook example",
+        "Code below, shapes, and invariants",
+        "Difference from released implementations",
+        "Comprehension checkpoint",
+        "--through-stage D",
+        "artifact-bearing host",
+        "fresh CPU independent rescore",
+        "G→EVIDENCE→decision→ledger→lock",
+        "--stage-published-evidence",
+        "materialize_candidate_evidence.py",
+        "not `prepare_candidate_authority.py`",
+        "There is no draft",
+        "--candidate-lock",
+        "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+        "strictly* below 10%",
+        "30,000 MiB",
+        "D has concurrency one",
+        "[B,L]",
+    ):
+        assert fragment in markdown
+
+    for fragment in (
+        'stage213_prefixes = ["D", "A", "B", "C", "eligible"]',
+        '"scripts/udlm/materialize_candidate_evidence.py"',
+        '"--stage-published-evidence"',
+        '"scripts/udlm/prepare_candidate_authority.py"',
+        '"experiments/udlm/candidates/candidate_lock.json"',
+        '"scripts/exps/denovo/launch_benchmark.py"',
+        '"<INTEGER_1_TO_3>"',
+        '"diagnostic_gpu_count"',
+        '"all_43_children_are_independently_validated_and_rescored_before_any_target_publication"',
+        '"ranked_stage_metrics_must_come_from_fresh_cpu_independent_rescore_before_advancement"',
+    ):
+        assert fragment in code
+
+    protocol = json.loads(
+        (
+            REPOSITORY_ROOT / "experiments/udlm/protocols/de_novo_superiority_v4.json"
+        ).read_text()
+    )
+    namespace = {"stage20_superiority_protocol": protocol}
+    exec(compile(code, "stage-20-udlm-publication-runbook-code", "exec"), namespace)
+    assert namespace["stage213_runbook_summary"] == {
+        "campaign_prefixes": ["D", "A", "B", "C", "eligible"],
+        "evidence_symbol": "EVIDENCE",
+        "authority_phases": ["decision", "ledger", "lock"],
+        "final_seeds": [0, 1, 2],
+        "diagnostic_concurrency": 1,
+        "maximum_gpu_concurrency": 3,
+    }

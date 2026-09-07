@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
 import pickle
 import subprocess
 from pathlib import Path
@@ -14,7 +15,8 @@ from scripts.exps.denovo import benchmark
 
 
 def test_benchmark_summary_schema_includes_mandatory_inference_weights() -> None:
-    assert benchmark.SCHEMA_VERSION == 7
+    assert benchmark.SCHEMA_VERSION == 8
+    assert benchmark.HISTORICAL_MDLM_SCHEMA_VERSION == 7
 
 
 def _tiny_sa_artifact(root: Path) -> tuple[Path, str, int]:
@@ -326,7 +328,8 @@ def test_generate_raw_model_text_uses_shared_raw_token_api(diffusion_type: str) 
             return values + 2
 
     sampler = FakeSampler()
-    decoded, protocol = benchmark.generate_raw_model_text(
+    decoded, protocol, sampler_input_ids, final_sampled_ids = (
+        benchmark.generate_raw_model_text(
         sampler,
         3,
         diffusion_type=diffusion_type,
@@ -338,19 +341,197 @@ def test_generate_raw_model_text_uses_shared_raw_token_api(diffusion_type: str) 
         exclude_special_tokens=False if diffusion_type == "udlm" else None,
         prior_variant="release_uniform" if diffusion_type == "udlm" else None,
         prior_metadata_sha256=None,
+        raw_loo_top_p=0.95 if diffusion_type == "udlm" else None,
+        )
     )
 
     assert sampler.insert_call[1:] == (3, 40)
     assert decoded == ["safe-3", "safe-3", "safe-3"]
-    assert sampler.generate_call[1] == {
+    expected_generate_call = {
         "softmax_temp": 0.5,
         "randomness": 0.25,
         "num_steps": 8 if diffusion_type == "udlm" else None,
         "return_token_ids": True,
     }
+    if diffusion_type == "udlm":
+        expected_generate_call["raw_loo_top_p"] = 0.95
+    assert sampler.generate_call[1] == expected_generate_call
+    assert torch.equal(sampler_input_ids, sampler.generate_call[0])
+    assert torch.equal(final_sampled_ids, sampler.generate_call[0] + 2)
     assert protocol["diffusion_type"] == diffusion_type
     assert protocol["nfe"] == (8 if diffusion_type == "udlm" else 2)
     assert protocol["randomness_used_by_sampler"] is (diffusion_type == "mdlm")
+    if diffusion_type == "udlm":
+        assert protocol["raw_loo_top_p"] == 0.95
+
+
+def _sampled_token_audit_fixture(final_ids=None):
+    torch = pytest.importorskip("torch")
+    input_ids = torch.tensor(
+        [[1, 4, 4, 2, 3], [1, 4, 2, 3, 3]], dtype=torch.long
+    )
+    if final_ids is None:
+        final_ids = torch.tensor(
+            [[1, 7, 8, 2, 3], [1, 9, 2, 3, 3]], dtype=torch.long
+        )
+
+    class Tokenizer:
+        unk_token_id = 0
+        bos_token_id = 1
+        eos_token_id = 2
+        pad_token_id = 3
+        mask_token_id = 4
+
+        def __len__(self):
+            return 1882
+
+        def batch_decode(self, values, *, skip_special_tokens):
+            assert skip_special_tokens is True
+            assert torch.equal(values, final_ids)
+            return ["first", "second"]
+
+    model = SimpleNamespace(
+        bos_index=1,
+        eos_index=2,
+        mask_index=4,
+        tokenizer=Tokenizer(),
+        config=SimpleNamespace(
+            model=SimpleNamespace(vocab_size=1880),
+            training={"udlm": {"exclude_special_tokens": False}},
+        ),
+    )
+    sampler = SimpleNamespace(model=model, pad_index=3)
+    return sampler, input_ids, final_ids
+
+
+def test_sampled_token_control_audit_matches_frozen_normative_vectors() -> None:
+    sampler, input_ids, final_ids = _sampled_token_audit_fixture()
+
+    audit = benchmark.build_sampled_token_control_audit(
+        sampler, input_ids, final_ids, ["first", "second"]
+    )
+
+    assert set(audit) == {
+        "schema_version",
+        "rows",
+        "columns",
+        "model_vocab_size",
+        "tokenizer_effective_size",
+        "control_token_ids",
+        "sampler_input_ids",
+        "final_sampled_ids",
+        "editable_mask",
+        "control_token_counts",
+    }
+    assert (audit["rows"], audit["columns"]) == (2, 5)
+    assert audit["model_vocab_size"] == 1880
+    assert audit["tokenizer_effective_size"] == 1882
+    assert audit["control_token_ids"] == {
+        "unk": 0,
+        "bos": 1,
+        "eos": 2,
+        "pad": 3,
+        "mask": 4,
+    }
+    assert audit["sampler_input_ids"]["data_base64"] == (
+        "AQAEAAQAAgADAAEABAACAAMAAwA="
+    )
+    assert audit["sampler_input_ids"]["decoded_sha256"] == (
+        "e4414736945d993eb61ada7a21bce9f77957f816ccaa8e4a5c376329608afd95"
+    )
+    assert audit["final_sampled_ids"]["data_base64"] == (
+        "AQAHAAgAAgADAAEACQACAAMAAwA="
+    )
+    assert audit["final_sampled_ids"]["decoded_sha256"] == (
+        "7d64fdd9d93604a26e67b6e4ffbbb04e767f7c1eb4e3097c558117667f1ddcf3"
+    )
+    assert audit["editable_mask"]["data_base64"] == "YgA="
+    assert audit["editable_mask"]["decoded_sha256"] == (
+        "1e57b933b0a78203e21d41cc4b16d731b255b04058d48a4ac2731f0089312129"
+    )
+    assert audit["editable_mask"]["unused_tail_bit_count"] == 6
+    assert audit["control_token_counts"] == {
+        "sampler_input_all_positions": {
+            "unk": 0,
+            "bos": 2,
+            "eos": 2,
+            "pad": 3,
+            "mask": 3,
+        },
+        "final_sampled_all_positions": {
+            "unk": 0,
+            "bos": 2,
+            "eos": 2,
+            "pad": 3,
+            "mask": 0,
+        },
+        "final_sampled_editable_positions": {
+            "unk": 0,
+            "bos": 0,
+            "eos": 0,
+            "pad": 0,
+            "mask": 0,
+        },
+    }
+
+
+def test_sampled_token_control_audit_counts_special_editable_tokens() -> None:
+    torch = pytest.importorskip("torch")
+    final_ids = torch.tensor(
+        [[1, 1, 4, 2, 3], [1, 3, 2, 3, 3]], dtype=torch.long
+    )
+    sampler, input_ids, final_ids = _sampled_token_audit_fixture(final_ids)
+
+    audit = benchmark.build_sampled_token_control_audit(
+        sampler, input_ids, final_ids, ["first", "second"]
+    )
+
+    assert audit["control_token_counts"]["final_sampled_editable_positions"] == {
+        "unk": 0,
+        "bos": 1,
+        "eos": 0,
+        "pad": 1,
+        "mask": 1,
+    }
+
+    sampler.model.config.training["udlm"]["exclude_special_tokens"] = True
+    with pytest.raises(RuntimeError, match="excluded checkpoint"):
+        benchmark.build_sampled_token_control_audit(
+            sampler, input_ids, final_ids, ["first", "second"]
+        )
+
+
+def test_sampled_token_control_audit_rejects_immutable_change_and_decode_drift() -> None:
+    sampler, input_ids, final_ids = _sampled_token_audit_fixture()
+    changed = final_ids.clone()
+    changed[0, 0] = 7
+    with pytest.raises(RuntimeError, match="immutable"):
+        benchmark.build_sampled_token_control_audit(
+            sampler, input_ids, changed, ["first", "second"]
+        )
+
+    with pytest.raises(RuntimeError, match="raw_model_text"):
+        benchmark.build_sampled_token_control_audit(
+            sampler, input_ids, final_ids, ["wrong", "second"]
+        )
+
+    malformed_input = input_ids.clone()
+    malformed_input[0, 1] = 7
+    with pytest.raises(RuntimeError, match=r"BOS MASK\+ EOS PAD\*"):
+        benchmark.build_sampled_token_control_audit(
+            sampler, malformed_input, final_ids, ["first", "second"]
+        )
+
+
+@pytest.mark.parametrize("shape", [(1001, 1), (1, 257)])
+def test_sampled_token_control_audit_enforces_frozen_shape_bound(shape) -> None:
+    torch = pytest.importorskip("torch")
+    sampler, _, _ = _sampled_token_audit_fixture()
+    values = torch.full(shape, 4, dtype=torch.long)
+    with pytest.raises(RuntimeError, match="1000x256"):
+        benchmark.build_sampled_token_control_audit(
+            sampler, values, values, [""] * shape[0]
+        )
 
 
 def test_loaded_categorical_model_must_match_explicit_sampling_prior_digest() -> None:
@@ -417,6 +598,222 @@ def test_output_lock_prevents_concurrent_writer(tmp_path: Path) -> None:
     assert not (tmp_path / benchmark.LOCK_FILENAME).exists()
 
 
+def _candidate_execution_authority_fixture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    repository = tmp_path
+    output_dir = repository / "output/candidate"
+    output_dir.mkdir(parents=True)
+    artifact_source = repository / benchmark.ARTIFACT_IO_RELATIVE_PATH
+    artifact_source.parent.mkdir(parents=True)
+    artifact_source.write_bytes(b"frozen artifact io source\n")
+    monkeypatch.setattr(benchmark, "REPO_ROOT", repository)
+    artifact_claim, _ = benchmark.artifact_io.snapshot_file(
+        repository, benchmark.ARTIFACT_IO_RELATIVE_PATH
+    )
+    owner_token = "d" * 64
+    source_revision = "a" * 40
+    lease_record = {
+        "schema_version": 1,
+        "status": "held",
+        "purpose": "enforce_one_repository_generation_controller_at_a_time",
+        "source_revision": source_revision,
+        "owner_token": owner_token,
+        "launcher_pid_at_acquisition": 123,
+        "acquired_at_utc": "2026-09-07T00:00:00+00:00",
+        "artifact_io": {
+            "relative_path": benchmark.ARTIFACT_IO_RELATIVE_PATH,
+            "device": artifact_claim.device,
+            "inode": artifact_claim.inode,
+            "sha256": artifact_claim.sha256,
+        },
+        "owner_process_exit_does_not_make_lock_stale": True,
+        "stale_lock_policy": "fail_closed_and_require_manual_review",
+        "release_policy": (
+            "exact_owner_only_after_all_handed_off_children_terminal_and_required_"
+            "ignored_decisions_or_failure_receipts_are_durable"
+        ),
+    }
+    lease_path = repository / benchmark.GENERATION_LEASE_RELATIVE_PATH
+    lease_path.write_text(
+        json.dumps(lease_record, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    lease_claim, _ = benchmark.artifact_io.snapshot_file(
+        repository, benchmark.GENERATION_LEASE_RELATIVE_PATH
+    )
+    output_state = output_dir.stat()
+    args = SimpleNamespace(
+        checkpoint=repository / "checkpoint.ckpt",
+        expected_checkpoint_sha256="b" * 64,
+        expected_source_revision=source_revision,
+        config=repository / "config.yaml",
+        expected_config_sha256="c" * 64,
+        num_samples=32,
+        seed=1100,
+        device="cuda:0",
+        output_dir=output_dir,
+        expected_output_directory_device=int(output_state.st_dev),
+        expected_output_directory_inode=int(output_state.st_ino),
+        overwrite=False,
+    )
+    command = [
+        benchmark.sys.executable,
+        str(repository / "scripts/exps/denovo/benchmark.py"),
+        "--checkpoint",
+        str(args.checkpoint),
+        "--expected-checkpoint-sha256",
+        args.expected_checkpoint_sha256,
+        "--expected-source-revision",
+        args.expected_source_revision,
+        "--config",
+        str(args.config),
+        "--expected-config-sha256",
+        args.expected_config_sha256,
+        "--num-samples",
+        str(args.num_samples),
+        "--seed",
+        str(args.seed),
+        "--device",
+        "cuda:0",
+        "--output-dir",
+        str(args.output_dir),
+        "--expected-output-directory-device",
+        str(args.expected_output_directory_device),
+        "--expected-output-directory-inode",
+        str(args.expected_output_directory_inode),
+    ]
+    authority = {
+        "schema_version": 1,
+        "generation_lease": {
+            "path": str(lease_path),
+            "relative_path": benchmark.GENERATION_LEASE_RELATIVE_PATH,
+            "sha256": lease_claim.sha256,
+            "device": lease_claim.device,
+            "inode": lease_claim.inode,
+            "owner_token": owner_token,
+        },
+        "artifact_io_source": {
+            "path": str(artifact_source),
+            "sha256": artifact_claim.sha256,
+            "device": artifact_claim.device,
+            "inode": artifact_claim.inode,
+        },
+        "output_directory": {
+            "path": str(output_dir),
+            "relative_path": "output/candidate",
+            "device": int(output_state.st_dev),
+            "inode": int(output_state.st_ino),
+        },
+        "command": command,
+        "command_sha256": hashlib.sha256(
+            json.dumps(command, separators=(",", ":"), ensure_ascii=True).encode(
+                "ascii"
+            )
+        ).hexdigest(),
+    }
+    required_environment = {
+        "CUDA_VISIBLE_DEVICES": "GPU-deadbeef",
+        "PYTHONPATH": f"{repository / 'src'}:{repository}",
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONOPTIMIZE": "0",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONUTF8": "1",
+        "PYTHONIOENCODING": "utf-8",
+        "GENMOL_BENCHMARK_GPU_PHYSICAL_INDEX": "3",
+        "GENMOL_BENCHMARK_GPU_UUID": "GPU-deadbeef",
+        "GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT": "{}",
+        "GENMOL_BENCHMARK_RUN_LABEL": "candidate-test",
+        "GENMOL_BENCHMARK_GENERATION_LEASE_PATH": str(lease_path),
+        "GENMOL_BENCHMARK_EXPECTED_GENERATION_LEASE_SHA256": lease_claim.sha256,
+        "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN": owner_token,
+        "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON": json.dumps(
+            authority, separators=(",", ":"), sort_keys=True
+        ),
+    }
+    for key, value in required_environment.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setattr(benchmark.sys, "argv", command[1:])
+    return args, authority, lease_path, output_dir
+
+
+def test_candidate_authority_retains_exact_directory_and_revalidates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, expected, _, _ = _candidate_execution_authority_fixture(
+        tmp_path, monkeypatch
+    )
+
+    with benchmark.candidate_execution_authority(args) as authority:
+        assert authority.launch_authority == expected
+        assert authority.output_directory_relative_path == "output/candidate"
+        assert os.fstat(authority.output_directory_fd).st_ino == (
+            args.expected_output_directory_inode
+        )
+        assert authority.launch_authority_canonical_sha256 == (
+            benchmark._canonical_json_sha256(expected)
+        )
+        benchmark._revalidate_candidate_execution_authority(authority)
+        descriptor = authority.output_directory_fd
+    with pytest.raises(OSError):
+        os.fstat(descriptor)
+
+
+def test_candidate_authority_rejects_command_drift_before_model_import(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, authority, _, _ = _candidate_execution_authority_fixture(
+        tmp_path, monkeypatch
+    )
+    authority["command"][2] = "--wrong-checkpoint-flag"
+    authority["command_sha256"] = hashlib.sha256(
+        json.dumps(
+            authority["command"], separators=(",", ":"), ensure_ascii=True
+        ).encode("ascii")
+    ).hexdigest()
+    monkeypatch.setenv(
+        "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON",
+        json.dumps(authority, separators=(",", ":"), sort_keys=True),
+    )
+    monkeypatch.setattr(benchmark.sys, "argv", authority["command"][1:])
+
+    with pytest.raises(benchmark.BenchmarkConfigurationError, match="24-string"):
+        benchmark._load_candidate_execution_authority(args)
+
+
+def test_candidate_authority_revalidation_rejects_lease_or_output_mutation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, _, lease_path, output_dir = _candidate_execution_authority_fixture(
+        tmp_path, monkeypatch
+    )
+    authority = benchmark._load_candidate_execution_authority(args)
+    try:
+        (output_dir / "intruder").write_text("not owned\n", encoding="utf-8")
+        with pytest.raises(RuntimeError, match="gained entries"):
+            benchmark._revalidate_candidate_execution_authority(authority)
+        (output_dir / "intruder").unlink()
+        lease_path.write_bytes(lease_path.read_bytes() + b" ")
+        with pytest.raises(RuntimeError, match="lease identity or bytes"):
+            benchmark._revalidate_candidate_execution_authority(authority)
+    finally:
+        os.close(authority.output_directory_fd)
+
+
+def test_candidate_authority_revalidation_rejects_controlled_environment_mutation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, _, _, _ = _candidate_execution_authority_fixture(tmp_path, monkeypatch)
+    authority = benchmark._load_candidate_execution_authority(args)
+    try:
+        monkeypatch.setenv(
+            "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN", "e" * 64
+        )
+        with pytest.raises(RuntimeError, match="environment changed"):
+            benchmark._revalidate_candidate_execution_authority(authority)
+    finally:
+        os.close(authority.output_directory_fd)
+
+
 def test_config_validation_and_fingerprints(tmp_path: Path) -> None:
     config_path = tmp_path / "config.yaml"
     config_path.write_text(
@@ -463,6 +860,7 @@ def test_config_validation_and_fingerprints(tmp_path: Path) -> None:
     assert udlm["inference_eps"] == pytest.approx(1e-5)
     assert udlm["prior_variant"] == "release_uniform"
     assert udlm["prior_metadata_sha256"] is None
+    assert udlm["raw_loo_top_p"] == 1.0
     categorical = benchmark.validate_sampling_config(
         {
             **{
@@ -506,6 +904,39 @@ def test_config_validation_and_fingerprints(tmp_path: Path) -> None:
                 "softmax_temp": 1.0,
                 "randomness": 0.0,
                 "min_add_len": 12,
+                "inference_eps": 1e-5,
+                "exclude_special_tokens": False,
+            }
+        )
+
+
+@pytest.mark.parametrize("value", [True, False, 0, -0.1, 1.01, float("inf"), float("nan")])
+def test_sampling_config_rejects_invalid_raw_loo_top_p(value) -> None:
+    with pytest.raises(benchmark.BenchmarkConfigurationError, match="raw_loo_top_p"):
+        benchmark.validate_sampling_config(
+            {
+                "diffusion_type": "udlm",
+                "softmax_temp": 1.0,
+                "raw_loo_top_p": value,
+                "randomness": 0.0,
+                "min_add_len": 12,
+                "num_steps": 128,
+                "inference_eps": 1e-5,
+                "exclude_special_tokens": False,
+            }
+        )
+
+
+@pytest.mark.parametrize("value", [True, False, 0, -1, float("inf"), float("nan")])
+def test_sampling_config_rejects_invalid_softmax_temp(value) -> None:
+    with pytest.raises(benchmark.BenchmarkConfigurationError, match="softmax_temp"):
+        benchmark.validate_sampling_config(
+            {
+                "diffusion_type": "udlm",
+                "softmax_temp": value,
+                "randomness": 0.0,
+                "min_add_len": 12,
+                "num_steps": 128,
                 "inference_eps": 1e-5,
                 "exclude_special_tokens": False,
             }
@@ -775,6 +1206,7 @@ def test_implementation_inputs_include_length_distribution_statistics() -> None:
         "moco_utils_source",
         "save_utils_source",
         "bracket_safe_converter_source",
+        "artifact_io_source",
         "length_distribution",
     }
     for artifact in inputs.values():
@@ -1229,11 +1661,17 @@ def test_cli_requires_every_run_identity_field() -> None:
             "cpu",
             "--output-dir",
             "run",
+            "--expected-output-directory-device",
+            "123",
+            "--expected-output-directory-inode",
+            "456",
         ]
     )
     assert args.seed == 7
     assert args.num_samples == 1000
     assert args.overwrite is False
+    assert args.expected_output_directory_device == 123
+    assert args.expected_output_directory_inode == 456
 
 
 def test_benchmark_run_label_is_hash_qualified() -> None:

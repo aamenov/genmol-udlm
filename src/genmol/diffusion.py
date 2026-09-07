@@ -18,6 +18,7 @@ non-negative, and ``expm1`` keeps the expression accurate near zero.
 from __future__ import annotations
 
 import math
+import numbers
 from collections.abc import Iterable, Sequence
 
 import torch
@@ -293,20 +294,56 @@ class ContinuousUniformDiffusion(nn.Module):
         logits: torch.Tensor,
         *,
         temperature: float = 1.0,
+        raw_loo_top_p: float = 1.0,
     ) -> torch.Tensor:
-        """Return float32 clean-token log probabilities on the UDLM alphabet."""
+        """Return sampling-time raw-LOO log probabilities on the active alphabet.
+
+        Temperature and nucleus filtering act on the learned raw-LOO primitive,
+        before either exact reverse bridge is constructed.  ``raw_loo_top_p=1``
+        deliberately returns through the historical path before any sorting,
+        exponentiation, masking, or renormalization.
+        """
 
         if logits.shape[-1] != self.num_classes:
             raise ValueError(
                 f"expected {self.num_classes} logits, received {logits.shape[-1]}"
             )
-        if temperature <= 0:
-            raise ValueError("temperature must be positive")
+        if isinstance(temperature, bool) or not isinstance(temperature, numbers.Real):
+            raise ValueError("temperature must be a finite real number")
+        temperature = float(temperature)
+        if not math.isfinite(temperature) or temperature <= 0:
+            raise ValueError("temperature must be finite and positive")
+        if isinstance(raw_loo_top_p, bool) or not isinstance(
+            raw_loo_top_p, numbers.Real
+        ):
+            raise ValueError("raw_loo_top_p must be a finite real number")
+        raw_loo_top_p = float(raw_loo_top_p)
+        if not math.isfinite(raw_loo_top_p) or not 0.0 < raw_loo_top_p <= 1.0:
+            raise ValueError("raw_loo_top_p must be finite and lie in (0, 1]")
         # Float64 is useful for reference checks; all lower-precision training
         # dtypes are deliberately promoted to float32 for the UDLM algebra.
         compute_logits = logits if logits.dtype == torch.float64 else logits.float()
         selected = compute_logits.index_select(-1, self.diffusion_token_ids)
-        return (selected / float(temperature)).log_softmax(dim=-1)
+        log_probs = (selected / temperature).log_softmax(dim=-1)
+        if raw_loo_top_p == 1.0:
+            return log_probs
+
+        probs = log_probs.exp()
+        # diffusion_token_ids is strictly increasing, so a stable descending
+        # sort resolves exact probability ties by the lower active model token
+        # ID.  Shift the cumulative-mass mask right to retain the crossing token.
+        sorted_indices = torch.argsort(
+            probs, dim=-1, descending=True, stable=True
+        )
+        sorted_probs = probs.gather(-1, sorted_indices)
+        sorted_to_remove = sorted_probs.cumsum(dim=-1) > raw_loo_top_p
+        sorted_to_remove[..., 1:] = sorted_to_remove[..., :-1].clone()
+        sorted_to_remove[..., 0] = False
+        to_remove = torch.zeros_like(sorted_to_remove)
+        to_remove.scatter_(-1, sorted_indices, sorted_to_remove)
+        truncated = probs.masked_fill(to_remove, 0.0)
+        truncated = truncated / truncated.sum(dim=-1, keepdim=True)
+        return truncated.log()
 
     def sample_prior(
         self,
@@ -464,6 +501,7 @@ class ContinuousUniformDiffusion(nn.Module):
         s: torch.Tensor,
         *,
         temperature: float = 1.0,
+        raw_loo_top_p: float = 1.0,
     ) -> torch.Tensor:
         """Compute ``p_theta(z_s | z_t)`` on the compact diffusion alphabet."""
 
@@ -474,7 +512,11 @@ class ContinuousUniformDiffusion(nn.Module):
         if torch.any(s < 0) or torch.any(t > 1) or torch.any(s >= t):
             raise ValueError("posterior requires 0 <= s < t <= 1")
 
-        log_x_theta = self.clean_log_probs(logits, temperature=temperature)
+        log_x_theta = self.clean_log_probs(
+            logits,
+            temperature=temperature,
+            raw_loo_top_p=raw_loo_top_p,
+        )
         x_theta = log_x_theta.exp()
         xt_compact, _ = self._compact_indices(xt)
         xt_one_hot = F.one_hot(
@@ -503,12 +545,18 @@ class ContinuousUniformDiffusion(nn.Module):
         *,
         mutable_mask: torch.Tensor | None = None,
         temperature: float = 1.0,
+        raw_loo_top_p: float = 1.0,
         generator: torch.Generator | None = None,
     ) -> torch.Tensor:
         """Draw one reverse transition while clamping immutable context."""
 
         posterior = self.posterior_probs(
-            logits, xt, t, s, temperature=temperature
+            logits,
+            xt,
+            t,
+            s,
+            temperature=temperature,
+            raw_loo_top_p=raw_loo_top_p,
         )
         sampled_compact = torch.multinomial(
             posterior.reshape(-1, self.diffusion_vocab_size),
@@ -834,6 +882,7 @@ class ContinuousCategoricalDiffusion(ContinuousUniformDiffusion):
         s: torch.Tensor,
         *,
         temperature: float = 1.0,
+        raw_loo_top_p: float = 1.0,
     ) -> torch.Tensor:
         """Compute the exact model reverse posterior on the active alphabet.
 
@@ -859,7 +908,11 @@ class ContinuousCategoricalDiffusion(ContinuousUniformDiffusion):
                 f"received {bad_ids}"
             )
 
-        log_x_theta = self.clean_log_probs(logits, temperature=temperature)
+        log_x_theta = self.clean_log_probs(
+            logits,
+            temperature=temperature,
+            raw_loo_top_p=raw_loo_top_p,
+        )
         dtype = log_x_theta.dtype
         device = logits.device
         log_pi = self.stationary_probs.log().to(device=device, dtype=dtype)
@@ -900,6 +953,7 @@ class ContinuousCategoricalDiffusion(ContinuousUniformDiffusion):
         *,
         mutable_mask: torch.Tensor | None = None,
         temperature: float = 1.0,
+        raw_loo_top_p: float = 1.0,
         generator: torch.Generator | None = None,
     ) -> torch.Tensor:
         """Draw one reverse transition while preserving excluded context."""
@@ -924,6 +978,7 @@ class ContinuousCategoricalDiffusion(ContinuousUniformDiffusion):
             t,
             s,
             temperature=temperature,
+            raw_loo_top_p=raw_loo_top_p,
         )
         sampled_compact = torch.multinomial(
             posterior.reshape(-1, self.diffusion_vocab_size),

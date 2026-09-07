@@ -70,7 +70,9 @@ def test_stable_reader_rejects_ancestor_swap_before_descriptor_walk(
         udlm_root.symlink_to(outside, target_is_directory=True)
         return candidate
 
-    monkeypatch.setattr(writer, "_absolute_in_repository", swap_after_lexical_validation)
+    monkeypatch.setattr(
+        writer, "_absolute_in_repository", swap_after_lexical_validation
+    )
     with pytest.raises(writer.PilotEvidenceError, match="unavailable"):
         writer.read_stable_regular_file(inside, label="ancestor-swap fixture")
 
@@ -221,7 +223,7 @@ class Harness:
             "extra_producer_field": True,
         }
         self.summary_path.write_bytes(
-            _bytes({"schema_version": 7, "seed": SEED, "num_samples": 256})
+            _bytes({"schema_version": 8, "seed": SEED, "num_samples": 256})
         )
         self.raw_path.write_text("raw_model_text\nexample\n", encoding="utf-8")
         predecessor = {"state": "explicit_genesis_no_predecessor"}
@@ -414,7 +416,7 @@ def test_collects_exact_reference_only_schema2_envelope(harness: Harness) -> Non
     assert envelope["benchmark_artifacts"]["summary_json"] == {
         "relative_path": f"output/benchmarks/selection/{ATTEMPT}/seed_{SEED}/summary.json",
         "sha256": harness.summary_sha,
-        "schema_version": 7,
+        "schema_version": 8,
     }
     assert harness.report_calls == [
         (
@@ -759,14 +761,24 @@ def test_revalidates_inputs_after_worker_before_publication(harness: Harness) ->
 def test_atomic_publication_loses_race_without_clobber(
     harness: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    real_link = os.link
+    real_link_stage = writer.artifact_io._link_stage
 
-    def racing_link(source: Path, destination: Path, **kwargs: Any) -> None:
-        destination.write_bytes(b"racer\n")
-        real_link(source, destination, **kwargs)
+    def racing_link_stage(stage) -> None:
+        descriptor = os.open(
+            stage.name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+            0o644,
+            dir_fd=stage.parent.fd,
+        )
+        try:
+            os.write(descriptor, b"racer\n")
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        real_link_stage(stage)
 
-    monkeypatch.setattr(writer.os, "link", racing_link)
-    with pytest.raises(FileExistsError, match="concurrently created"):
+    monkeypatch.setattr(writer.artifact_io, "_link_stage", racing_link_stage)
+    with pytest.raises(FileExistsError, match="replace|exists"):
         harness.collect()
     assert harness.output.read_bytes() == b"racer\n"
 
@@ -854,6 +866,7 @@ class FailureHarness:
         self.config_path.write_text(
             "diffusion_type: udlm\n"
             "softmax_temp: 1.0\n"
+            "raw_loo_top_p: 1.0\n"
             "randomness: 0.5\n"
             "min_add_len: 40\n"
             "num_steps: 128\n"
@@ -866,6 +879,7 @@ class FailureHarness:
         source_config = {
             "diffusion_type": "udlm",
             "softmax_temp": 1.0,
+            "raw_loo_top_p": 1.0,
             "randomness": 0.5,
             "min_add_len": 40,
             "num_steps": 128,
@@ -924,6 +938,8 @@ class FailureHarness:
             num_samples=self.expected.num_samples,
             seed=SEED,
             output_dir=self.run_dir,
+            expected_output_directory_device=self.run_dir.stat().st_dev,
+            expected_output_directory_inode=self.run_dir.stat().st_ino,
         )
         self.job = launcher.RunningJob(
             seed=SEED,
@@ -942,6 +958,12 @@ class FailureHarness:
             log_path=self.log_path,
             command=tuple(command),
             started_at_utc="2026-09-06T10:00:00+00:00",
+            output_directory_owner=launcher.artifact_io.OwnedDirectory(
+                relative_path=str(self.run_dir.relative_to(root)),
+                device=self.run_dir.stat().st_dev,
+                inode=self.run_dir.stat().st_ino,
+                mode=self.run_dir.stat().st_mode,
+            ),
         )
         self.receipt_path = launcher._write_pilot_failure_receipt(
             output_root=self.output_root,

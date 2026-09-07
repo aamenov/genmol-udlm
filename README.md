@@ -9,21 +9,170 @@ controls and molecular variants derived from the
 It is not NVIDIA's official repository and is not affiliated with NVIDIA or the
 UDLM authors.
 
-> **Research status.** The frozen one-GPU optimization screens selected the
-> E-L1 learning-rate bundle and E-A1 FiLM time conditioner using matched
-> denoising evidence. Those screens used no generation metrics or final
-> benchmark seeds. They do not establish molecular-quality improvement or a
-> UDLM-over-GenMol superiority claim. An initial scale-up lineage completed R
-> and S but stopped before E launch on a recursive provenance-validator defect;
-> those outputs are preserved but cannot be mixed with repaired-source E. The
-> next step is a corrected, freshly frozen matched R/S/E scale-up followed by
-> the registered generation protocol.
+> **Research status.** The corrected one-GPU scale-up completed the matched
+> 1,000-update R/S/E chain, and its terminal E receipt passed the independent
+> panel validator. Training evidence alone does not measure molecular quality.
+> No registered v4 candidate molecule has been generated, no final benchmark
+> seed has run, and there is no UDLM-over-GenMol superiority result yet. The
+> next boundary is the separately reviewed v4 framework/config/registry Git
+> sequence, followed by the small-first registered generation campaign.
 
 The main educational implementation is
 [`genmol_from_scratch.ipynb`](genmol_from_scratch.ipynb); exact experiment
 state, hashes, caveats, and the next safe action are in
 [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md). The standalone repository is
 [aamenov/genmol-udlm](https://github.com/aamenov/genmol-udlm).
+
+## Registered UDLM generation plan
+
+Protocol v4 binds three immutable W=1 checkpoints: release-compatible uniform
+R (`d0310d2e…`), schedule-consistent uniform S (`100f467b…`), and
+schedule-consistent empirical-prior E (`dce870e8…`). All three restart from the
+same verified MDLM EMA, use the selected E-L1 schedule and E-A1 conditioner,
+and complete 1,000 optimizer updates. This is training/provenance evidence, not
+a molecule benchmark. The frozen
+`experiments/udlm/protocols/de_novo_superiority_v4.json` has raw SHA-256
+`9432360dad30a01de7ededf62db77470af9a0b8297fc78f06d330dbc73e826b7`
+and canonical SHA-256
+`4edb0d193fcedc76913905220f3431fed8f0dd416f900c8da5f433a6071d4bfa`.
+
+The prospective sampling universe is 36 settings:
+
+- checkpoint arm in `{R, S, E}`;
+- raw-LOO softmax temperature in `{0.50, 0.70, 0.85, 1.00}`; and
+- `raw_loo_top_p` in `{1.00, 0.98, 0.95}`.
+
+Temperature and stable nucleus filtering act on the active-alphabet raw LOO
+probabilities before the exact UDLM reverse bridge. The crossing token is
+retained, ties use ascending active token ID, and the final reverse posterior is
+never truncated. `raw_loo_top_p=1.0` takes the literal pre-v4 path; uniform and
+categorical posterior tensors and cloned-RNG samples must be exactly equal to
+the old behavior.
+
+The campaign is deliberately small-first. D runs one structural-only
+seed-1100 × 32 diagnostic. A screens 12 temperature settings at seed 1101 × 32;
+B tests 18 promoted temperature/top-p interactions at seed 1102 × 64; C checks
+six survivors at held-out engineering seed 1103 × 96. The eligible stage alone
+uses seeds 1000 and 1001 × 256 for the three arm survivors. One global winner is
+then frozen before final seeds 0, 1, and 2 × 1,000. Ranking uses raw unrounded
+released-compatible quality, then diversity, then ASCII config and attempt IDs.
+Every scheduled child must terminate; failures remain disclosed and unrankable,
+with no retry, substitution, or cross-stage score pooling.
+Before any ranked stage advances, its raw, unrounded metrics are recomputed by
+the fresh CPU independent rescore. Every non-D child starts strictly after its
+predecessor decision completes, every child terminates before its own decision,
+and the eligible decision completes before the candidate lock is built.
+
+Candidate benchmark schema 8 embeds bounded sampler-input IDs, final sampled
+IDs, editable bits, and recomputed control-token counts in `summary.json`, then
+checks that tokenizer decoding exactly matches CSV raw text. Publication is
+exclusive and completion-last: `raw_samples.csv` is linked before
+`summary.json`, with identity-owned rollback, a retained output-directory
+descriptor, and a repository-global generation lease.
+
+At every real launch, the full GPU inventory is inspected and selected UUIDs
+are immediately re-probed. A card is eligible only below 10% utilization
+(exactly 10% is not idle), with at least 30,000 MiB free and non-prohibited
+compute mode. Active processes are recorded and never interrupted. Up to three
+GPUs are authorized without another user request, physical GPU 0 is never
+assumed, and long jobs use named detached `tmux` sessions with logs under
+`output/logs/`.
+
+The publication firewall is acyclic: F contains framework/tests/docs/notebook
+and v4; clean pushed C adds exactly 33 new YAMLs while reusing three historical
+identity YAMLs; clean pushed G adds only the config registry, and every GPU
+child binds exact G. After all 43 pre-final children terminate, a CPU
+materializer independently validates and rescores all outcomes, publishes 43
+tracked envelopes plus a completion-last manifest, and force-adds exactly that
+manifest-derived closure. The addition-only EVIDENCE commit is the exact sole
+child of G. It is followed by decision-only, deterministic-ledger-only, and
+deterministically-built candidate-lock-only commits. There is no hand-authored
+lock draft. Final seeds are forbidden until the lock is clean and pushed.
+
+## Exact post-G operational handoff
+
+This sequence must run in the original artifact-bearing worktree. A fresh Git
+clone does not contain the ignored terminal checkpoints, child outputs, live
+envelopes, or stage decisions; it is valid only if those artifacts were
+restored byte-for-byte and independently pass every check. Replace the two
+digest marker strings below with the raw and canonical registry SHA-256 values
+verified at clean pushed G. `G` itself is captured from that clean pushed
+revision.
+
+```bash
+cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree
+mkdir -p output/logs
+G="$(git rev-parse HEAD)"
+REGISTRY_RAW='REPLACE_WITH_REGISTRY_RAW_SHA256'
+REGISTRY_CANONICAL='REPLACE_WITH_REGISTRY_CANONICAL_SHA256'
+```
+
+Authorize one bounded prefix at a time. D is internally fixed to concurrency
+one; later stages use at most three one-GPU children. Do not launch A until D's
+decision is terminal, B until A is terminal, C until B is terminal, or
+`eligible` until C is terminal.
+
+```bash
+tmux new-session -d -s genmol-udlm-v4-d "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_candidate_campaign.py --registry experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json --expected-registry-sha256 $REGISTRY_RAW --expected-registry-canonical-sha256 $REGISTRY_CANONICAL --through-stage D > output/logs/v4-campaign-D-controller.log 2>&1"
+tmux new-session -d -s genmol-udlm-v4-a "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_candidate_campaign.py --registry experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json --expected-registry-sha256 $REGISTRY_RAW --expected-registry-canonical-sha256 $REGISTRY_CANONICAL --through-stage A > output/logs/v4-campaign-A-controller.log 2>&1"
+tmux new-session -d -s genmol-udlm-v4-b "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_candidate_campaign.py --registry experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json --expected-registry-sha256 $REGISTRY_RAW --expected-registry-canonical-sha256 $REGISTRY_CANONICAL --through-stage B > output/logs/v4-campaign-B-controller.log 2>&1"
+tmux new-session -d -s genmol-udlm-v4-c "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_candidate_campaign.py --registry experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json --expected-registry-sha256 $REGISTRY_RAW --expected-registry-canonical-sha256 $REGISTRY_CANONICAL --through-stage C > output/logs/v4-campaign-C-controller.log 2>&1"
+tmux new-session -d -s genmol-udlm-v4-eligible "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_candidate_campaign.py --registry experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json --expected-registry-sha256 $REGISTRY_RAW --expected-registry-canonical-sha256 $REGISTRY_CANONICAL --through-stage eligible > output/logs/v4-campaign-eligible-controller.log 2>&1"
+```
+
+After all five stage decisions are terminal, stay at exact G and materialize,
+then stage, the evidence closure. The staging flag belongs to the materializer,
+uses exact `git add -f` paths derived from the manifest, verifies the index, and
+does not commit or push.
+
+```bash
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/materialize_candidate_evidence.py --expected-source-revision "$G" --expected-registry-sha256 "$REGISTRY_RAW" --expected-registry-canonical-sha256 "$REGISTRY_CANONICAL"
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/materialize_candidate_evidence.py --expected-source-revision "$G" --expected-registry-sha256 "$REGISTRY_RAW" --expected-registry-canonical-sha256 "$REGISTRY_CANONICAL" --stage-published-evidence
+git commit -m 'Publish registered v4 campaign evidence'
+git push --no-thin origin codex/udlm-genmol-scale-retry1
+EVIDENCE="$(git rev-parse HEAD)"
+```
+
+Build each authority artifact only from its clean pushed predecessor. The lock
+phase is the deterministic schema-2 builder; do not create a draft manually.
+
+```bash
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/prepare_candidate_authority.py --phase decision --expected-source-revision "$EVIDENCE" --expected-registry-sha256 "$REGISTRY_RAW" --expected-registry-canonical-sha256 "$REGISTRY_CANONICAL" --registry-revision "$G"
+git add experiments/udlm/candidates/candidate_decision.json
+git commit -m 'Publish registered v4 candidate decision'
+git push --no-thin origin codex/udlm-genmol-scale-retry1
+DECISION="$(git rev-parse HEAD)"
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/prepare_candidate_authority.py --phase ledger --expected-source-revision "$DECISION"
+git add experiments/udlm/candidates/candidate_ledger.json
+git commit -m 'Publish deterministic v4 candidate ledger'
+git push --no-thin origin codex/udlm-genmol-scale-retry1
+LEDGER="$(git rev-parse HEAD)"
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/prepare_candidate_authority.py --phase lock --expected-source-revision "$LEDGER"
+git add experiments/udlm/candidates/candidate_lock.json
+git commit -m 'Lock registered v4 candidate before final evaluation'
+git push --no-thin origin codex/udlm-genmol-scale-retry1
+LOCK="$(git rev-parse HEAD)"
+```
+
+Finally, read `LOCK_CHECKPOINT` from `training.checkpoint.relative_path`,
+`LOCK_CONFIG` from `inference.evaluation_config_relative_path`, and
+`LOCK_OUTPUT_ROOT` as the common parent of the three
+`inference.final_run_directories_by_seed` paths in the committed lock. Set
+`GPU_COUNT` to 1, 2, or 3. The launcher requires every supplied field to equal
+the lock and validates the committed schema-2 lock before mutation or GPU work.
+
+```bash
+LOCK_CHECKPOINT='REPLACE_WITH_EXACT_LOCK_CHECKPOINT_PATH'
+LOCK_CONFIG='REPLACE_WITH_EXACT_LOCK_CONFIG_PATH'
+LOCK_OUTPUT_ROOT='REPLACE_WITH_EXACT_LOCK_OUTPUT_ROOT'
+GPU_COUNT='REPLACE_WITH_INTEGER_1_TO_3'
+tmux new-session -d -s genmol-udlm-v4-final "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/exps/denovo/launch_benchmark.py --checkpoint $LOCK_CHECKPOINT --config $LOCK_CONFIG --num-samples 1000 --seeds 0 1 2 --output-root $LOCK_OUTPUT_ROOT --candidate-lock experiments/udlm/candidates/candidate_lock.json --gpu-count $GPU_COUNT --max-utilization-percent 10 --min-free-memory-mib 30000 --log-root output/logs > output/logs/v4-final-controller.log 2>&1"
+```
+
+For every launch, utilization must be strictly below 10% (10% is busy), free
+memory must be at least 30,000 MiB, physical IDs are never assumed, selected
+UUIDs are immediately re-probed, and active processes are recorded and never
+interrupted.
 
 ## Upstream GenMol reference documentation
 

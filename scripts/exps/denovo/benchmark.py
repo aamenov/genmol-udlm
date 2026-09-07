@@ -17,10 +17,12 @@ for every requested sample.
 from __future__ import annotations
 
 import argparse
+import base64
 import csv
 import hashlib
 import importlib
 import importlib.metadata
+import io
 import json
 import math
 import numbers
@@ -34,6 +36,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from array import array
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -48,11 +51,31 @@ for import_root in (REPO_ROOT, REPO_SRC):
         sys.path.remove(str(import_root))
     sys.path.insert(0, str(import_root))
 
-SCHEMA_VERSION = 7
+from scripts import artifact_io  # noqa: E402
+
+
+SCHEMA_VERSION = 8
+HISTORICAL_MDLM_SCHEMA_VERSION = 7
 TOKENIZER_REQUESTED_IDENTIFIER = "datamol-io/safe-gpt"
 RAW_SAMPLES_FILENAME = "raw_samples.csv"
 SUMMARY_FILENAME = "summary.json"
 LOCK_FILENAME = ".benchmark.lock"
+GENERATION_LEASE_RELATIVE_PATH = "output/.single_generation_job.lock"
+ARTIFACT_IO_RELATIVE_PATH = "scripts/artifact_io.py"
+LAUNCH_AUTHORITY_SCHEMA_VERSION = 1
+SAMPLED_TOKEN_CONTROL_AUDIT_SCHEMA_VERSION = 1
+MAX_AUDIT_ROWS = 1_000
+MAX_AUDIT_COLUMNS = 256
+MAX_SCHEMA8_SUMMARY_BYTES = 2 * 1024 * 1024
+EXPECTED_MODEL_VOCAB_SIZE = 1_880
+EXPECTED_TOKENIZER_EFFECTIVE_SIZE = 1_882
+CONTROL_TOKEN_IDS = {
+    "unk": 0,
+    "bos": 1,
+    "eos": 2,
+    "pad": 3,
+    "mask": 4,
+}
 
 INFERENCE_WEIGHTS_FIELDS = frozenset({"source", "ema_applied", "ema"})
 EMA_INFERENCE_METADATA_FIELDS = frozenset(
@@ -185,7 +208,12 @@ LAUNCH_ENVIRONMENT_KEYS = (
     "GENMOL_BENCHMARK_GPU_UUID",
     "GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT",
     "GENMOL_BENCHMARK_RUN_LABEL",
+    "GENMOL_BENCHMARK_GENERATION_LEASE_PATH",
+    "GENMOL_BENCHMARK_EXPECTED_GENERATION_LEASE_SHA256",
+    "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN",
+    "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON",
 )
+HISTORICAL_MDLM_LAUNCH_ENVIRONMENT_KEYS = LAUNCH_ENVIRONMENT_KEYS[:11]
 
 IMPLEMENTATION_INPUT_PATHS = {
     "genmol_package_init_source": REPO_ROOT / "src/genmol/__init__.py",
@@ -203,6 +231,7 @@ IMPLEMENTATION_INPUT_PATHS = {
     "bracket_safe_converter_source": (
         REPO_ROOT / "src/genmol/utils/bracket_safe_converter.py"
     ),
+    "artifact_io_source": REPO_ROOT / ARTIFACT_IO_RELATIVE_PATH,
     "length_distribution": REPO_ROOT / "data/len.pk",
 }
 
@@ -346,6 +375,22 @@ class ImplementationInputSnapshot:
 
     provenance: Mapping[str, Any]
     length_distribution: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class CandidateExecutionAuthority:
+    """Retained controller authority for one schema-8 candidate child."""
+
+    output_directory_fd: int
+    output_directory_path: Path
+    output_directory_relative_path: str
+    output_directory_device: int
+    output_directory_inode: int
+    generation_lease_claim: artifact_io.FileClaim
+    generation_lease_payload: bytes
+    artifact_io_source_claim: artifact_io.FileClaim
+    launch_authority: Mapping[str, Any]
+    launch_authority_canonical_sha256: str
 
 
 def benchmark_run_label(global_step: int, checkpoint_sha256: str, seed: int) -> str:
@@ -1245,7 +1290,8 @@ def generate_raw_model_text(
     exclude_special_tokens: bool | None,
     prior_variant: str | None,
     prior_metadata_sha256: str | None,
-) -> tuple[list[str], dict[str, Any]]:
+    raw_loo_top_p: float | None = None,
+) -> tuple[list[str], dict[str, Any], Any, Any]:
     """Run either diffusion backend through the shared raw-token sampler API.
 
     ``Sampler.generate(..., return_token_ids=True)`` is the single source of
@@ -1272,6 +1318,7 @@ def generate_raw_model_text(
         )
         x = sampler._insert_mask(x, num_samples, min_add_len=min_add_len)
         x = x.to(sampler.model.device)
+        sampler_input_ids = x.detach().to(device="cpu").clone()
 
         if diffusion_type == "udlm":
             assert num_steps is not None
@@ -1303,6 +1350,10 @@ def generate_raw_model_text(
                 prior_variant=prior_variant,
                 prior_metadata_sha256=prior_metadata_sha256,
             )
+            if raw_loo_top_p is None:
+                raise BenchmarkConfigurationError(
+                    "UDLM sampling requires normalized raw_loo_top_p"
+                )
             nfe = num_steps
             num_steps_source = "explicit UDLM reverse-transition count"
         else:
@@ -1311,22 +1362,25 @@ def generate_raw_model_text(
                 "MDLM.get_num_steps_confidence on the single padded generation batch"
             )
 
-        token_ids = sampler.generate(
-            x,
-            softmax_temp=softmax_temp,
-            randomness=randomness,
-            num_steps=num_steps,
-            return_token_ids=True,
-        )
+        generate_arguments = {
+            "softmax_temp": softmax_temp,
+            "randomness": randomness,
+            "num_steps": num_steps,
+            "return_token_ids": True,
+        }
+        if diffusion_type == "udlm":
+            generate_arguments["raw_loo_top_p"] = raw_loo_top_p
+        token_ids = sampler.generate(x, **generate_arguments)
         decoded = sampler.model.tokenizer.batch_decode(
             token_ids, skip_special_tokens=True
         )
+        final_sampled_ids = token_ids.detach().to(device="cpu").clone()
 
     if len(decoded) != num_samples:
         raise RuntimeError(
             f"Tokenizer returned {len(decoded)} rows for {num_samples} requested samples"
         )
-    return [str(value) for value in decoded], {
+    protocol = {
         "diffusion_type": diffusion_type,
         "nfe": nfe,
         "nfe_definition": "one full backbone forward evaluation per reverse step",
@@ -1339,6 +1393,221 @@ def generate_raw_model_text(
         "temperature": softmax_temp,
         "randomness": randomness,
         "randomness_used_by_sampler": diffusion_type == "mdlm",
+    }
+    if diffusion_type == "udlm":
+        protocol["raw_loo_top_p"] = raw_loo_top_p
+    return (
+        [str(value) for value in decoded],
+        protocol,
+        sampler_input_ids,
+        final_sampled_ids,
+    )
+
+
+def _encoded_uint16_tensor(value: Any, *, label: str) -> dict[str, Any]:
+    import torch
+
+    if not isinstance(value, torch.Tensor) or value.ndim != 2:
+        raise RuntimeError(f"{label} must be a rank-two Torch tensor")
+    if value.dtype == torch.bool or value.is_floating_point() or value.is_complex():
+        raise RuntimeError(f"{label} must contain integer token IDs")
+    cpu = value.detach().to(device="cpu")
+    if torch.any(cpu < 0).item() or torch.any(cpu > 0xFFFF).item():
+        raise RuntimeError(f"{label} cannot be represented as uint16")
+    values = array("H", (int(item) for item in cpu.reshape(-1).tolist()))
+    if values.itemsize != 2:  # pragma: no cover - CPython platform invariant
+        raise RuntimeError("platform unsigned-short representation is not 16 bits")
+    if sys.byteorder != "little":  # pragma: no cover - current platform is little-endian
+        values.byteswap()
+    decoded = values.tobytes()
+    return {
+        "encoding": "rfc4648_base64",
+        "dtype": "uint16",
+        "byte_order": "little",
+        "array_order": "C",
+        "compression": "none",
+        "element_count": int(cpu.numel()),
+        "decoded_byte_count": len(decoded),
+        "decoded_sha256": hashlib.sha256(decoded).hexdigest(),
+        "data_base64": base64.b64encode(decoded).decode("ascii"),
+    }
+
+
+def _encoded_msb0_mask(value: Any, *, label: str) -> dict[str, Any]:
+    import torch
+
+    if not isinstance(value, torch.Tensor) or value.ndim != 2 or value.dtype != torch.bool:
+        raise RuntimeError(f"{label} must be a rank-two boolean Torch tensor")
+    flattened = value.detach().to(device="cpu").reshape(-1).tolist()
+    decoded = bytearray((len(flattened) + 7) // 8)
+    for index, enabled in enumerate(flattened):
+        if enabled:
+            decoded[index // 8] |= 1 << (7 - index % 8)
+    unused_tail = (8 - len(flattened) % 8) % 8
+    payload = bytes(decoded)
+    return {
+        "encoding": "rfc4648_base64",
+        "packing": "one_bit_per_position",
+        "bit_order": "msb0",
+        "array_order": "C",
+        "compression": "none",
+        "logical_bit_count": len(flattened),
+        "decoded_byte_count": len(payload),
+        "unused_tail_bit_count": unused_tail,
+        "decoded_sha256": hashlib.sha256(payload).hexdigest(),
+        "data_base64": base64.b64encode(payload).decode("ascii"),
+    }
+
+
+def _control_token_count_map(values: Any) -> dict[str, int]:
+    return {
+        name: int((values == token_id).sum().item())
+        for name, token_id in CONTROL_TOKEN_IDS.items()
+    }
+
+
+def build_sampled_token_control_audit(
+    sampler: Any,
+    sampler_input_ids: Any,
+    final_sampled_ids: Any,
+    raw_model_texts: Sequence[str],
+) -> dict[str, Any]:
+    """Encode and validate the exact sampled-token boundary for schema 8."""
+    import torch
+
+    if not isinstance(sampler_input_ids, torch.Tensor) or not isinstance(
+        final_sampled_ids, torch.Tensor
+    ):
+        raise RuntimeError("sampled-token audit inputs must be Torch tensors")
+    if sampler_input_ids.ndim != 2 or final_sampled_ids.ndim != 2:
+        raise RuntimeError("sampled-token audit tensors must be rank two")
+    if sampler_input_ids.shape != final_sampled_ids.shape:
+        raise RuntimeError("sampled-token audit tensors must have identical shapes")
+    rows, columns = (int(value) for value in sampler_input_ids.shape)
+    if not 1 <= rows <= MAX_AUDIT_ROWS or not 1 <= columns <= MAX_AUDIT_COLUMNS:
+        raise RuntimeError(
+            "sampled-token audit shape exceeds the registered 1000x256 bound"
+        )
+    if len(raw_model_texts) != rows:
+        raise RuntimeError("sampled-token audit row count disagrees with decoded text")
+
+    model_vocab_size = int(sampler.model.config.model.vocab_size)
+    tokenizer = sampler.model.tokenizer
+    tokenizer_effective_size = int(len(tokenizer))
+    if model_vocab_size != EXPECTED_MODEL_VOCAB_SIZE:
+        raise RuntimeError("sampled-token audit requires model_vocab_size=1880")
+    if tokenizer_effective_size != EXPECTED_TOKENIZER_EFFECTIVE_SIZE:
+        raise RuntimeError("sampled-token audit requires tokenizer_effective_size=1882")
+    observed_controls = {
+        "unk": getattr(tokenizer, "unk_token_id", None),
+        "bos": sampler.model.bos_index,
+        "eos": sampler.model.eos_index,
+        "pad": sampler.pad_index,
+        "mask": sampler.model.mask_index,
+    }
+    if observed_controls != CONTROL_TOKEN_IDS:
+        raise RuntimeError(
+            "sampled-token audit control-token IDs disagree with the frozen contract"
+        )
+    tokenizer_controls = {
+        "unk": getattr(tokenizer, "unk_token_id", None),
+        "bos": getattr(tokenizer, "bos_token_id", None),
+        "eos": getattr(tokenizer, "eos_token_id", None),
+        "pad": getattr(tokenizer, "pad_token_id", None),
+        "mask": getattr(tokenizer, "mask_token_id", None),
+    }
+    if tokenizer_controls != CONTROL_TOKEN_IDS:
+        raise RuntimeError(
+            "sampled-token audit tokenizer control IDs disagree with the frozen contract"
+        )
+
+    sampler_input_ids = sampler_input_ids.detach().to(device="cpu")
+    final_sampled_ids = final_sampled_ids.detach().to(device="cpu")
+    editable_mask = sampler_input_ids == CONTROL_TOKEN_IDS["mask"]
+    for row in sampler_input_ids.tolist():
+        try:
+            eos_position = row.index(CONTROL_TOKEN_IDS["eos"])
+        except ValueError as error:
+            raise RuntimeError(
+                "sampler input must follow BOS MASK+ EOS PAD*"
+            ) from error
+        if (
+            row[0] != CONTROL_TOKEN_IDS["bos"]
+            or eos_position < 2
+            or any(
+                token_id != CONTROL_TOKEN_IDS["mask"]
+                for token_id in row[1:eos_position]
+            )
+            or any(
+                token_id != CONTROL_TOKEN_IDS["pad"]
+                for token_id in row[eos_position + 1 :]
+            )
+        ):
+            raise RuntimeError("sampler input must follow BOS MASK+ EOS PAD*")
+    if not torch.equal(
+        final_sampled_ids.masked_select(~editable_mask),
+        sampler_input_ids.masked_select(~editable_mask),
+    ):
+        raise RuntimeError("immutable sampled-token audit positions changed")
+    if torch.any(sampler_input_ids < 0).item() or torch.any(
+        sampler_input_ids >= tokenizer_effective_size
+    ).item():
+        raise RuntimeError("sampler input contains an out-of-tokenizer-range ID")
+    if torch.any(final_sampled_ids < 0).item() or torch.any(
+        final_sampled_ids >= model_vocab_size
+    ).item():
+        raise RuntimeError("final sample contains an out-of-model-range ID")
+    training = getattr(sampler.model.config, "training", {})
+    if not isinstance(training, Mapping):
+        raise RuntimeError("sampled-token audit model training config is invalid")
+    udlm_training = training.get("udlm", {})
+    if not isinstance(udlm_training, Mapping):
+        raise RuntimeError("sampled-token audit UDLM training config is invalid")
+    excludes_special_tokens = udlm_training.get("exclude_special_tokens", False)
+    if type(excludes_special_tokens) is not bool:
+        raise RuntimeError("sampled-token audit exclusion setting is not boolean")
+    editable_final_ids = final_sampled_ids.masked_select(editable_mask)
+    if excludes_special_tokens and any(
+        torch.any(editable_final_ids == token_id).item()
+        for token_id in CONTROL_TOKEN_IDS.values()
+    ):
+        raise RuntimeError(
+            "excluded checkpoint sampled a control token at an editable position"
+        )
+
+    decoded_again = tokenizer.batch_decode(
+        final_sampled_ids, skip_special_tokens=True
+    )
+    if [str(value) for value in decoded_again] != list(raw_model_texts):
+        raise RuntimeError(
+            "batch_decode(final_sampled_ids) disagrees with raw_model_text"
+        )
+
+    return {
+        "schema_version": SAMPLED_TOKEN_CONTROL_AUDIT_SCHEMA_VERSION,
+        "rows": rows,
+        "columns": columns,
+        "model_vocab_size": model_vocab_size,
+        "tokenizer_effective_size": tokenizer_effective_size,
+        "control_token_ids": dict(CONTROL_TOKEN_IDS),
+        "sampler_input_ids": _encoded_uint16_tensor(
+            sampler_input_ids, label="sampler_input_ids"
+        ),
+        "final_sampled_ids": _encoded_uint16_tensor(
+            final_sampled_ids, label="final_sampled_ids"
+        ),
+        "editable_mask": _encoded_msb0_mask(editable_mask, label="editable_mask"),
+        "control_token_counts": {
+            "sampler_input_all_positions": _control_token_count_map(
+                sampler_input_ids
+            ),
+            "final_sampled_all_positions": _control_token_count_map(
+                final_sampled_ids
+            ),
+            "final_sampled_editable_positions": _control_token_count_map(
+                editable_final_ids
+            ),
+        },
     }
 
 
@@ -1703,6 +1972,21 @@ def atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
     _atomic_write(path, write)
 
 
+def _csv_payload(records: Sequence[Mapping[str, Any]]) -> bytes:
+    handle = io.StringIO(newline="")
+    writer = csv.DictWriter(
+        handle, fieldnames=RAW_SAMPLE_FIELDS, extrasaction="raise"
+    )
+    writer.writeheader()
+    writer.writerows(records)
+    return handle.getvalue().encode("utf-8")
+
+
+def _json_payload(payload: Mapping[str, Any]) -> bytes:
+    serialized = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    return serialized.encode("utf-8")
+
+
 @contextmanager
 def output_lock(output_dir: Path) -> Iterable[None]:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1746,6 +2030,473 @@ def validate_output_target(output_dir: Path, *, overwrite: bool) -> None:
         )
 
 
+_DIRECTORY_OPEN_FLAGS = (
+    os.O_RDONLY
+    | getattr(os, "O_CLOEXEC", 0)
+    | getattr(os, "O_DIRECTORY", 0)
+    | getattr(os, "O_NOFOLLOW", 0)
+)
+
+
+def _repository_output_relative_path(output_dir: Path) -> str:
+    raw = os.fspath(output_dir)
+    if (
+        not isinstance(raw, str)
+        or not raw
+        or "\x00" in raw
+        or not os.path.isabs(raw)
+        or os.path.normpath(raw) != raw
+    ):
+        raise BenchmarkConfigurationError(
+            "schema-8 output_dir must be an absolute canonical path"
+        )
+    repository = Path(os.path.abspath(REPO_ROOT))
+    lexical = Path(raw)
+    try:
+        relative = lexical.relative_to(repository)
+    except ValueError as error:
+        raise BenchmarkConfigurationError(
+            "schema-8 output_dir must remain inside the repository"
+        ) from error
+    if not relative.parts or relative.parts[0] != "output":
+        raise BenchmarkConfigurationError(
+            "schema-8 output_dir must be below the repository output directory"
+        )
+    return relative.as_posix()
+
+
+def _open_repository_directory(relative_path: str) -> int:
+    parts = tuple(Path(relative_path).parts)
+    descriptor = os.open(REPO_ROOT, _DIRECTORY_OPEN_FLAGS)
+    try:
+        for part in parts:
+            child = os.open(part, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = child
+        state = os.fstat(descriptor)
+        if not stat.S_ISDIR(state.st_mode):  # pragma: no cover - O_DIRECTORY enforces
+            raise RuntimeError("schema-8 output target is not a directory")
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _exact_mapping(value: Any, fields: set[str], label: str) -> dict[str, Any]:
+    if not isinstance(value, Mapping) or set(value) != fields:
+        raise BenchmarkConfigurationError(
+            f"{label} fields must be exactly {sorted(fields)}"
+        )
+    return dict(value)
+
+
+def _strict_nonnegative_authority_integer(value: Any, label: str) -> int:
+    if type(value) is not int or value < 0:
+        raise BenchmarkConfigurationError(f"{label} must be a nonnegative integer")
+    return value
+
+
+def _required_environment_text(name: str) -> str:
+    value = os.environ.get(name)
+    if not isinstance(value, str) or not value or "\x00" in value:
+        raise BenchmarkConfigurationError(
+            f"schema-8 child requires nonempty environment key {name}"
+        )
+    return value
+
+
+def _validate_generation_lease_payload(
+    payload: bytes,
+    *,
+    expected_owner_token: str,
+    expected_source_revision: str,
+    expected_artifact_source: Mapping[str, Any],
+) -> None:
+    try:
+        record = json.loads(payload)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise BenchmarkConfigurationError(
+            "generation lease is not valid JSON"
+        ) from error
+    record = _exact_mapping(
+        record,
+        {
+            "schema_version",
+            "status",
+            "purpose",
+            "source_revision",
+            "owner_token",
+            "launcher_pid_at_acquisition",
+            "acquired_at_utc",
+            "artifact_io",
+            "owner_process_exit_does_not_make_lock_stale",
+            "stale_lock_policy",
+            "release_policy",
+        },
+        "generation lease",
+    )
+    if (
+        record["schema_version"] != 1
+        or record["status"] != "held"
+        or record["purpose"]
+        != "enforce_one_repository_generation_controller_at_a_time"
+        or record["source_revision"] != expected_source_revision
+        or record["owner_token"] != expected_owner_token
+        or record["owner_process_exit_does_not_make_lock_stale"] is not True
+        or record["stale_lock_policy"]
+        != "fail_closed_and_require_manual_review"
+        or record["release_policy"]
+        != (
+            "exact_owner_only_after_all_handed_off_children_terminal_and_required_"
+            "ignored_decisions_or_failure_receipts_are_durable"
+        )
+    ):
+        raise BenchmarkConfigurationError(
+            "generation lease semantics disagree with the child contract"
+        )
+    _strict_nonnegative_authority_integer(
+        record["launcher_pid_at_acquisition"], "generation lease launcher PID"
+    )
+    if not isinstance(record["acquired_at_utc"], str) or not record["acquired_at_utc"]:
+        raise BenchmarkConfigurationError(
+            "generation lease acquired_at_utc must be nonempty text"
+        )
+    artifact_record = _exact_mapping(
+        record["artifact_io"],
+        {"relative_path", "device", "inode", "sha256"},
+        "generation lease artifact_io",
+    )
+    expected = {
+        "relative_path": ARTIFACT_IO_RELATIVE_PATH,
+        "device": expected_artifact_source["device"],
+        "inode": expected_artifact_source["inode"],
+        "sha256": expected_artifact_source["sha256"],
+    }
+    if artifact_record != expected:
+        raise BenchmarkConfigurationError(
+            "generation lease artifact_io binding disagrees with launch authority"
+        )
+
+
+def _load_candidate_execution_authority(
+    args: argparse.Namespace,
+) -> CandidateExecutionAuthority:
+    for key in LAUNCH_ENVIRONMENT_KEYS:
+        _required_environment_text(key)
+    for label, value in (
+        ("expected output directory device", args.expected_output_directory_device),
+        ("expected output directory inode", args.expected_output_directory_inode),
+    ):
+        _strict_nonnegative_authority_integer(value, label)
+    output_path = args.output_dir
+    output_relative = _repository_output_relative_path(output_path)
+    output_fd = _open_repository_directory(output_relative)
+    try:
+        output_state = os.fstat(output_fd)
+        if (
+            int(output_state.st_dev) != args.expected_output_directory_device
+            or int(output_state.st_ino) != args.expected_output_directory_inode
+        ):
+            raise BenchmarkConfigurationError(
+                "controller-created output directory identity disagrees with argv"
+            )
+        if os.listdir(output_fd):
+            raise BenchmarkConfigurationError(
+                "schema-8 controller-created output directory must be empty"
+            )
+
+        lease_path_text = _required_environment_text(
+            "GENMOL_BENCHMARK_GENERATION_LEASE_PATH"
+        )
+        expected_lease_path = str(REPO_ROOT / GENERATION_LEASE_RELATIVE_PATH)
+        if lease_path_text != expected_lease_path:
+            raise BenchmarkConfigurationError(
+                "generation lease path environment value is not the fixed repository path"
+            )
+        lease_sha256 = _sha256_identity(
+            _required_environment_text(
+                "GENMOL_BENCHMARK_EXPECTED_GENERATION_LEASE_SHA256"
+            ),
+            "expected generation lease SHA-256",
+        )
+        owner_token = _sha256_identity(
+            _required_environment_text(
+                "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN"
+            ),
+            "generation lease owner token",
+        )
+        authority_text = _required_environment_text(
+            "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON"
+        )
+        try:
+            parsed_authority = json.loads(authority_text)
+        except json.JSONDecodeError as error:
+            raise BenchmarkConfigurationError(
+                "launch authority environment value is not valid JSON"
+            ) from error
+        authority = _exact_mapping(
+            parsed_authority,
+            {
+                "schema_version",
+                "generation_lease",
+                "artifact_io_source",
+                "output_directory",
+                "command",
+                "command_sha256",
+            },
+            "launch authority",
+        )
+        canonical_authority = json.dumps(
+            authority, separators=(",", ":"), sort_keys=True
+        )
+        if authority_text != canonical_authority:
+            raise BenchmarkConfigurationError(
+                "launch authority environment JSON must be canonical and compact"
+            )
+        if authority["schema_version"] != LAUNCH_AUTHORITY_SCHEMA_VERSION:
+            raise BenchmarkConfigurationError("launch authority schema is invalid")
+
+        command = authority["command"]
+        expected_command = [
+            sys.executable,
+            str(REPO_ROOT / "scripts/exps/denovo/benchmark.py"),
+            "--checkpoint",
+            str(args.checkpoint),
+            "--expected-checkpoint-sha256",
+            args.expected_checkpoint_sha256,
+            "--expected-source-revision",
+            args.expected_source_revision,
+            "--config",
+            str(args.config),
+            "--expected-config-sha256",
+            args.expected_config_sha256,
+            "--num-samples",
+            str(args.num_samples),
+            "--seed",
+            str(args.seed),
+            "--device",
+            "cuda:0",
+            "--output-dir",
+            str(args.output_dir),
+            "--expected-output-directory-device",
+            str(args.expected_output_directory_device),
+            "--expected-output-directory-inode",
+            str(args.expected_output_directory_inode),
+        ]
+        executed_command = [sys.executable, *sys.argv]
+        if (
+            not isinstance(command, list)
+            or len(command) != 24
+            or any(not isinstance(value, str) for value in command)
+            or command != expected_command
+            or command != executed_command
+        ):
+            raise BenchmarkConfigurationError(
+                "launch authority command must equal the exact executed 24-string argv"
+            )
+        expected_command_sha256 = hashlib.sha256(
+            json.dumps(command, separators=(",", ":"), ensure_ascii=True).encode(
+                "ascii"
+            )
+        ).hexdigest()
+        if authority["command_sha256"] != expected_command_sha256:
+            raise BenchmarkConfigurationError("launch authority command hash is invalid")
+
+        lease_authority = _exact_mapping(
+            authority["generation_lease"],
+            {"path", "relative_path", "sha256", "device", "inode", "owner_token"},
+            "launch authority generation_lease",
+        )
+        if lease_authority["path"] != expected_lease_path or lease_authority[
+            "relative_path"
+        ] != GENERATION_LEASE_RELATIVE_PATH:
+            raise BenchmarkConfigurationError("launch authority lease path is invalid")
+        if lease_authority["sha256"] != lease_sha256 or lease_authority[
+            "owner_token"
+        ] != owner_token:
+            raise BenchmarkConfigurationError(
+                "launch authority lease hash or owner token disagrees with environment"
+            )
+        for key in ("device", "inode"):
+            _strict_nonnegative_authority_integer(
+                lease_authority[key], f"launch authority lease {key}"
+            )
+
+        artifact_authority = _exact_mapping(
+            authority["artifact_io_source"],
+            {"path", "sha256", "device", "inode"},
+            "launch authority artifact_io_source",
+        )
+        if artifact_authority["path"] != str(REPO_ROOT / ARTIFACT_IO_RELATIVE_PATH):
+            raise BenchmarkConfigurationError(
+                "launch authority artifact_io source path is invalid"
+            )
+        artifact_authority["sha256"] = _sha256_identity(
+            artifact_authority["sha256"], "launch authority artifact_io SHA-256"
+        )
+        for key in ("device", "inode"):
+            _strict_nonnegative_authority_integer(
+                artifact_authority[key], f"launch authority artifact_io {key}"
+            )
+
+        output_authority = _exact_mapping(
+            authority["output_directory"],
+            {"path", "relative_path", "device", "inode"},
+            "launch authority output_directory",
+        )
+        for key in ("device", "inode"):
+            _strict_nonnegative_authority_integer(
+                output_authority[key], f"launch authority output directory {key}"
+            )
+        if output_authority != {
+            "path": str(output_path),
+            "relative_path": output_relative,
+            "device": int(output_state.st_dev),
+            "inode": int(output_state.st_ino),
+        }:
+            raise BenchmarkConfigurationError(
+                "launch authority output directory disagrees with retained descriptor"
+            )
+
+        lease_claim, lease_payload = artifact_io.snapshot_file(
+            REPO_ROOT, GENERATION_LEASE_RELATIVE_PATH, capture_bytes=True
+        )
+        if lease_payload is None:  # pragma: no cover - capture_bytes contract
+            raise AssertionError("generation lease bytes were not retained")
+        if (
+            lease_claim.sha256 != lease_sha256
+            or lease_claim.device != lease_authority["device"]
+            or lease_claim.inode != lease_authority["inode"]
+        ):
+            raise BenchmarkConfigurationError(
+                "generation lease file disagrees with launch authority"
+            )
+        artifact_claim, _ = artifact_io.snapshot_file(
+            REPO_ROOT, ARTIFACT_IO_RELATIVE_PATH, capture_bytes=False
+        )
+        if (
+            artifact_claim.sha256 != artifact_authority["sha256"]
+            or artifact_claim.device != artifact_authority["device"]
+            or artifact_claim.inode != artifact_authority["inode"]
+        ):
+            raise BenchmarkConfigurationError(
+                "artifact_io source file disagrees with launch authority"
+            )
+        _validate_generation_lease_payload(
+            lease_payload,
+            expected_owner_token=owner_token,
+            expected_source_revision=args.expected_source_revision,
+            expected_artifact_source=artifact_authority,
+        )
+        return CandidateExecutionAuthority(
+            output_directory_fd=output_fd,
+            output_directory_path=output_path,
+            output_directory_relative_path=output_relative,
+            output_directory_device=int(output_state.st_dev),
+            output_directory_inode=int(output_state.st_ino),
+            generation_lease_claim=lease_claim,
+            generation_lease_payload=lease_payload,
+            artifact_io_source_claim=artifact_claim,
+            launch_authority=authority,
+            launch_authority_canonical_sha256=_canonical_json_sha256(authority),
+        )
+    except BaseException:
+        os.close(output_fd)
+        raise
+
+
+def _revalidate_candidate_execution_authority(
+    authority: CandidateExecutionAuthority,
+) -> None:
+    expected_environment = {
+        "GENMOL_BENCHMARK_GENERATION_LEASE_PATH": str(
+            REPO_ROOT / GENERATION_LEASE_RELATIVE_PATH
+        ),
+        "GENMOL_BENCHMARK_EXPECTED_GENERATION_LEASE_SHA256": (
+            authority.generation_lease_claim.sha256
+        ),
+        "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN": authority.launch_authority[
+            "generation_lease"
+        ]["owner_token"],
+        "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON": json.dumps(
+            authority.launch_authority,
+            separators=(",", ":"),
+            sort_keys=True,
+        ),
+    }
+    for key, expected_value in expected_environment.items():
+        if _required_environment_text(key) != expected_value:
+            raise RuntimeError(
+                f"schema-8 execution authority environment changed during run: {key}"
+            )
+    retained_state = os.fstat(authority.output_directory_fd)
+    if (
+        not stat.S_ISDIR(retained_state.st_mode)
+        or int(retained_state.st_dev) != authority.output_directory_device
+        or int(retained_state.st_ino) != authority.output_directory_inode
+    ):
+        raise RuntimeError("retained schema-8 output directory identity changed")
+    if os.listdir(authority.output_directory_fd):
+        raise RuntimeError(
+            "schema-8 output directory gained entries before bundle publication"
+        )
+    reopened_fd = _open_repository_directory(authority.output_directory_relative_path)
+    try:
+        reopened_state = os.fstat(reopened_fd)
+        if (
+            int(reopened_state.st_dev) != authority.output_directory_device
+            or int(reopened_state.st_ino) != authority.output_directory_inode
+        ):
+            raise RuntimeError("schema-8 output directory path binding changed")
+    finally:
+        os.close(reopened_fd)
+    current_lease, lease_payload = artifact_io.snapshot_file(
+        REPO_ROOT, GENERATION_LEASE_RELATIVE_PATH, capture_bytes=True
+    )
+    if (
+        current_lease != authority.generation_lease_claim
+        or lease_payload != authority.generation_lease_payload
+    ):
+        raise RuntimeError("generation lease identity or bytes changed during benchmark")
+    current_source, _ = artifact_io.snapshot_file(
+        REPO_ROOT, ARTIFACT_IO_RELATIVE_PATH, capture_bytes=False
+    )
+    if current_source != authority.artifact_io_source_claim:
+        raise RuntimeError("artifact_io source changed during benchmark")
+
+
+@contextmanager
+def candidate_execution_authority(
+    args: argparse.Namespace,
+) -> Iterable[CandidateExecutionAuthority]:
+    authority = _load_candidate_execution_authority(args)
+    try:
+        yield authority
+    finally:
+        os.close(authority.output_directory_fd)
+
+
+@contextmanager
+def benchmark_output_context(
+    args: argparse.Namespace, *, diffusion_type: str
+) -> Iterable[tuple[Path, CandidateExecutionAuthority | None]]:
+    """Retain schema-specific output authority for the complete run."""
+
+    if diffusion_type == "udlm":
+        if args.overwrite:
+            raise BenchmarkConfigurationError(
+                "schema-8 candidate runs do not permit --overwrite"
+            )
+        with candidate_execution_authority(args) as authority:
+            yield authority.output_directory_path, authority
+        return
+
+    output_dir = args.output_dir.resolve()
+    with output_lock(output_dir):
+        validate_output_target(output_dir, overwrite=args.overwrite)
+        yield output_dir, None
+
+
 def load_yaml_config(path: Path) -> dict[str, Any]:
     import yaml
 
@@ -1777,6 +2528,12 @@ def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
         raise BenchmarkConfigurationError(
             "diffusion_type must be either 'mdlm' or 'udlm'"
         )
+    if isinstance(config["softmax_temp"], bool) or not isinstance(
+        config["softmax_temp"], numbers.Real
+    ):
+        raise BenchmarkConfigurationError(
+            "softmax_temp must be a finite real number"
+        )
     try:
         softmax_temp = float(config["softmax_temp"])
         randomness = float(config["randomness"])
@@ -1798,6 +2555,7 @@ def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
     inference_eps: float | None = None
     prior_variant: str | None = None
     prior_metadata_sha256: str | None = None
+    raw_loo_top_p: float | None = None
     if diffusion_type == "udlm":
         missing_udlm = [
             key
@@ -1831,6 +2589,18 @@ def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
                 "exclude_special_tokens must be a boolean"
             )
         exclude_special_tokens: bool | None = config["exclude_special_tokens"]
+        raw_top_p_value = config.get("raw_loo_top_p", 1.0)
+        if isinstance(raw_top_p_value, bool) or not isinstance(
+            raw_top_p_value, numbers.Real
+        ):
+            raise BenchmarkConfigurationError(
+                "raw_loo_top_p must be a finite real number"
+            )
+        raw_loo_top_p = float(raw_top_p_value)
+        if not math.isfinite(raw_loo_top_p) or not 0.0 < raw_loo_top_p <= 1.0:
+            raise BenchmarkConfigurationError(
+                "raw_loo_top_p must be finite and lie in (0, 1]"
+            )
         raw_prior_variant = config.get("prior_variant", "release_uniform")
         if not isinstance(raw_prior_variant, str):
             raise BenchmarkConfigurationError("prior_variant must be a string")
@@ -1863,13 +2633,14 @@ def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
         or config.get("exclude_special_tokens") is not None
         or config.get("prior_variant") is not None
         or config.get("prior_metadata_sha256") is not None
+        or config.get("raw_loo_top_p") is not None
     ):
         raise BenchmarkConfigurationError(
             "MDLM inference config must leave UDLM-only settings null"
         )
     else:
         exclude_special_tokens = None
-    return {
+    normalized = {
         "diffusion_type": diffusion_type,
         "softmax_temp": softmax_temp,
         "randomness": randomness,
@@ -1880,6 +2651,9 @@ def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
         "prior_variant": prior_variant,
         "prior_metadata_sha256": prior_metadata_sha256,
     }
+    if diffusion_type == "udlm":
+        normalized["raw_loo_top_p"] = raw_loo_top_p
+    return normalized
 
 
 def validate_device(device: str) -> None:
@@ -2334,7 +3108,12 @@ def _package_version(*distribution_names: str) -> str | None:
     return None
 
 
-def environment_metadata(requested_device: str, resolved_device: str) -> dict[str, Any]:
+def environment_metadata(
+    requested_device: str,
+    resolved_device: str,
+    *,
+    candidate_schema: bool = False,
+) -> dict[str, Any]:
     import torch
 
     metadata: dict[str, Any] = {
@@ -2360,7 +3139,12 @@ def environment_metadata(requested_device: str, resolved_device: str) -> dict[st
         "torch_cuda_version": torch.version.cuda,
         "cudnn_version": torch.backends.cudnn.version(),
         "launch_environment": {
-            key: os.environ.get(key) for key in LAUNCH_ENVIRONMENT_KEYS
+            key: os.environ.get(key)
+            for key in (
+                LAUNCH_ENVIRONMENT_KEYS
+                if candidate_schema
+                else HISTORICAL_MDLM_LAUNCH_ENVIRONMENT_KEYS
+            )
         },
     }
     resolved = torch.device(resolved_device)
@@ -2436,6 +3220,8 @@ def assert_runtime_module_provenance(
         "save_utils_source": save_utils_module,
         "bracket_safe_converter_source": bracket_safe_converter_module,
     }
+    if "artifact_io_source" in implementation_inputs:
+        modules["artifact_io_source"] = artifact_io
     for source_name, module in modules.items():
         module_path = Path(module.__file__).resolve()
         recorded = implementation_inputs[source_name]
@@ -2537,7 +3323,6 @@ def pinned_tdc_sa_oracle(
 def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
     checkpoint_path = args.checkpoint.resolve()
     config_path = args.config.resolve()
-    output_dir = args.output_dir.resolve()
     if not checkpoint_path.is_file():
         raise FileNotFoundError(f"Checkpoint does not exist: {checkpoint_path}")
     if not config_path.is_file():
@@ -2560,13 +3345,6 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
         expected_sha256=expected_config_sha256,
     )
 
-    started_at = _utc_now()
-    total_start = time.perf_counter()
-    validate_device(args.device)
-    # Verify and retain the metric-defining bytes before loading a checkpoint,
-    # importing CUDA-facing model code, or moving any tensor onto a GPU.
-    sa_metric_snapshot = load_pinned_sa_metric_input()
-    metric_inputs = dict(sa_metric_snapshot.provenance)
     source_config_sha256 = _sha256(config_path)
     if source_config_sha256 != expected_config_sha256:
         raise BenchmarkConfigurationError(
@@ -2577,6 +3355,12 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
     if _sha256(config_path) != expected_config_sha256:
         raise RuntimeError(f"Config changed while it was being read: {config_path}")
     sampling_config = validate_sampling_config(source_config)
+    candidate_schema = sampling_config["diffusion_type"] == "udlm"
+    schema_version = SCHEMA_VERSION if candidate_schema else HISTORICAL_MDLM_SCHEMA_VERSION
+    if candidate_schema and args.num_samples > MAX_AUDIT_ROWS:
+        raise BenchmarkConfigurationError(
+            "schema-8 candidate sample count must not exceed 1000"
+        )
     effective_config = dict(source_config)
     effective_config.update(
         {
@@ -2585,15 +3369,43 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
             "device": args.device,
         }
     )
+    if candidate_schema:
+        effective_config["raw_loo_top_p"] = sampling_config["raw_loo_top_p"]
     sampling_config_sha256 = _canonical_json_sha256(sampling_config)
     effective_config_sha256 = _canonical_json_sha256(effective_config)
-    # Capture every direct generation implementation before checkpoint metadata
-    # imports the stable-descriptor helper or the sampler imports model code.
-    implementation_snapshot = load_implementation_input_snapshot()
-    implementation_inputs = dict(implementation_snapshot.provenance)
 
-    with output_lock(output_dir):
-        validate_output_target(output_dir, overwrite=args.overwrite)
+    started_at = _utc_now()
+    total_start = time.perf_counter()
+    with benchmark_output_context(
+        args, diffusion_type=sampling_config["diffusion_type"]
+    ) as (output_dir, execution_authority):
+        # Candidate authority is retained before Torch/CUDA validation, checkpoint
+        # loading, or any model import.  Historical MDLM continues to use schema 7.
+        validate_device(args.device)
+        # Verify and retain the metric-defining bytes before loading a checkpoint,
+        # importing CUDA-facing model code, or moving any tensor onto a GPU.
+        sa_metric_snapshot = load_pinned_sa_metric_input()
+        metric_inputs = dict(sa_metric_snapshot.provenance)
+        # Capture every direct generation implementation before checkpoint metadata
+        # imports the stable-descriptor helper or the sampler imports model code.
+        implementation_snapshot = load_implementation_input_snapshot()
+        implementation_inputs = dict(implementation_snapshot.provenance)
+        if not candidate_schema:
+            # Schema 7 predates artifact_io and remains byte-schema compatible.
+            implementation_inputs.pop("artifact_io_source")
+        else:
+            assert execution_authority is not None
+            artifact_source = implementation_inputs["artifact_io_source"]
+            artifact_claim = execution_authority.artifact_io_source_claim
+            if (
+                artifact_source["sha256"] != artifact_claim.sha256
+                or artifact_source["size_bytes"] != artifact_claim.size_bytes
+            ):
+                raise RuntimeError(
+                    "implementation_inputs artifact_io source disagrees with launch "
+                    "authority"
+                )
+
         checkpoint_info = checkpoint_metadata(
             checkpoint_path,
             expected_sha256=getattr(args, "expected_checkpoint_sha256", None),
@@ -2661,19 +3473,40 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
         sampler.mdlm.to_device(sampler.model.device)
         model_load_seconds = time.perf_counter() - model_load_start
         tokenizer_info = tokenizer_provenance(sampler.model.tokenizer)
-        environment_info = environment_metadata(args.device, str(sampler.model.device))
+        environment_info = environment_metadata(
+            args.device,
+            str(sampler.model.device),
+            candidate_schema=candidate_schema,
+        )
         use_bracket_safe = _uses_bracket_safe(sampler)
 
         seed_info = seed_sampling(args.seed, args.device)
         synchronize_device(sampler.model.device)
         model_sampling_start = time.perf_counter()
-        raw_model_texts, denoising_protocol = generate_raw_model_text(
+        (
+            raw_model_texts,
+            denoising_protocol,
+            sampler_input_ids,
+            final_sampled_ids,
+        ) = generate_raw_model_text(
             sampler,
             args.num_samples,
             **sampling_config,
         )
         synchronize_device(sampler.model.device)
         model_sampling_seconds = time.perf_counter() - model_sampling_start
+
+        sampled_token_control_audit: dict[str, Any] | None = None
+        sampled_token_control_audit_seconds: float | None = None
+        if candidate_schema:
+            audit_start = time.perf_counter()
+            sampled_token_control_audit = build_sampled_token_control_audit(
+                sampler,
+                sampler_input_ids,
+                final_sampled_ids,
+                raw_model_texts,
+            )
+            sampled_token_control_audit_seconds = time.perf_counter() - audit_start
 
         scoring_start = time.perf_counter()
         decode_timing: dict[str, float] = {}
@@ -2691,6 +3524,10 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
                 diversity_evaluator=Evaluator("diversity"),
             )
         assert_runtime_tdc_metric_provenance(metric_inputs)
+        if [record["raw_model_text"] for record in records] != raw_model_texts:
+            raise RuntimeError(
+                "raw_samples.csv raw_model_text does not match tokenizer output"
+            )
         scoring_seconds = time.perf_counter() - scoring_start
         released_postprocessing_seconds = decode_timing["released_postprocessing"]
         # Released run.py times the full de_novo_generation call.  Its endpoint
@@ -2723,37 +3560,81 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
 
         raw_samples_path = output_dir / RAW_SAMPLES_FILENAME
         summary_path = output_dir / SUMMARY_FILENAME
-        atomic_write_csv(raw_samples_path, records)
+        raw_samples_payload = _csv_payload(records)
 
         total_seconds = time.perf_counter() - total_start
+        runtime_seconds: dict[str, Any] = {
+            "model_load_and_device_move": model_load_seconds,
+            "model_sampling_and_tokenizer": model_sampling_seconds,
+            "released_postprocessing": released_postprocessing_seconds,
+            "generation": generation_seconds,
+            "decode_and_metrics": scoring_seconds,
+            "total_before_summary_write": total_seconds,
+        }
+        if candidate_schema:
+            runtime_seconds["sampled_token_control_audit"] = (
+                sampled_token_control_audit_seconds
+            )
+        run_record: dict[str, Any] = {
+            "seed": args.seed,
+            "requested_sample_count": args.num_samples,
+            "evaluation_tier": ("final" if args.num_samples == 1_000 else "pilot"),
+            "final_protocol_eligible": args.num_samples == 1_000,
+            "started_at_utc": started_at,
+            "completed_at_utc": _utc_now(),
+            "one_seed_per_invocation": True,
+            "single_generation_batch": True,
+            "generation_protocol": {
+                **denoising_protocol,
+                "model_use_bracket_safe": use_bracket_safe,
+                "single_generation_batch": True,
+                "released_safe_fix": True,
+                "released_largest_component": "maximum SMILES string length",
+                "strict_safe_fix": False,
+                "inference_weights": inference_weights,
+            },
+            "command": [sys.executable, *sys.argv],
+            "seed_configuration": seed_info,
+        }
+        artifacts: dict[str, Any] = {
+            "raw_samples_csv": {
+                "path": str(raw_samples_path),
+                "sha256": hashlib.sha256(raw_samples_payload).hexdigest(),
+                "row_count": len(records),
+                "fields": list(RAW_SAMPLE_FIELDS),
+            },
+            "summary_json": {"path": str(summary_path)},
+        }
+        if candidate_schema:
+            assert execution_authority is not None
+            run_record["execution_authority"] = {
+                "schema_version": LAUNCH_AUTHORITY_SCHEMA_VERSION,
+                "launch_authority": execution_authority.launch_authority,
+                "launch_authority_canonical_sha256": (
+                    execution_authority.launch_authority_canonical_sha256
+                ),
+                "output_directory_descriptor_retained_until_after_bundle_publication": (
+                    True
+                ),
+                "validated_before_model_import": True,
+                "revalidated_immediately_before_publication": True,
+            }
+            artifacts["bundle"] = {
+                "publication_api": "scripts.artifact_io.publish_bundle_exclusive",
+                "ordinary_members": [RAW_SAMPLES_FILENAME],
+                "completion_member": SUMMARY_FILENAME,
+                "exclusive_no_clobber": True,
+                "completion_linked_last": True,
+                "precompletion_failure_rollback": "exact_owned_members_only",
+            }
         summary: dict[str, Any] = {
-            "schema_version": SCHEMA_VERSION,
+            "schema_version": schema_version,
             "status": "completed",
             # Top-level aliases make launcher completion checks cheap.  The
             # structured copies below are retained for schema clarity.
             "seed": args.seed,
             "num_samples": args.num_samples,
-            "run": {
-                "seed": args.seed,
-                "requested_sample_count": args.num_samples,
-                "evaluation_tier": ("final" if args.num_samples == 1_000 else "pilot"),
-                "final_protocol_eligible": args.num_samples == 1_000,
-                "started_at_utc": started_at,
-                "completed_at_utc": _utc_now(),
-                "one_seed_per_invocation": True,
-                "single_generation_batch": True,
-                "generation_protocol": {
-                    **denoising_protocol,
-                    "model_use_bracket_safe": use_bracket_safe,
-                    "single_generation_batch": True,
-                    "released_safe_fix": True,
-                    "released_largest_component": "maximum SMILES string length",
-                    "strict_safe_fix": False,
-                    "inference_weights": inference_weights,
-                },
-                "command": [sys.executable, *sys.argv],
-                "seed_configuration": seed_info,
-            },
+            "run": run_record,
             "checkpoint": checkpoint_info,
             "config": {
                 "path": str(config_path),
@@ -2767,33 +3648,47 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
             },
             "metrics": metrics,
             "failure_counts": failure_counts,
-            "runtime_seconds": {
-                "model_load_and_device_move": model_load_seconds,
-                "model_sampling_and_tokenizer": model_sampling_seconds,
-                "released_postprocessing": released_postprocessing_seconds,
-                "generation": generation_seconds,
-                "decode_and_metrics": scoring_seconds,
-                "total_before_summary_write": total_seconds,
-            },
+            "runtime_seconds": runtime_seconds,
             "environment": environment_info,
             "git": git_info,
             "implementation_inputs": implementation_inputs,
             "metric_inputs": metric_inputs,
             "tokenizer": tokenizer_info,
-            "artifacts": {
-                "raw_samples_csv": {
-                    "path": str(raw_samples_path),
-                    "sha256": _sha256(raw_samples_path),
-                    "row_count": len(records),
-                    "fields": list(RAW_SAMPLE_FIELDS),
-                },
-                "summary_json": {"path": str(summary_path)},
-            },
+            "artifacts": artifacts,
         }
-        # The summary is written last and is the completion marker.  Its own
-        # digest is intentionally omitted because a file cannot contain its
-        # final self-hash.
-        atomic_write_json(summary_path, summary)
+        if candidate_schema:
+            assert sampled_token_control_audit is not None
+            assert execution_authority is not None
+            summary["sampled_token_control_audit"] = sampled_token_control_audit
+            summary_payload = _json_payload(summary)
+            if len(summary_payload) > MAX_SCHEMA8_SUMMARY_BYTES:
+                raise RuntimeError("schema-8 summary exceeds the frozen 2 MiB bound")
+            # This is intentionally the last operation before the exclusive
+            # completion-last bundle call.
+            _revalidate_candidate_execution_authority(execution_authority)
+            artifact_io.publish_bundle_exclusive(
+                REPO_ROOT,
+                [
+                    artifact_io.PublishItem(
+                        relative_path=(
+                            f"{execution_authority.output_directory_relative_path}/"
+                            f"{RAW_SAMPLES_FILENAME}"
+                        ),
+                        payload=raw_samples_payload,
+                    )
+                ],
+                completion=artifact_io.PublishItem(
+                    relative_path=(
+                        f"{execution_authority.output_directory_relative_path}/"
+                        f"{SUMMARY_FILENAME}"
+                    ),
+                    payload=summary_payload,
+                ),
+            )
+        else:
+            # Historical schema 7 retains its original publication behavior.
+            atomic_write_csv(raw_samples_path, records)
+            atomic_write_json(summary_path, summary)
 
     return summary
 
@@ -2832,6 +3727,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", required=True, type=int)
     parser.add_argument("--device", required=True)
     parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument(
+        "--expected-output-directory-device",
+        required=True,
+        type=int,
+        help="Controller-retained device number for the precreated output directory.",
+    )
+    parser.add_argument(
+        "--expected-output-directory-inode",
+        required=True,
+        type=int,
+        help="Controller-retained inode number for the precreated output directory.",
+    )
     parser.add_argument(
         "--overwrite",
         action="store_true",

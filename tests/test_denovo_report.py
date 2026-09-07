@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import base64
 import csv
 import copy
+import hashlib
 import json
 import os
 import tempfile
@@ -16,7 +18,88 @@ from scripts.exps.denovo import benchmark, report
 
 class DenovoReportTests(unittest.TestCase):
     def _workspace(self) -> tempfile.TemporaryDirectory[str]:
-        return tempfile.TemporaryDirectory(dir=report.REPOSITORY_ROOT)
+        output_root = report.REPOSITORY_ROOT / "output"
+        output_root.mkdir(exist_ok=True)
+        return tempfile.TemporaryDirectory(dir=output_root)
+
+    @staticmethod
+    def _encoded_uint16(values: list[int]) -> dict:
+        payload = b"".join(value.to_bytes(2, "little") for value in values)
+        return {
+            "encoding": "rfc4648_base64",
+            "dtype": "uint16",
+            "byte_order": "little",
+            "array_order": "C",
+            "compression": "none",
+            "element_count": len(values),
+            "decoded_byte_count": len(payload),
+            "decoded_sha256": hashlib.sha256(payload).hexdigest(),
+            "data_base64": base64.b64encode(payload).decode("ascii"),
+        }
+
+    @staticmethod
+    def _control_counts(values: list[int]) -> dict[str, int]:
+        return {
+            name: values.count(token_id)
+            for name, token_id in {
+                "unk": 0,
+                "bos": 1,
+                "eos": 2,
+                "pad": 3,
+                "mask": 4,
+            }.items()
+        }
+
+    @classmethod
+    def _token_audit(cls, *, seed: int, rows: int) -> dict:
+        columns = 5
+        sampler_input = [1, 4, 4, 2, 3] * rows
+        final: list[int] = []
+        for index in range(rows):
+            final.extend([1, seed + 5, index + 100, 2, 3])
+        editable = [value == 4 for value in sampler_input]
+        packed = bytearray((len(editable) + 7) // 8)
+        for index, value in enumerate(editable):
+            if value:
+                packed[index // 8] |= 1 << (7 - index % 8)
+        editable_final = [
+            token_id
+            for token_id, is_editable in zip(final, editable, strict=True)
+            if is_editable
+        ]
+        return {
+            "schema_version": 1,
+            "rows": rows,
+            "columns": columns,
+            "model_vocab_size": 1_880,
+            "tokenizer_effective_size": 1_882,
+            "control_token_ids": {"unk": 0, "bos": 1, "eos": 2, "pad": 3, "mask": 4},
+            "sampler_input_ids": cls._encoded_uint16(sampler_input),
+            "final_sampled_ids": cls._encoded_uint16(final),
+            "editable_mask": {
+                "encoding": "rfc4648_base64",
+                "packing": "one_bit_per_position",
+                "bit_order": "msb0",
+                "array_order": "C",
+                "compression": "none",
+                "logical_bit_count": len(editable),
+                "decoded_byte_count": len(packed),
+                "unused_tail_bit_count": len(packed) * 8 - len(editable),
+                "decoded_sha256": hashlib.sha256(packed).hexdigest(),
+                "data_base64": base64.b64encode(packed).decode("ascii"),
+            },
+            "control_token_counts": {
+                "sampler_input_all_positions": cls._control_counts(sampler_input),
+                "final_sampled_all_positions": cls._control_counts(final),
+                "final_sampled_editable_positions": cls._control_counts(editable_final),
+            },
+        }
+
+    @staticmethod
+    def _fixture_batch_decode(token_rows, *, skip_special_tokens):
+        if skip_special_tokens is not True:
+            raise AssertionError("schema-8 audit must skip special tokens")
+        return [f"raw-{row[1] - 5}-{row[2] - 100}" for row in token_rows]
 
     def test_stable_regular_file_reader_rejects_symlink(self):
         with self._workspace() as directory:
@@ -297,7 +380,7 @@ class DenovoReportTests(unittest.TestCase):
             writer.writeheader()
             writer.writerows(records)
 
-        sampling = dict(report.PAPER_V1_SAMPLING_CONFIG)
+        sampling = dict(report.HISTORICAL_PAPER_V1_SAMPLING_CONFIG)
         source = {"model_path": "model.ckpt", "num_samples": 1_000, **sampling}
         effective = {
             **source,
@@ -536,7 +619,7 @@ class DenovoReportTests(unittest.TestCase):
             "command": run_command,
         }
         summary = {
-            "schema_version": report.RUN_SCHEMA_VERSION,
+            "schema_version": report.HISTORICAL_MDLM_RUN_SCHEMA_VERSION,
             "status": "completed",
             "seed": seed,
             "num_samples": num_samples,
@@ -549,7 +632,11 @@ class DenovoReportTests(unittest.TestCase):
                 "completed_at_utc": "2026-09-05T00:01:00+00:00",
                 "one_seed_per_invocation": True,
                 "single_generation_batch": True,
-                "generation_protocol": dict(report.EXPECTED_GENERATION_PROTOCOL),
+                "generation_protocol": {
+                    key: value
+                    for key, value in report.EXPECTED_GENERATION_PROTOCOL.items()
+                    if key != "raw_loo_top_p"
+                },
                 "command": run_command,
                 "seed_configuration": {
                     "seed": seed,
@@ -819,6 +906,15 @@ class DenovoReportTests(unittest.TestCase):
         *,
         prior_variant: str = "release_uniform",
     ) -> None:
+        from scripts.udlm import rescore_denovo_run as denovo_rescore
+
+        decoder_patch = mock.patch.object(
+            denovo_rescore,
+            "_load_pinned_tokenizer_batch_decode",
+            return_value=self._fixture_batch_decode,
+        )
+        decoder_patch.start()
+        self.addCleanup(decoder_patch.stop)
         self._three_runs(root)
         checkpoint_path = report.REPOSITORY_ROOT / "output/udlm/checkpoints/100.ckpt"
         checkpoint_sha = "d" * 64
@@ -831,6 +927,7 @@ class DenovoReportTests(unittest.TestCase):
         sampling = {
             "diffusion_type": "udlm",
             "softmax_temp": 1.0,
+            "raw_loo_top_p": 1.0,
             "randomness": 0.0,
             "min_add_len": 40,
             "num_steps": 32,
@@ -842,6 +939,7 @@ class DenovoReportTests(unittest.TestCase):
         for seed in report.EXPECTED_SEEDS:
             summary_path = root / f"seed_{seed}" / "summary.json"
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            summary["schema_version"] = report.RUN_SCHEMA_VERSION
             summary["checkpoint"].update(
                 {
                     "path": str(checkpoint_path),
@@ -873,10 +971,16 @@ class DenovoReportTests(unittest.TestCase):
             command[command.index("--checkpoint") + 1] = str(checkpoint_path)
             command[command.index("--expected-checkpoint-sha256") + 1] = checkpoint_sha
             command[command.index("--config") + 1] = summary["config"]["path"]
-            launch = summary["environment"]["launch_environment"]
-            snapshot = json.loads(launch["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"])
-            snapshot["command"] = command
-            launch["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"] = json.dumps(snapshot)
+            run_dir = summary_path.parent
+            output_state = run_dir.stat()
+            command.extend(
+                [
+                    "--expected-output-directory-device",
+                    str(output_state.st_dev),
+                    "--expected-output-directory-inode",
+                    str(output_state.st_ino),
+                ]
+            )
             summary["config"]["sampling"] = sampling
             summary["config"]["sampling_sha256"] = report._sha256_json(sampling)
             summary["config"]["source"].update(sampling)
@@ -896,6 +1000,7 @@ class DenovoReportTests(unittest.TestCase):
                     "inference_eps": 1e-5,
                     "temperature": 1.0,
                     "randomness": 0.0,
+                    "raw_loo_top_p": 1.0,
                     "randomness_used_by_sampler": False,
                     "exclude_special_tokens": False,
                     "prior_variant": prior_variant,
@@ -910,6 +1015,87 @@ class DenovoReportTests(unittest.TestCase):
                         },
                     },
                 }
+            )
+            artifact_source = {
+                "path": str(report.REPOSITORY_ROOT / "scripts/artifact_io.py"),
+                "sha256": "f" * 64,
+                "size_bytes": 1234,
+            }
+            summary["implementation_inputs"]["artifact_io_source"] = artifact_source
+            lease_path = str(
+                report.REPOSITORY_ROOT / "output/.single_generation_job.lock"
+            )
+            lease_sha256 = "1" * 64
+            owner_token = "2" * 64
+            authority = {
+                "schema_version": 1,
+                "generation_lease": {
+                    "path": lease_path,
+                    "relative_path": "output/.single_generation_job.lock",
+                    "sha256": lease_sha256,
+                    "device": 101,
+                    "inode": 102,
+                    "owner_token": owner_token,
+                },
+                "artifact_io_source": {
+                    "path": artifact_source["path"],
+                    "sha256": artifact_source["sha256"],
+                    "device": 103,
+                    "inode": 104,
+                },
+                "output_directory": {
+                    "path": str(run_dir),
+                    "relative_path": run_dir.relative_to(
+                        report.REPOSITORY_ROOT
+                    ).as_posix(),
+                    "device": output_state.st_dev,
+                    "inode": output_state.st_ino,
+                },
+                "command": command,
+                "command_sha256": hashlib.sha256(
+                    json.dumps(
+                        command, separators=(",", ":"), ensure_ascii=True
+                    ).encode("ascii")
+                ).hexdigest(),
+            }
+            summary["run"]["execution_authority"] = {
+                "schema_version": 1,
+                "launch_authority": authority,
+                "launch_authority_canonical_sha256": report._sha256_json(authority),
+                "output_directory_descriptor_retained_until_after_bundle_publication": True,
+                "validated_before_model_import": True,
+                "revalidated_immediately_before_publication": True,
+            }
+            launch = summary["environment"]["launch_environment"]
+            snapshot = json.loads(launch["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"])
+            snapshot["gpu_selection_schema_version"] = 3
+            snapshot["command"] = command
+            snapshot["running_gpu_uuids_at_selection"] = []
+            snapshot.pop("running_physical_indices_at_selection")
+            snapshot["policy"]["active_compute_processes_allowed"] = True
+            snapshot["launch_authority"] = authority
+            launch["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"] = json.dumps(
+                snapshot, separators=(",", ":"), sort_keys=True
+            )
+            launch.update(
+                {
+                    "GENMOL_BENCHMARK_GENERATION_LEASE_PATH": lease_path,
+                    "GENMOL_BENCHMARK_EXPECTED_GENERATION_LEASE_SHA256": lease_sha256,
+                    "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN": owner_token,
+                    "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON": json.dumps(
+                        authority,
+                        separators=(",", ":"),
+                        sort_keys=True,
+                        ensure_ascii=True,
+                    ),
+                }
+            )
+            summary["runtime_seconds"]["sampled_token_control_audit"] = 0.25
+            summary["artifacts"]["bundle"] = copy.deepcopy(
+                denovo_rescore.ARTIFACT_BUNDLE
+            )
+            summary["sampled_token_control_audit"] = self._token_audit(
+                seed=seed, rows=summary["num_samples"]
             )
             run_label = report.benchmark_run_label(100, checkpoint_sha, seed)
             summary["environment"]["launch_environment"][
@@ -926,7 +1112,7 @@ class DenovoReportTests(unittest.TestCase):
             self._three_runs(runs)
             payload = report.collect_report(runs)
 
-            self.assertEqual(payload["schema_version"], 6)
+            self.assertEqual(payload["schema_version"], 7)
             self.assertEqual(
                 payload["required_protocol"]["total_requested_samples"], 3_000
             )
@@ -981,7 +1167,7 @@ class DenovoReportTests(unittest.TestCase):
 
             with self.assertRaisesRegex(
                 report.ReportValidationError,
-                "schema_version=6; expected 7",
+                "schema_version=6; expected 8",
             ):
                 report.collect_report(runs)
 
@@ -1003,7 +1189,7 @@ class DenovoReportTests(unittest.TestCase):
             summary_path.write_text(json.dumps(summary), encoding="utf-8")
             with self.assertRaisesRegex(
                 report.ReportValidationError,
-                "missing top-level field",
+                "top-level fields differ",
             ):
                 report.collect_report(runs)
 
@@ -1213,11 +1399,11 @@ class DenovoReportTests(unittest.TestCase):
             runs = Path(directory) / "runs"
             self._three_runs(runs)
             payload = report.collect_report(runs)
-            payload["schema_version"] = 5
+            payload["schema_version"] = 6
 
             with self.assertRaisesRegex(
                 report.ReportValidationError,
-                "schema_version=5; expected 6",
+                "schema_version=6; expected 7",
             ):
                 report.write_report_bundle(
                     payload,
@@ -1629,7 +1815,9 @@ class DenovoReportTests(unittest.TestCase):
             snapshot = json.loads(launch["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"])
             process = {"pid": 123, "process_name": "other", "used_memory_mib": 4}
             snapshot["gpu_inventory_at_selection"][0]["compute_processes"] = [process]
-            snapshot["physical_gpu_at_final_uuid_probe"]["compute_processes"] = [process]
+            snapshot["physical_gpu_at_final_uuid_probe"]["compute_processes"] = [
+                process
+            ]
             snapshot["physical_gpu_at_final_uuid_probe"]["utilization_percent"] = 9
             launch["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"] = json.dumps(snapshot)
             summary_path.write_text(json.dumps(summary), encoding="utf-8")

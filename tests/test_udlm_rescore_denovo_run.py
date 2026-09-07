@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import base64
 import csv
 import hashlib
 import io
@@ -73,6 +74,243 @@ def _json_bytes(value) -> bytes:
     )
 
 
+def _encoded_uint16(values: list[int]) -> dict:
+    payload = b"".join(value.to_bytes(2, "little") for value in values)
+    return {
+        "encoding": "rfc4648_base64",
+        "dtype": "uint16",
+        "byte_order": "little",
+        "array_order": "C",
+        "compression": "none",
+        "element_count": len(values),
+        "decoded_byte_count": len(payload),
+        "decoded_sha256": hashlib.sha256(payload).hexdigest(),
+        "data_base64": base64.b64encode(payload).decode("ascii"),
+    }
+
+
+def _control_counts(values: list[int]) -> dict[str, int]:
+    return {
+        name: values.count(token_id)
+        for name, token_id in rescore.CONTROL_TOKEN_IDS.items()
+    }
+
+
+def _token_audit() -> dict:
+    sampler_input = [1, 4, 2, 3] * len(TEXTS)
+    final = [1, 7, 2, 3, 1, 8, 2, 3, 1, 7, 2, 3]
+    editable = [value == 4 for value in sampler_input]
+    mask_payload = bytes([0x44, 0x40])
+    return {
+        "schema_version": 1,
+        "rows": len(TEXTS),
+        "columns": 4,
+        "model_vocab_size": 1880,
+        "tokenizer_effective_size": 1882,
+        "control_token_ids": dict(rescore.CONTROL_TOKEN_IDS),
+        "sampler_input_ids": _encoded_uint16(sampler_input),
+        "final_sampled_ids": _encoded_uint16(final),
+        "editable_mask": {
+            "encoding": "rfc4648_base64",
+            "packing": "one_bit_per_position",
+            "bit_order": "msb0",
+            "array_order": "C",
+            "compression": "none",
+            "logical_bit_count": len(editable),
+            "decoded_byte_count": len(mask_payload),
+            "unused_tail_bit_count": 4,
+            "decoded_sha256": hashlib.sha256(mask_payload).hexdigest(),
+            "data_base64": base64.b64encode(mask_payload).decode("ascii"),
+        },
+        "control_token_counts": {
+            "sampler_input_all_positions": _control_counts(sampler_input),
+            "final_sampled_all_positions": _control_counts(final),
+            "final_sampled_editable_positions": _control_counts([7, 8, 7]),
+        },
+    }
+
+
+def _batch_decode(token_rows, *, skip_special_tokens):
+    assert skip_special_tokens is True
+    return [{7: "mol-a", 8: "mol-b"}[row[1]] for row in token_rows]
+
+
+def _normative_audit() -> dict:
+    sampler_input = [1, 4, 4, 2, 3, 1, 4, 2, 3, 3]
+    final = [1, 7, 8, 2, 3, 1, 9, 2, 3, 3]
+    mask_payload = bytes.fromhex("6200")
+    return {
+        "schema_version": 1,
+        "rows": 2,
+        "columns": 5,
+        "model_vocab_size": 1880,
+        "tokenizer_effective_size": 1882,
+        "control_token_ids": dict(rescore.CONTROL_TOKEN_IDS),
+        "sampler_input_ids": _encoded_uint16(sampler_input),
+        "final_sampled_ids": _encoded_uint16(final),
+        "editable_mask": {
+            "encoding": "rfc4648_base64",
+            "packing": "one_bit_per_position",
+            "bit_order": "msb0",
+            "array_order": "C",
+            "compression": "none",
+            "logical_bit_count": 10,
+            "decoded_byte_count": 2,
+            "unused_tail_bit_count": 6,
+            "decoded_sha256": hashlib.sha256(mask_payload).hexdigest(),
+            "data_base64": "YgA=",
+        },
+        "control_token_counts": {
+            "sampler_input_all_positions": _control_counts(sampler_input),
+            "final_sampled_all_positions": _control_counts(final),
+            "final_sampled_editable_positions": _control_counts([7, 8, 9]),
+        },
+    }
+
+
+def _normative_decode(token_rows, *, skip_special_tokens):
+    assert skip_special_tokens is True
+    assert token_rows == [[1, 7, 8, 2, 3], [1, 9, 2, 3, 3]]
+    return ["first", "second"]
+
+
+def test_normative_sampled_token_control_audit_vectors() -> None:
+    audit = _normative_audit()
+    assert audit["sampler_input_ids"]["data_base64"] == ("AQAEAAQAAgADAAEABAACAAMAAwA=")
+    assert audit["sampler_input_ids"]["decoded_sha256"] == (
+        "e4414736945d993eb61ada7a21bce9f77957f816ccaa8e4a5c376329608afd95"
+    )
+    assert audit["final_sampled_ids"]["data_base64"] == ("AQAHAAgAAgADAAEACQACAAMAAwA=")
+    assert audit["final_sampled_ids"]["decoded_sha256"] == (
+        "7d64fdd9d93604a26e67b6e4ffbbb04e767f7c1eb4e3097c558117667f1ddcf3"
+    )
+    assert audit["editable_mask"]["decoded_sha256"] == (
+        "1e57b933b0a78203e21d41cc4b16d731b255b04058d48a4ac2731f0089312129"
+    )
+    result = rescore.validate_sampled_token_control_audit(
+        audit,
+        expected_rows=2,
+        exclude_special_tokens=False,
+        raw_model_texts=["first", "second"],
+        tokenizer_batch_decode=_normative_decode,
+    )
+    assert result["exact_batch_decode_match"] is True
+
+
+@pytest.mark.parametrize(
+    ("mutator", "message"),
+    [
+        (
+            lambda audit: audit["sampler_input_ids"].__setitem__(
+                "data_base64", "not-base64!"
+            ),
+            "base64",
+        ),
+        (
+            lambda audit: audit["editable_mask"].__setitem__("data_base64", "YgE="),
+            "sha256|tail bits",
+        ),
+        (
+            lambda audit: audit["sampler_input_ids"].__setitem__("element_count", 9),
+            "element_count",
+        ),
+        (
+            lambda audit: audit["control_token_counts"][
+                "final_sampled_all_positions"
+            ].__setitem__("bos", 99),
+            "counts.*bos|bos differs",
+        ),
+    ],
+)
+def test_sampled_token_control_audit_rejects_malformed_encodings_and_counts(
+    mutator, message
+) -> None:
+    audit = _normative_audit()
+    mutator(audit)
+    with pytest.raises(rescore.RescoreValidationError, match=message):
+        rescore.validate_sampled_token_control_audit(
+            audit,
+            expected_rows=2,
+            exclude_special_tokens=False,
+            raw_model_texts=["first", "second"],
+            tokenizer_batch_decode=_normative_decode,
+        )
+
+
+def test_sampled_token_control_audit_rejects_range_template_and_decode_mismatch() -> (
+    None
+):
+    for field, index, replacement, message in (
+        ("final_sampled_ids", 1, 1880, "out-of-range"),
+        ("sampler_input_ids", 1, 7, "BOS MASK"),
+        ("final_sampled_ids", 0, 7, "immutable ID changed"),
+    ):
+        audit = _normative_audit()
+        encoded = base64.b64decode(audit[field]["data_base64"])
+        values = [
+            int.from_bytes(encoded[offset : offset + 2], "little")
+            for offset in range(0, len(encoded), 2)
+        ]
+        values[index] = replacement
+        audit[field] = _encoded_uint16(values)
+        if field == "final_sampled_ids":
+            audit["control_token_counts"]["final_sampled_all_positions"] = (
+                _control_counts(values)
+            )
+            editable_values = [values[1], values[2], values[6]]
+            audit["control_token_counts"]["final_sampled_editable_positions"] = (
+                _control_counts(editable_values)
+            )
+        with pytest.raises(rescore.RescoreValidationError, match=message):
+            rescore.validate_sampled_token_control_audit(
+                audit,
+                expected_rows=2,
+                exclude_special_tokens=False,
+                raw_model_texts=["first", "second"],
+                tokenizer_batch_decode=_normative_decode,
+            )
+
+    with pytest.raises(rescore.RescoreValidationError, match="batch_decode"):
+        rescore.validate_sampled_token_control_audit(
+            _normative_audit(),
+            expected_rows=2,
+            exclude_special_tokens=False,
+            raw_model_texts=["wrong", "second"],
+            tokenizer_batch_decode=lambda *_args, **_kwargs: ["first", "second"],
+        )
+
+
+def test_editable_special_tokens_are_legal_only_when_exclusion_is_false() -> None:
+    audit = _normative_audit()
+    final = [1, 4, 8, 2, 3, 1, 9, 2, 3, 3]
+    audit["final_sampled_ids"] = _encoded_uint16(final)
+    audit["control_token_counts"]["final_sampled_all_positions"] = _control_counts(
+        final
+    )
+    audit["control_token_counts"]["final_sampled_editable_positions"] = _control_counts(
+        [4, 8, 9]
+    )
+
+    def decoder(*_args, **_kwargs):
+        return ["first", "second"]
+
+    rescore.validate_sampled_token_control_audit(
+        audit,
+        expected_rows=2,
+        exclude_special_tokens=False,
+        raw_model_texts=["first", "second"],
+        tokenizer_batch_decode=decoder,
+    )
+    with pytest.raises(rescore.RescoreValidationError, match="exclusion policy"):
+        rescore.validate_sampled_token_control_audit(
+            audit,
+            expected_rows=2,
+            exclude_special_tokens=True,
+            raw_model_texts=["first", "second"],
+            tokenizer_batch_decode=decoder,
+        )
+
+
 def _csv_bytes(records) -> bytes:
     handle = io.StringIO(newline="")
     writer = csv.DictWriter(handle, fieldnames=benchmark.RAW_SAMPLE_FIELDS)
@@ -115,6 +353,7 @@ def _fixture() -> dict:
         "exclude_special_tokens": False,
         "prior_variant": "release_uniform",
         "prior_metadata_sha256": None,
+        "raw_loo_top_p": 1.0,
     }
     source_config = dict(sampling)
     effective = {
@@ -139,9 +378,71 @@ def _fixture() -> dict:
             "sha256": f"{index:x}"[-1] * 64,
             "size_bytes": index,
         }
+    implementation_inputs["artifact_io_source"] = {
+        "path": "/project/scripts/artifact_io.py",
+        "sha256": "f" * 64,
+        "size_bytes": 1234,
+    }
     metric_inputs = {"schema_version": 1, "fixture": "pinned-test-inputs"}
+    output_directory = "/project/output/pilot"
+    command = [
+        "/project/.venv/bin/python",
+        "/project/scripts/exps/denovo/benchmark.py",
+        "--checkpoint",
+        checkpoint_path,
+        "--expected-checkpoint-sha256",
+        checkpoint_sha256,
+        "--expected-source-revision",
+        source_revision,
+        "--config",
+        "/project/config.yaml",
+        "--expected-config-sha256",
+        config_sha256,
+        "--num-samples",
+        str(len(TEXTS)),
+        "--seed",
+        str(SEED),
+        "--device",
+        "cuda:0",
+        "--output-dir",
+        output_directory,
+        "--expected-output-directory-device",
+        "11",
+        "--expected-output-directory-inode",
+        "12",
+    ]
+    launch_authority = {
+        "schema_version": 1,
+        "generation_lease": {
+            "path": "/project/output/.single_generation_job.lock",
+            "relative_path": "output/.single_generation_job.lock",
+            "sha256": "1" * 64,
+            "device": 7,
+            "inode": 8,
+            "owner_token": "2" * 64,
+        },
+        "artifact_io_source": {
+            "path": "/project/scripts/artifact_io.py",
+            "sha256": "f" * 64,
+            "device": 9,
+            "inode": 10,
+        },
+        "output_directory": {
+            "path": output_directory,
+            "relative_path": "output/pilot",
+            "device": 11,
+            "inode": 12,
+        },
+        "command": command,
+        "command_sha256": hashlib.sha256(
+            json.dumps(command, separators=(",", ":")).encode("ascii")
+        ).hexdigest(),
+    }
+    launch_authority_json = json.dumps(
+        launch_authority, separators=(",", ":"), sort_keys=True
+    )
     summary = {
-        "schema_version": benchmark.SCHEMA_VERSION,
+        "schema_version": rescore.SUMMARY_SCHEMA_VERSION,
         "status": "completed",
         "seed": SEED,
         "num_samples": len(TEXTS),
@@ -168,6 +469,7 @@ def _fixture() -> dict:
                 "prior_metadata_sha256": None,
                 "temperature": 0.5,
                 "randomness": 0.5,
+                "raw_loo_top_p": 1.0,
                 "randomness_used_by_sampler": False,
                 "model_use_bracket_safe": False,
                 "single_generation_batch": True,
@@ -176,7 +478,7 @@ def _fixture() -> dict:
                 "strict_safe_fix": False,
                 "inference_weights": inference_weights,
             },
-            "command": ["/project/.venv/bin/python", "benchmark.py"],
+            "command": command,
             "seed_configuration": {
                 "seed": SEED,
                 "seed_applied_immediately_before_generation": True,
@@ -185,6 +487,16 @@ def _fixture() -> dict:
                 "torch_cpu": True,
                 "torch_cuda_all": True,
                 "python_hash_seed": str(SEED),
+            },
+            "execution_authority": {
+                "schema_version": 1,
+                "launch_authority": launch_authority,
+                "launch_authority_canonical_sha256": (
+                    rescore.baseline_rescore.canonical_json_sha256(launch_authority)
+                ),
+                "output_directory_descriptor_retained_until_after_bundle_publication": True,
+                "validated_before_model_import": True,
+                "revalidated_immediately_before_publication": True,
             },
         },
         "checkpoint": {
@@ -222,8 +534,25 @@ def _fixture() -> dict:
         },
         "metrics": metrics,
         "failure_counts": failures,
-        "runtime_seconds": {},
-        "environment": {},
+        "runtime_seconds": {
+            "model_load_and_device_move": 1.0,
+            "model_sampling_and_tokenizer": 2.0,
+            "sampled_token_control_audit": 0.1,
+            "released_postprocessing": 0.2,
+            "generation": 2.2,
+            "decode_and_metrics": 3.0,
+            "total_before_summary_write": 6.1,
+        },
+        "environment": {
+            "launch_environment": {
+                "GENMOL_BENCHMARK_GENERATION_LEASE_PATH": (
+                    "/project/output/.single_generation_job.lock"
+                ),
+                "GENMOL_BENCHMARK_EXPECTED_GENERATION_LEASE_SHA256": "1" * 64,
+                "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN": "2" * 64,
+                "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON": launch_authority_json,
+            }
+        },
         "git": {
             "repo_root": "/project",
             "commit": source_revision,
@@ -247,7 +576,9 @@ def _fixture() -> dict:
                 "fields": list(benchmark.RAW_SAMPLE_FIELDS),
             },
             "summary_json": {"path": "/project/output/pilot/summary.json"},
+            "bundle": copy.deepcopy(rescore.ARTIFACT_BUNDLE),
         },
+        "sampled_token_control_audit": _token_audit(),
     }
     summary_payload = _json_bytes(summary)
     return {
@@ -284,6 +615,7 @@ def _rescore(fixture: dict, **overrides):
         "oracle_qed": _qed,
         "oracle_sa": _sa,
         "diversity_evaluator": _diversity,
+        "tokenizer_batch_decode": _batch_decode,
         "expected_checkpoint_sha256": fixture["checkpoint_sha256"],
         "expected_config_sha256": fixture["config_sha256"],
         "expected_source_revision": fixture["source_revision"],
@@ -309,7 +641,7 @@ def _replace_raw(fixture: dict, raw_payload: bytes) -> dict:
     return changed
 
 
-def test_valid_small_schema7_fixture_is_independently_rescored():
+def test_valid_small_schema8_fixture_is_independently_rescored():
     fixture = _fixture()
 
     result = _rescore(fixture)
@@ -380,7 +712,10 @@ def test_rescore_rejects_raw_model_text_tampering_with_updated_bindings():
     )
     fixture = _replace_raw(fixture, tampered_raw)
 
-    with pytest.raises(rescore.RescoreValidationError, match="raw_safe|smiles"):
+    with pytest.raises(
+        rescore.RescoreValidationError,
+        match="batch_decode|raw_safe|smiles",
+    ):
         _rescore(fixture)
 
 

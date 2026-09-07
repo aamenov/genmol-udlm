@@ -19,7 +19,6 @@ import stat
 import statistics
 import subprocess
 import sys
-import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
@@ -31,23 +30,27 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from scripts.exps.denovo import report as denovo_report  # noqa: E402
+from scripts import artifact_io  # noqa: E402
+from scripts.udlm import (  # noqa: E402
+    verify_denovo_candidate_config_registry as candidate_config_registry,
+)
 from scripts.udlm import verify_scale_up_registry as scale_up_registry  # noqa: E402
 
 
 SCHEMA_VERSION = 1
-PROTOCOL_RELATIVE_PATH = Path("experiments/udlm/protocols/de_novo_superiority_v3.json")
-PROTOCOL_SHA256 = "27a1f3e4fa66988d77eddeb66025eae64b514c452e089bb5c62fff99060c9f16"
+PROTOCOL_RELATIVE_PATH = Path("experiments/udlm/protocols/de_novo_superiority_v4.json")
+PROTOCOL_SHA256 = "9432360dad30a01de7ededf62db77470af9a0b8297fc78f06d330dbc73e826b7"
 PROTOCOL_CANONICAL_SHA256 = (
-    "e7b108dce51cd1445758a9f7dc852532b2ee075a80f783ae009303a7550577ee"
+    "4edb0d193fcedc76913905220f3431fed8f0dd416f900c8da5f433a6071d4bfa"
 )
 PREVIOUS_PROTOCOL_RELATIVE_PATH = Path(
-    "experiments/udlm/protocols/de_novo_superiority_v2.json"
+    "experiments/udlm/protocols/de_novo_superiority_v3.json"
 )
 PREVIOUS_PROTOCOL_SHA256 = (
-    "f845429dae7ca889c09aad3af7946d20a5a05c189d2a19ec5ad8da7fff075a66"
+    "27a1f3e4fa66988d77eddeb66025eae64b514c452e089bb5c62fff99060c9f16"
 )
 PREVIOUS_PROTOCOL_CANONICAL_SHA256 = (
-    "b3b890ba19368e0caefda7a6ca9b082c9d7c2911ddd92eba1d83d1cf91408396"
+    "e7b108dce51cd1445758a9f7dc852532b2ee075a80f783ae009303a7550577ee"
 )
 BASELINE_RELATIVE_PATH = Path("experiments/udlm/baselines/mdlm_50000.json")
 BASELINE_SHA256 = "6da46fc615dedbcca436da087a2c1e9145f5d110036e0c15bb431ded3c2e5539"
@@ -65,12 +68,14 @@ DENOVO_RESCORE_DEPENDENCY_RELATIVE_PATH = Path("scripts/udlm/rescore_mdlm_baseli
 DENOVO_LAUNCHER_RELATIVE_PATH = Path("scripts/exps/denovo/launch_benchmark.py")
 PILOT_EVIDENCE_WRITER_RELATIVE_PATH = Path("scripts/udlm/write_pilot_evidence.py")
 EXPECTED_BASELINE_RESCORE_SOURCE_REVISION = "74482c2742ab5ad15def122c809a6b4e403e94cf"
-EXPECTED_PROTOCOL_ID = "genmol_udlm_de_novo_superiority_v3"
+EXPECTED_PROTOCOL_ID = "genmol_udlm_de_novo_superiority_v4"
 EXPECTED_SEEDS = (0, 1, 2)
 EXPECTED_SAMPLES_PER_SEED = 1_000
 EXPECTED_NFE = 128
 EXPECTED_BASELINE_BENCHMARK_SCHEMA_VERSION = 7
 EXPECTED_BASELINE_REPORT_SCHEMA_VERSION = 6
+EXPECTED_CANDIDATE_BENCHMARK_SCHEMA_VERSION = 8
+EXPECTED_CANDIDATE_REPORT_SCHEMA_VERSION = 7
 EXPECTED_BASELINE_RAW_SAMPLE_FIELD_COUNT = 21
 NUMERIC_RAW_SAMPLE_FIELDS = frozenset(
     {"strict_qed", "strict_sa", "released_qed", "released_sa"}
@@ -106,6 +111,25 @@ PILOT_EMPIRICAL_UNIFORM_MIX_AUDIT_CANONICAL_SHA256 = (
 MAX_SAFE_UTILIZATION_PERCENT = 10
 MIN_SAFE_FREE_MEMORY_MIB = 30_000
 ACTIVE_COMPUTE_PROCESSES_ALLOWED = True
+MAX_GENERATION_GPUS_WITHOUT_PERMISSION = 3
+CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH = Path(
+    "experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json"
+)
+CANDIDATE_CONFIG_DIRECTORY_RELATIVE_PATH = Path(
+    "experiments/udlm/protocols/de_novo_candidate_configs_v1"
+)
+CANDIDATE_DECISION_RELATIVE_PATH = Path(
+    "experiments/udlm/candidates/candidate_decision.json"
+)
+CAMPAIGN_EVIDENCE_MANIFEST_RELATIVE_PATH = Path(
+    "experiments/udlm/pilots/campaign_evidence_manifest.json"
+)
+CANDIDATE_LEDGER_RELATIVE_PATH = Path(
+    "experiments/udlm/candidates/candidate_ledger.json"
+)
+CANDIDATE_LOCK_RELATIVE_PATH = Path("experiments/udlm/candidates/candidate_lock.json")
+GENERATION_LEASE_RELATIVE_PATH = Path("output/.single_generation_job.lock")
+ARTIFACT_IO_RELATIVE_PATH = Path("scripts/artifact_io.py")
 REGISTERED_SELECTION_PILOT_SEEDS = (1000, 1001)
 REGISTERED_SELECTION_SAMPLES_PER_SEED = 256
 REGISTERED_SELECTION_NFE = 128
@@ -118,6 +142,42 @@ CANDIDATE_SELECTION_RULE = (
     "then_lexicographically_smallest_attempt_id"
 )
 CHECKPOINT_SELECTION_RULE = "last_completed_optimizer_step"
+CAMPAIGN_RANKING_ORDER = (
+    "released_quality_descending",
+    "released_diversity_descending",
+    "config_id_ascii_ascending",
+    "attempt_id_ascii_ascending",
+)
+CAMPAIGN_STAGE_IDS = ("D", "A", "B", "C", "eligible")
+CAMPAIGN_STAGE_CONTRACT = {
+    "D": {"entries": 1, "children": 1, "seeds": (1100,), "samples": 32},
+    "A": {"entries": 12, "children": 12, "seeds": (1101,), "samples": 32},
+    "B": {"entries": 18, "children": 18, "seeds": (1102,), "samples": 64},
+    "C": {"entries": 6, "children": 6, "seeds": (1103,), "samples": 96},
+    "eligible": {
+        "entries": 3,
+        "children": 6,
+        "seeds": (1000, 1001),
+        "samples": 256,
+    },
+}
+CAMPAIGN_STAGE_ROLES = {
+    "D": "nonranking_decode_diagnostic",
+    "A": "raw_loo_temperature_screen",
+    "B": "joint_temperature_nucleus_screen",
+    "C": "held_out_operating_point_confirmation",
+    "eligible": "registered_candidate_selection",
+}
+CAMPAIGN_PROMOTION_QUOTA = {"D": None, "A": 2, "B": 2, "C": 1, "eligible": None}
+CAMPAIGN_CANDIDATE_IDS = {
+    "R": "r-w1-1000u-dcb271453411",
+    "S": "s-w1-1000u-dcb271453411",
+    "E": "e-w1-1000u-dcb271453411",
+}
+CAMPAIGN_CONFIG_ID = re.compile(r"[rse]_t(?:050|070|085|100)_p(?:095|098|100)\Z")
+CAMPAIGN_ATTEMPT_ID = re.compile(
+    r"stage-(?:d|a|b|c|eligible)-" r"[rse]_t(?:050|070|085|100)_p(?:095|098|100)\Z"
+)
 CLAIM_SCOPE_BY_STARTUP = {
     "warm_start": "operational_continuation_only",
     "scratch": "single_training_trajectory_checkpoint_comparison_only",
@@ -615,17 +675,862 @@ def validate_empirical_prior_floor_audit() -> dict[str, Any]:
     }
 
 
+def _validate_terminal_scale_up_authority(authority: Mapping[str, Any]) -> None:
+    _exact_keys(
+        authority,
+        {
+            "schema_version",
+            "status",
+            "claim_scope",
+            "source_revision",
+            "registry",
+            "validator_sources",
+            "matched_panel_spec_sha256",
+            "arm_order",
+            "training_variant_order",
+            "terminal_arm_id",
+            "selected_scheduler_arm_id",
+            "selected_conditioning_arm_id",
+            "gpu_count_per_member",
+            "optimizer_updates_per_member",
+            "initialization_checkpoint_sha256",
+            "members",
+            "required_revalidation",
+            "eligibility",
+        },
+        "terminal scale-up authority",
+    )
+    expected_identity = {
+        "schema_version": 1,
+        "status": "validated",
+        "claim_scope": "selection_bound_training_health_and_provenance_only",
+        "source_revision": "83c92963690aa0c41fa4d86dcc69fa0f692f656a",
+        "matched_panel_spec_sha256": (
+            "b7f8abf958fa46d66f0d838a20c10ac8db58386d818ef92834b31afd930348fa"
+        ),
+        "arm_order": ["R", "S", "E"],
+        "training_variant_order": [
+            "udlm",
+            "schedule_uniform",
+            "udlm_categorical",
+        ],
+        "terminal_arm_id": "E",
+        "selected_scheduler_arm_id": "E-L1",
+        "selected_conditioning_arm_id": "E-A1",
+        "gpu_count_per_member": 1,
+        "optimizer_updates_per_member": 1000,
+        "initialization_checkpoint_sha256": EXPECTED_BASELINE_CHECKPOINT_SHA256,
+    }
+    for field, expected in expected_identity.items():
+        if authority.get(field) != expected:
+            raise GateValidationError(
+                f"terminal scale-up authority {field} is unexpected"
+            )
+    registry = _mapping(authority.get("registry"), "terminal scale-up registry")
+    expected_registry = {
+        "relative_path": (
+            "experiments/udlm/protocols/selection_bound_scale_up_registry_gpu1.json"
+        ),
+        "raw_sha256": (
+            "98e482107e450563947e1d8441900b6cf61115ba6910ca57508cd629ed0df209"
+        ),
+        "canonical_sha256": (
+            "a147c1e92beadda8c14a9184bc7143286874de15c5c2313d19fbabe6420f0671"
+        ),
+        "size_bytes": 14469,
+        "schema_version": 1,
+    }
+    if dict(registry) != expected_registry:
+        raise GateValidationError("terminal scale-up registry reference is unexpected")
+    registry_path = _relative_path(
+        registry["relative_path"], "terminal scale-up registry path", suffix=".json"
+    )
+    registry_payload = _repository_artifact_bytes(
+        registry_path, label="terminal scale-up registry"
+    )
+    if (
+        len(registry_payload) != registry["size_bytes"]
+        or _sha256_bytes(registry_payload) != registry["raw_sha256"]
+    ):
+        raise GateValidationError("terminal scale-up registry live bytes differ")
+    registry_document = _mapping(
+        strict_json_loads(registry_payload, label="terminal scale-up registry"),
+        "terminal scale-up registry",
+    )
+    if canonical_json_sha256(registry_document) != registry["canonical_sha256"]:
+        raise GateValidationError("terminal scale-up registry canonical hash differs")
+
+    validator_sources = _mapping(
+        authority.get("validator_sources"), "terminal validator sources"
+    )
+    _exact_keys(
+        validator_sources,
+        {"panel_validator", "registry_validator"},
+        "terminal validator sources",
+    )
+    expected_validators = {
+        "panel_validator": (
+            "scripts/udlm/validate_scale_up_panel.py",
+            "493f5cd985e282705dcaa2dc70507ccd4b523bdc567df5e769a3ae1e9656d65f",
+        ),
+        "registry_validator": (
+            "scripts/udlm/verify_scale_up_registry.py",
+            "f299e6e7ca8ad56727ea038261823e175f784af24c1816df871445b34cce6675",
+        ),
+    }
+    for name, (relative_path, digest) in expected_validators.items():
+        reference = _mapping(
+            validator_sources.get(name), f"terminal {name} source reference"
+        )
+        if dict(reference) != {
+            "relative_path": relative_path,
+            "sha256_at_validation_revision": digest,
+        }:
+            raise GateValidationError(f"terminal {name} source is unexpected")
+        committed = _git_blob(
+            authority["source_revision"], Path(reference["relative_path"])
+        )
+        if _sha256_bytes(committed) != digest:
+            raise GateValidationError(
+                f"terminal {name} source differs at the validation revision"
+            )
+
+    members = authority.get("members")
+    if not isinstance(members, list) or len(members) != 3:
+        raise GateValidationError("terminal scale-up authority must bind R/S/E")
+    expected_candidates = {
+        "R": (
+            "r-w1-1000u-dcb271453411",
+            "udlm",
+            "d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c",
+        ),
+        "S": (
+            "s-w1-1000u-dcb271453411",
+            "schedule_uniform",
+            "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72",
+        ),
+        "E": (
+            "e-w1-1000u-dcb271453411",
+            "udlm_categorical",
+            "dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005",
+        ),
+    }
+    for position, raw_member in enumerate(members):
+        member = _mapping(raw_member, f"terminal scale-up member {position}")
+        _exact_keys(
+            member,
+            {
+                "position",
+                "arm_id",
+                "candidate_id",
+                "training_variant",
+                "registered_config",
+                "launch_manifest",
+                "runtime_config",
+                "training_summary",
+                "successful_exit_receipt",
+                "checkpoint",
+                "log",
+            },
+            f"terminal scale-up member {position}",
+        )
+        arm = ("R", "S", "E")[position]
+        candidate_id, variant, checkpoint_sha256 = expected_candidates[arm]
+        if (
+            member.get("position") != position
+            or member.get("arm_id") != arm
+            or member.get("candidate_id") != candidate_id
+            or member.get("training_variant") != variant
+        ):
+            raise GateValidationError("terminal scale-up member ordering is invalid")
+        checkpoint = _mapping(member.get("checkpoint"), f"terminal {arm} checkpoint")
+        if (
+            checkpoint.get("sha256") != checkpoint_sha256
+            or checkpoint.get("global_step") != 1000
+            or _integer(
+                checkpoint.get("size_bytes"),
+                f"terminal {arm} checkpoint size",
+                minimum=1,
+            )
+            < 1
+        ):
+            raise GateValidationError(f"terminal {arm} checkpoint is unexpected")
+        _relative_path(
+            checkpoint.get("relative_path"),
+            f"terminal {arm} checkpoint path",
+            suffix=".ckpt",
+        )
+        for field, suffix, schema in (
+            ("registered_config", ".json", None),
+            ("launch_manifest", ".json", LAUNCH_MANIFEST_SCHEMA_VERSION),
+            ("runtime_config", ".json", RUNTIME_CONFIG_SCHEMA_VERSION),
+            ("training_summary", ".json", TRAINING_SUMMARY_SCHEMA_VERSION),
+            ("successful_exit_receipt", ".json", PILOT_EXIT_STATUS_SCHEMA_VERSION),
+            ("log", ".log", None),
+        ):
+            reference = _mapping(member.get(field), f"terminal {arm} {field} reference")
+            _relative_path(
+                reference.get("relative_path"),
+                f"terminal {arm} {field} path",
+                suffix=suffix,
+            )
+            digest_field = "raw_sha256" if field == "registered_config" else "sha256"
+            _sha256(reference.get(digest_field), f"terminal {arm} {field} digest")
+            _integer(
+                reference.get("size_bytes"),
+                f"terminal {arm} {field} size",
+                minimum=1,
+            )
+            if schema is not None and reference.get("schema_version") != schema:
+                raise GateValidationError(
+                    f"terminal {arm} {field} schema is unsupported"
+                )
+    if authority.get("eligibility") != {
+        "registered_evaluation_input": True,
+        "generation_without_v4_framework_and_registry": False,
+        "ranking_from_training_artifacts": False,
+        "candidate_lock_from_training_artifacts": False,
+        "superiority_from_training_artifacts": False,
+    }:
+        raise GateValidationError("terminal scale-up eligibility is unexpected")
+
+
+def _validate_raw_loo_top_p_protocol(contract: Mapping[str, Any]) -> None:
+    if (
+        contract.get("schema_version") != 1
+        or contract.get("public_key") != "raw_loo_top_p"
+        or contract.get("omitted_value_normalizes_to") != 1
+        or contract.get("domain")
+        != "finite_non_boolean_real_with_0_less_than_p_less_than_or_equal_to_1"
+        or contract.get("softmax_temperature_domain")
+        != "finite_non_boolean_real_strictly_greater_than_0"
+        or contract.get("scope") != "udlm_active_diffusion_alphabet_only"
+        or contract.get("training_or_loss_changes") is not False
+        or contract.get("mdlm_non_null_raw_loo_top_p_forbidden") is not True
+    ):
+        raise GateValidationError("raw-LOO top-p contract is unexpected")
+    if contract.get("operation_order") != [
+        "select_raw_loo_logits_on_active_model_token_ids",
+        "divide_raw_loo_logits_by_softmax_temperature",
+        "softmax_to_raw_loo_probabilities",
+        "apply_stable_nucleus_filter_to_raw_loo_probabilities",
+        "renormalize_retained_raw_loo_probabilities",
+        "apply_exact_uniform_or_categorical_reverse_bridge",
+        "sample_from_the_untruncated_reverse_posterior",
+    ]:
+        raise GateValidationError("raw-LOO top-p operation order is unexpected")
+    nucleus = _mapping(contract.get("nucleus_rule"), "top-p nucleus rule")
+    expected_nucleus = {
+        "sort": "probability_descending_then_active_model_token_id_ascending",
+        "stability_required": True,
+        "crossing_token_retained": True,
+        "at_least_one_token_retained": True,
+        "tokens_after_first_sorted_position_with_cumulative_mass_strictly_greater_than_p_are_zeroed": True,
+        "final_reverse_posterior_truncation_forbidden": True,
+    }
+    if dict(nucleus) != expected_nucleus:
+        raise GateValidationError("raw-LOO top-p nucleus rule is unexpected")
+    identity = _mapping(contract.get("identity_branch"), "top-p identity branch")
+    if dict(identity) != {
+        "value": 1,
+        "branches_before_sort_exp_mask_or_renormalization": True,
+        "uses_literal_pre_v4_probability_path": True,
+        "adds_no_random_number_draws": True,
+        "required_uniform_and_categorical_posterior_check": "torch.equal",
+        "required_uniform_and_categorical_sample_check": (
+            "exact_sampled_ids_under_cloned_rng_state"
+        ),
+    }:
+        raise GateValidationError("raw-LOO top-p identity branch is unexpected")
+
+
+def _validate_schema8_protocol(contract: Mapping[str, Any]) -> None:
+    expected_versions = {
+        "schema_version": 1,
+        "candidate_benchmark_schema_version": (
+            EXPECTED_CANDIDATE_BENCHMARK_SCHEMA_VERSION
+        ),
+        "candidate_report_schema_version": EXPECTED_CANDIDATE_REPORT_SCHEMA_VERSION,
+        "historical_exact_mdlm_benchmark_schema_version": (
+            EXPECTED_BASELINE_BENCHMARK_SCHEMA_VERSION
+        ),
+        "historical_exact_mdlm_report_schema_version": (
+            EXPECTED_BASELINE_REPORT_SCHEMA_VERSION
+        ),
+        "candidate_pilot_evidence_schema_version": PILOT_EVIDENCE_SCHEMA_VERSION,
+        "candidate_failure_receipt_schema_version": (
+            PILOT_FAILURE_RECEIPT_SCHEMA_VERSION
+        ),
+        "candidate_ledger_schema_version": CANDIDATE_LEDGER_SCHEMA_VERSION,
+        "candidate_lock_schema_version": CANDIDATE_LOCK_SCHEMA_VERSION,
+        "candidate_decision_schema_version": 1,
+    }
+    for field, expected in expected_versions.items():
+        if contract.get(field) != expected:
+            raise GateValidationError(f"schema-8 contract {field} is unexpected")
+    if (
+        contract.get("audit_top_level_key") != "sampled_token_control_audit"
+        or contract.get("sidecar_audit_forbidden") is not True
+        or contract.get("summary_maximum_size_bytes") != 2 * 1024 * 1024
+        or contract.get("maximum_rows") != 1000
+        or contract.get("maximum_columns") != 256
+        or contract.get("model_vocab_size") != 1880
+        or contract.get("tokenizer_effective_size") != 1882
+        or contract.get("control_token_ids")
+        != {"unk": 0, "bos": 1, "eos": 2, "pad": 3, "mask": 4}
+    ):
+        raise GateValidationError("schema-8 audit bounds are unexpected")
+    if contract.get("audit_exact_fields") != [
+        "schema_version",
+        "rows",
+        "columns",
+        "model_vocab_size",
+        "tokenizer_effective_size",
+        "control_token_ids",
+        "sampler_input_ids",
+        "final_sampled_ids",
+        "editable_mask",
+        "control_token_counts",
+    ] or contract.get("control_token_count_exact_keys") != [
+        "unk",
+        "bos",
+        "eos",
+        "pad",
+        "mask",
+    ]:
+        raise GateValidationError("schema-8 audit exact fields are unexpected")
+    vector = _mapping(contract.get("normative_vector"), "schema-8 normative vector")
+    if (
+        vector.get("rows") != 2
+        or vector.get("columns") != 5
+        or _mapping(vector.get("sampler_input_ids"), "normative sampler input").get(
+            "data_base64"
+        )
+        != "AQAEAAQAAgADAAEABAACAAMAAwA="
+        or _mapping(vector.get("final_sampled_ids"), "normative sampled IDs").get(
+            "data_base64"
+        )
+        != "AQAHAAgAAgADAAEACQACAAMAAwA="
+        or _mapping(vector.get("editable_mask"), "normative editable mask").get(
+            "data_base64"
+        )
+        != "YgA="
+    ):
+        raise GateValidationError("schema-8 normative vector is unexpected")
+    execution = _mapping(
+        contract.get("execution_authority_contract"),
+        "schema-8 execution authority contract",
+    )
+    if (
+        execution.get("generation_lease_relative_path")
+        != GENERATION_LEASE_RELATIVE_PATH.as_posix()
+        or execution.get("artifact_io_source_relative_path")
+        != ARTIFACT_IO_RELATIVE_PATH.as_posix()
+        or execution.get("command_sha256_encoding")
+        != ("sha256_of_ascii_json_dumps_separators_comma_colon_ensure_ascii_true")
+        or execution.get(
+            "artifact_io_source_sha256_must_match_across_authority_and_implementation_inputs"
+        )
+        is not True
+    ):
+        raise GateValidationError("schema-8 execution authority is unexpected")
+    environment = _mapping(
+        contract.get("launch_environment_contract"),
+        "schema-8 launch environment contract",
+    )
+    controlled = environment.get("exact_fields")
+    if (
+        not isinstance(controlled, list)
+        or len(controlled) != 15
+        or len(set(controlled)) != 15
+        or environment.get("all_values_are_nonempty_strings") is not True
+    ):
+        raise GateValidationError("schema-8 launch environment is unexpected")
+    bundle = _mapping(
+        contract.get("benchmark_bundle_contract"),
+        "schema-8 benchmark bundle contract",
+    )
+    if bundle.get("exact_value") != {
+        "publication_api": "scripts.artifact_io.publish_bundle_exclusive",
+        "ordinary_members": ["raw_samples.csv"],
+        "completion_member": "summary.json",
+        "exclusive_no_clobber": True,
+        "completion_linked_last": True,
+        "precompletion_failure_rollback": "exact_owned_members_only",
+    }:
+        raise GateValidationError("schema-8 benchmark bundle contract is unexpected")
+
+
+def _validate_tracked_evidence_protocol(contract: Mapping[str, Any]) -> None:
+    if (
+        contract.get("schema_version") != 1
+        or contract.get("manifest_relative_path")
+        != "experiments/udlm/pilots/campaign_evidence_manifest.json"
+        or contract.get("manifest_schema_version") != 1
+        or contract.get("manifest_status") != "complete_before_candidate_decision"
+    ):
+        raise GateValidationError("tracked campaign evidence identity is unexpected")
+    expected_lists = {
+        "manifest_exact_top_level_fields": [
+            "schema_version",
+            "protocol_id",
+            "status",
+            "registry",
+            "source_revision",
+            "counts",
+            "stage_decisions",
+            "children",
+            "required_git_paths",
+        ],
+        "registry_exact_fields": [
+            "relative_path",
+            "sha256",
+            "canonical_sha256",
+            "size_bytes",
+            "schema_version",
+        ],
+        "source_revision_exact_fields": ["head", "upstream"],
+        "counts_exact_fields": [
+            "executed_entry_count",
+            "child_outcome_count",
+            "requested_molecule_count",
+            "stage_decision_count",
+            "tracked_envelope_count",
+            "required_git_path_count",
+        ],
+        "stage_decision_exact_fields": [
+            "stage_id",
+            "relative_path",
+            "sha256",
+            "schema_version",
+        ],
+        "stage_decision_order": ["D", "A", "B", "C", "eligible"],
+        "child_exact_fields": [
+            "stage_id",
+            "config_id",
+            "attempt_id",
+            "candidate_id",
+            "pilot_seed",
+            "artifact_kind",
+            "live_envelope",
+            "tracked_envelope",
+            "supporting_artifacts",
+        ],
+        "child_artifact_kind_values": ["pilot_evaluation", "pilot_failure"],
+        "envelope_reference_exact_fields": [
+            "relative_path",
+            "sha256",
+            "size_bytes",
+            "schema_version",
+        ],
+        "supporting_artifact_exact_fields": [
+            "artifact_role",
+            "relative_path",
+            "sha256",
+            "size_bytes",
+            "schema_version",
+        ],
+        "required_git_paths_exclude": [
+            "live_envelopes",
+            "stage_entries",
+            "checkpoints",
+            "configs",
+            "launcher_source",
+        ],
+    }
+    for field, expected in expected_lists.items():
+        if contract.get(field) != expected:
+            raise GateValidationError(f"tracked evidence {field} is unexpected")
+    if (
+        contract.get(
+            "live_and_tracked_envelope_sha_size_schema_kind_and_seed_must_match"
+        )
+        is not True
+        or contract.get("live_envelope_path_template")
+        != (
+            "output/udlm/de_novo_candidate_campaign_v1/evidence/"
+            "{attempt_id}/seed_{pilot_seed}.json"
+        )
+        or contract.get("tracked_envelope_path_template")
+        != "experiments/udlm/pilots/{attempt_id}/seed_{pilot_seed}.json"
+        or contract.get("supporting_artifact_order")
+        != "artifact_role_ascii_then_relative_path_ascii"
+        or contract.get("required_git_paths")
+        != (
+            "ascii_sorted_unique_union_of_43_tracked_envelopes_5_stage_decisions_"
+            "and_all_supporting_artifacts_excluding_manifest"
+        )
+    ):
+        raise GateValidationError(
+            "tracked evidence path/closure contract is unexpected"
+        )
+    if (
+        contract.get("completed_supporting_roles_and_schemas")
+        != {
+            "training_exit_receipt": 5,
+            "benchmark_summary_json": 8,
+            "benchmark_raw_samples_csv": None,
+        }
+        or contract.get("failed_required_supporting_roles_and_schemas")
+        != {
+            "failure_receipt": 1,
+            "failure_log": None,
+        }
+        or contract.get("failed_optional_partial_roles_and_schemas")
+        != {
+            "partial_summary_json": None,
+            "partial_raw_samples_csv": None,
+        }
+    ):
+        raise GateValidationError("tracked evidence supporting roles are unexpected")
+    if contract.get("materialization") != {
+        "cpu_only": True,
+        "source_revision_is_exact_clean_pushed_G": True,
+        "all_43_children_are_independently_validated_and_rescored_before_any_target_publication": True,
+        "regenerated_envelope_bytes_and_sha256_equal_live_envelope": True,
+        "publication_api": "scripts.artifact_io.publish_bundle_exclusive",
+        "ordinary_member_count": 43,
+        "completion_member": "campaign_evidence_manifest.json",
+        "completion_linked_last": True,
+        "exclusive_no_clobber": True,
+    }:
+        raise GateValidationError(
+            "tracked evidence materialization contract is unexpected"
+        )
+    if contract.get("evidence_commit") != {
+        "symbol": "EVIDENCE",
+        "exact_sole_parent_is_G": True,
+        "all_changes_are_additions": True,
+        "exact_addition_set": "manifest_union_manifest_required_git_paths",
+        "every_path_absent_at_G": True,
+        "every_blob_matches_manifest_sha256_and_recorded_size_where_size_is_recorded": True,
+        "decision_ledger_and_lock_absent_at_G_and_EVIDENCE": True,
+        "verified_before_candidate_decision_publication": True,
+    }:
+        raise GateValidationError("tracked evidence Git contract is unexpected")
+
+
+def _validate_registered_generation_campaign(campaign: Mapping[str, Any]) -> None:
+    if (
+        campaign.get("schema_version") != 1
+        or campaign.get("config_registry_relative_path")
+        != CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH.as_posix()
+        or campaign.get("config_directory_relative_path")
+        != CANDIDATE_CONFIG_DIRECTORY_RELATIVE_PATH.as_posix()
+        or campaign.get("candidate_decision_relative_path")
+        != CANDIDATE_DECISION_RELATIVE_PATH.as_posix()
+        or campaign.get("nfe") != EXPECTED_NFE
+    ):
+        raise GateValidationError("registered candidate campaign identity is invalid")
+    _validate_tracked_evidence_protocol(
+        _mapping(
+            campaign.get("tracked_evidence_contract"),
+            "tracked campaign evidence contract",
+        )
+    )
+    grid = _mapping(campaign.get("grid"), "candidate campaign grid")
+    if dict(grid) != {
+        "arms": ["R", "S", "E"],
+        "softmax_temperatures": [0.5, 0.7, 0.85, 1],
+        "raw_loo_top_p_values": [1, 0.98, 0.95],
+        "universe_config_count": 36,
+        "historical_identity_config_count": 3,
+        "new_config_count": 33,
+    }:
+        raise GateValidationError("candidate campaign grid is unexpected")
+    if campaign.get("candidate_id_by_arm") != {
+        "R": "r-w1-1000u-dcb271453411",
+        "S": "s-w1-1000u-dcb271453411",
+        "E": "e-w1-1000u-dcb271453411",
+    }:
+        raise GateValidationError("candidate campaign checkpoint IDs are unexpected")
+    chronology = _mapping(
+        campaign.get("adaptive_stage_chronology"),
+        "candidate campaign adaptive-stage chronology",
+    )
+    if dict(chronology) != {
+        "schema_version": 1,
+        "completed_and_failed_child_intervals_recovered_from_committed_evidence": True,
+        "every_non_d_child_start_strictly_after_predecessor_stage_decision_completion": True,
+        "every_child_terminal_strictly_before_own_stage_decision_completion": True,
+        "eligible_stage_decision_completion_strictly_before_candidate_lock": True,
+    }:
+        raise GateValidationError(
+            "candidate campaign adaptive-stage chronology is unexpected"
+        )
+    ranking = _mapping(campaign.get("ranking"), "candidate campaign ranking")
+    if (
+        ranking.get("uses_only_current_stage") is not True
+        or ranking.get("cross_stage_pooling_forbidden") is not True
+        or ranking.get("values") != "raw_unrounded_released_compatible_metrics"
+        or ranking.get(
+            "ranked_stage_metrics_must_come_from_fresh_cpu_independent_rescore_before_advancement"
+        )
+        is not True
+        or ranking.get("key")
+        != [
+            "released_quality_descending",
+            "released_diversity_descending",
+            "config_id_ascii_ascending",
+            "attempt_id_ascii_ascending",
+        ]
+        or ranking.get("attempts_aggregate_the_exact_fixed_seed_tuple_for_their_stage")
+        is not True
+        or ranking.get(
+            "eligible_attempt_ascii_order_is_config_id_major_and_therefore_equivalent_to_the_v3_attempt_id_tie_break"
+        )
+        is not True
+    ):
+        raise GateValidationError("candidate campaign ranking is unexpected")
+    stages = campaign.get("stages")
+    expected_stages = (
+        ("D", 1, 1, [1100], 32, 32),
+        ("A", 12, 12, [1101], 32, 384),
+        ("B", 18, 18, [1102], 64, 1152),
+        ("C", 6, 6, [1103], 96, 576),
+        ("eligible", 3, 6, [1000, 1001], 256, 1536),
+        ("final", 1, 3, [0, 1, 2], 1000, 3000),
+    )
+    if not isinstance(stages, list) or len(stages) != len(expected_stages):
+        raise GateValidationError("candidate campaign stage count is unexpected")
+    for raw_stage, expected in zip(stages, expected_stages, strict=True):
+        stage = _mapping(raw_stage, f"candidate campaign stage {expected[0]}")
+        actual = (
+            stage.get("stage_id"),
+            stage.get("scheduled_entry_count"),
+            stage.get("generation_child_count"),
+            stage.get("seeds"),
+            stage.get("requested_samples_per_child"),
+            stage.get("requested_molecules"),
+        )
+        if actual != expected:
+            raise GateValidationError(
+                f"candidate campaign stage {expected[0]} accounting is unexpected"
+            )
+    if campaign.get("accounting") != {
+        "prefinal_distinct_stage_config_entries": 40,
+        "prefinal_generation_children": 43,
+        "prefinal_requested_molecules": 3680,
+        "prefinal_molecule_nfe": 471040,
+        "complete_distinct_stage_config_entries": 41,
+        "complete_generation_children": 46,
+        "complete_requested_molecules": 6680,
+        "complete_molecule_nfe": 855040,
+    }:
+        raise GateValidationError("candidate campaign total accounting is unexpected")
+    failure = _mapping(campaign.get("failure_policy"), "campaign failure policy")
+    for field in (
+        "all_scheduled_stage_slots_terminal_before_advancement",
+        "failed_or_undefined_outcomes_retained",
+        "retry_forbidden",
+        "substitution_forbidden",
+        "already_running_siblings_complete_after_failure",
+    ):
+        _required_true(failure.get(field), f"campaign failure policy {field}")
+    if (
+        failure.get("failed_or_undefined_outcomes_rankable") is not False
+        or failure.get("insufficient_quota_result")
+        != "campaign_incomplete_and_candidate_lock_forbidden"
+    ):
+        raise GateValidationError("candidate campaign failure policy is unexpected")
+    registry_contract = _mapping(
+        campaign.get("config_registry_contract"), "candidate registry contract"
+    )
+    if (
+        registry_contract.get("schema_version") != 1
+        or registry_contract.get("registry_id")
+        != "genmol_udlm_de_novo_candidate_config_v1"
+        or registry_contract.get(
+            "publication_must_bind_F_and_C_but_never_G_or_the_registry_own_digest"
+        )
+        is not True
+        or registry_contract.get("ranking_order") != ranking.get("key")
+    ):
+        raise GateValidationError("candidate registry contract is unexpected")
+    decision = _mapping(
+        campaign.get("candidate_decision_contract"), "candidate decision contract"
+    )
+    if (
+        decision.get("schema_version") != 1
+        or decision.get("status") != "closed_before_candidate_ledger"
+        or decision.get("final_seed_results_included") is not False
+        or decision.get(
+            "candidate_decision_must_be_a_strict_git_predecessor_of_candidate_ledger"
+        )
+        is not True
+    ):
+        raise GateValidationError("candidate decision contract is unexpected")
+
+
+def _validate_generation_resource_policy(policy: Mapping[str, Any]) -> None:
+    if (
+        policy.get("schema_version") != 1
+        or policy.get("minimum_gpus") != 1
+        or policy.get("maximum_gpus_without_additional_user_permission")
+        != MAX_GENERATION_GPUS_WITHOUT_PERMISSION
+        or policy.get("diagnostic_gpu_count") != 1
+    ):
+        raise GateValidationError("generation GPU count policy is unexpected")
+    idle = _mapping(policy.get("idle_definition"), "generation idle definition")
+    if dict(idle) != {
+        "utilization_percent_strictly_less_than": MAX_SAFE_UTILIZATION_PERCENT,
+        "exactly_10_percent_is_idle": False,
+        "minimum_free_memory_mib": MIN_SAFE_FREE_MEMORY_MIB,
+        "prohibited_compute_mode_rejected": True,
+        "active_processes_allowed_when_live_telemetry_qualifies": True,
+        "active_processes_recorded_and_never_interrupted": True,
+    }:
+        raise GateValidationError("generation idle definition is unexpected")
+    lease = _mapping(policy.get("generation_lease"), "generation lease policy")
+    if (
+        lease.get("relative_path") != GENERATION_LEASE_RELATIVE_PATH.as_posix()
+        or lease.get("schema_version") != 1
+        or lease.get("payload_owner_token_is_64_lowercase_hex") is not True
+        or lease.get("payload_source_revision_is_exact_G") is not True
+        or lease.get("acquired_before_first_real_gpu_inventory") is not True
+        or lease.get("held_across_all_handed_off_children") is not True
+        or lease.get("unknown_or_stale_lease_policy")
+        != "fail_closed_and_require_manual_review"
+    ):
+        raise GateValidationError("generation lease policy is unexpected")
+    argv = _mapping(policy.get("child_argv"), "generation child argv")
+    if (
+        argv.get("element_count") != 24
+        or argv.get("overwrite_option_forbidden") is not True
+        or argv.get("historical_exact_mdlm_schema7_command_element_count") != 20
+        or argv.get("exact_option_order")
+        != [
+            "python",
+            "benchmark.py",
+            "--checkpoint",
+            "checkpoint_path",
+            "--expected-checkpoint-sha256",
+            "checkpoint_sha256",
+            "--expected-source-revision",
+            "source_revision_G",
+            "--config",
+            "config_path",
+            "--expected-config-sha256",
+            "config_sha256",
+            "--num-samples",
+            "sample_count",
+            "--seed",
+            "seed",
+            "--device",
+            "cuda:0",
+            "--output-dir",
+            "absolute_output_directory",
+            "--expected-output-directory-device",
+            "device_decimal",
+            "--expected-output-directory-inode",
+            "inode_decimal",
+        ]
+    ):
+        raise GateValidationError("generation child argv contract is unexpected")
+
+
+def _validate_publication_firewall(firewall: Mapping[str, Any]) -> None:
+    if (
+        firewall.get("schema_version") != 1
+        or firewall.get("no_separate_pre_framework_authority_revision") is not True
+    ):
+        raise GateValidationError("publication firewall identity is unexpected")
+    phases = firewall.get("ordered_phases")
+    expected_names = [
+        "F",
+        "C",
+        "G",
+        "registered_prefinal_gpu_campaign",
+        "tracked_envelopes_and_evidence",
+        "candidate_decision_only",
+        "candidate_ledger_only",
+        "candidate_lock_only",
+        "final_gpu_evaluation",
+    ]
+    if (
+        not isinstance(phases, list)
+        or [_mapping(phase, "publication phase").get("phase") for phase in phases]
+        != expected_names
+    ):
+        raise GateValidationError("publication phase order is unexpected")
+    historical = firewall.get("historical_identity_yamls")
+    expected_historical = [
+        (
+            "R",
+            "scripts/exps/denovo/hparams_udlm.yaml",
+            "bc28eb26297702624e009eed77d13b2a600aeba341b21fbc938d7d01d4c0d84d",
+            613,
+        ),
+        (
+            "S",
+            "scripts/exps/denovo/hparams_udlm_schedule_uniform.yaml",
+            "8f07751d3504eabc938dbccf91b90217df809945cb06b2fc8f96671cde59f739",
+            518,
+        ),
+        (
+            "E",
+            "scripts/exps/denovo/hparams_udlm_categorical_floor0002.yaml",
+            "309bbed7b67ad2090def3ba5429f00f4e56b4fb7af2f6be245b9e79619aa3c06",
+            602,
+        ),
+    ]
+    if not isinstance(historical, list) or len(historical) != 3:
+        raise GateValidationError("historical identity YAML list is unexpected")
+    for raw_reference, expected in zip(historical, expected_historical, strict=True):
+        reference = _mapping(raw_reference, "historical identity YAML")
+        actual = (
+            reference.get("arm_id"),
+            reference.get("relative_path"),
+            reference.get("sha256"),
+            reference.get("size_bytes"),
+        )
+        if actual != expected:
+            raise GateValidationError("historical identity YAML pin is unexpected")
+        payload = _repository_artifact_bytes(
+            Path(expected[1]), label=f"historical {expected[0]} identity YAML"
+        )
+        if len(payload) != expected[3] or _sha256_bytes(payload) != expected[2]:
+            raise GateValidationError(
+                f"historical {expected[0]} identity YAML live bytes differ"
+            )
+
+
 def validate_protocol(protocol: Mapping[str, Any]) -> None:
     if canonical_json_sha256(protocol) != PROTOCOL_CANONICAL_SHA256:
         raise GateValidationError(
             "superiority protocol content is not the frozen value"
         )
-    if protocol.get("schema_version") != 3:
-        raise GateValidationError("protocol schema_version must equal 3")
+    _exact_keys(
+        protocol,
+        {
+            "schema_version",
+            "protocol_id",
+            "status",
+            "amends",
+            "primary_claim",
+            "baseline",
+            "final_operating_point",
+            "selection_firewall",
+            "point_estimate_gates",
+            "uncertainty_gates",
+            "candidate_lock_requirements",
+            "decision",
+            "claim_boundaries",
+            "terminal_scale_up_authority",
+            "raw_loo_top_p_semantics",
+            "schema8_evidence_contract",
+            "registered_generation_campaign",
+            "generation_resource_policy",
+            "publication_firewall",
+        },
+        "superiority protocol",
+    )
+    if protocol.get("schema_version") != 4:
+        raise GateValidationError("protocol schema_version must equal 4")
     if protocol.get("protocol_id") != EXPECTED_PROTOCOL_ID:
         raise GateValidationError("unexpected superiority protocol ID")
     if protocol.get("status") != (
-        "frozen_after_failed_health_instrumentation_before_scientific_screens"
+        "frozen_after_terminal_scale_up_validation_before_registered_candidate_generation"
     ):
         raise GateValidationError("superiority protocol is not frozen")
     amendment = _mapping(protocol.get("amends"), "protocol.amends")
@@ -634,55 +1539,27 @@ def validate_protocol(protocol: Mapping[str, Any]) -> None:
         "raw_sha256": PREVIOUS_PROTOCOL_SHA256,
         "canonical_sha256": PREVIOUS_PROTOCOL_CANONICAL_SHA256,
         "reason": (
-            "Advance the training-summary schema from 4 to 5 after a completed "
-            "ten-update health-training process exposed Lightning's intended "
-            "unranked ModelCheckpoint positive-infinity sentinel; require an "
-            "exact checkpoint schema, structural sentinel validation, exact "
-            "checkpoint/config and loop-progress bindings, exact live trainer/"
-            "optimizer/scheduler/sampler/callback bindings, and an exact "
-            "independent screen/receipt verifier without changing any scientific "
-            "setting or threshold."
+            "Bind the independently validated terminal R/S/E scale-up panel; freeze "
+            "raw-LOO temperature and nucleus semantics, schema-8 token-control "
+            "evidence, a held-out staged candidate campaign, repository-global "
+            "generation safety, and an acyclic publication firewall before any "
+            "registered candidate generation."
         ),
-        "gpu_training_process_executed_before_amendment": True,
-        "successful_health_panels_before_amendment": False,
-        "failed_health_run_denoising_sampling_executed": False,
-        "failed_health_run_molecular_scoring_executed": False,
-        "registered_candidate_checkpoint_selection_or_ranking_executed_since_v2_freeze": False,
-        "candidate_final_evaluation_run_executed_since_v2_freeze": False,
-        "pre_v2_ineligible_cpu_smokes_and_audited_baseline_rescoring_remain_disclosed": True,
-        "scientific_decision_thresholds_changed": False,
-        "failed_health_instrumentation": {
-            "run_id": ("health-w1-r-" "12bdce22809f9672dbb6666fa3a6e828b39aadb0"),
-            "run_relative_path": (
-                "output/udlm/health-w1-r-" "12bdce22809f9672dbb6666fa3a6e828b39aadb0"
-            ),
-            "source_revision": "12bdce22809f9672dbb6666fa3a6e828b39aadb0",
-            "status": "failed_post_training_semantic_audit",
-            "optimizer_updates_completed": 10,
-            "training_summary_published": False,
-            "successful_exit_receipt": False,
-            "scientifically_eligible": False,
-            "launch_manifest_sha256": (
-                "ff0a946c8504b058574e082cadc14441295c4955352adc867e442521bf756f05"
-            ),
-            "runtime_config_sha256": (
-                "14547b9be4772b1c78f5bc639e9d0d2ed17103daf6ea1e3dd8b4a346807bc24a"
-            ),
-            "checkpoint_sha256": (
-                "f85230b09ddacd319082571b59773a9c3d26f61f27cfde8f206eae549cce4cb6"
-            ),
-            "failed_exit_receipt_sha256": (
-                "5336a4791256910632412ae09eec9d20e223c22765bcfd8796d00408248d3b99"
-            ),
-            "training_log_sha256": (
-                "6b6f14759c9d45cb6c0200ce188ccfdb912b91544912e9c01d07cf58a5aeef95"
-            ),
-            "diagnosis": (
-                "The blanket checkpoint finiteness audit rejected Lightning "
-                "2.5.1 ModelCheckpoint.kth_value=+inf even though every learned "
-                "model, EMA, optimizer, and scheduler tensor was finite."
-            ),
-        },
+        "scientific_decision_subtrees_unchanged": [
+            "primary_claim",
+            "baseline",
+            "final_operating_point",
+            "selection_firewall",
+            "point_estimate_gates",
+            "uncertainty_gates",
+            "candidate_lock_requirements",
+            "decision",
+            "claim_boundaries",
+        ],
+        "scientific_settings_or_thresholds_changed": False,
+        "registered_candidate_generation_executed_before_amendment": False,
+        "candidate_checkpoint_or_sampling_configuration_ranked_before_amendment": False,
+        "candidate_final_evaluation_executed_before_amendment": False,
     }:
         raise GateValidationError("superiority protocol amendment is unexpected")
     baseline = _mapping(protocol.get("baseline"), "protocol.baseline")
@@ -867,50 +1744,48 @@ def validate_protocol(protocol: Mapping[str, Any]) -> None:
         raise GateValidationError(
             "previous superiority protocol canonical digest is unexpected"
         )
-    previous_lock_requirements = _mapping(
-        previous_protocol.get("candidate_lock_requirements"),
-        "previous protocol candidate-lock requirements",
-    )
-    expected_lock_requirements = json.loads(
-        json.dumps(
-            previous_lock_requirements,
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-            allow_nan=False,
-        )
-    )
-    expected_lock_requirements["accepted_training_artifact_schema_versions"][
-        "training_summary"
-    ] = TRAINING_SUMMARY_SCHEMA_VERSION
-    for field in (
-        "training_summary_checkpoint_audit_excludes_only_exact_live_bound_lightning_sentinel_required",
-        "training_summary_checkpoint_exact_top_level_schema_and_nonfinite_python_numpy_rejection_required",
-        "training_summary_checkpoint_hyperparameters_loop_progress_and_live_trainer_configuration_match_required",
-        "training_summary_optimizer_scheduler_sampler_and_model_checkpoint_live_state_matches_required",
-        "independent_optimization_screen_exact_closed_schema_and_cross_artifact_bindings_required",
-        "failed_health_namespaces_are_immutable_and_never_eligible_for_candidate_selection",
-    ):
-        expected_lock_requirements[field] = True
-    if dict(lock_requirements) != expected_lock_requirements:
-        raise GateValidationError(
-            "v3 candidate-lock requirements differ beyond the registered "
-            "schema-5 instrumentation amendment"
-        )
-    for field in (
-        "primary_claim",
-        "baseline",
-        "final_operating_point",
-        "selection_firewall",
-        "point_estimate_gates",
-        "uncertainty_gates",
-        "decision",
-        "claim_boundaries",
-    ):
+    unchanged_fields = amendment["scientific_decision_subtrees_unchanged"]
+    for field in unchanged_fields:
         if protocol.get(field) != previous_protocol.get(field):
             raise GateValidationError(
-                f"v3 unexpectedly changes scientific protocol field {field}"
+                f"v4 unexpectedly changes scientific protocol field {field}"
             )
+    _validate_terminal_scale_up_authority(
+        _mapping(
+            protocol.get("terminal_scale_up_authority"),
+            "protocol.terminal_scale_up_authority",
+        )
+    )
+    _validate_raw_loo_top_p_protocol(
+        _mapping(
+            protocol.get("raw_loo_top_p_semantics"),
+            "protocol.raw_loo_top_p_semantics",
+        )
+    )
+    _validate_schema8_protocol(
+        _mapping(
+            protocol.get("schema8_evidence_contract"),
+            "protocol.schema8_evidence_contract",
+        )
+    )
+    _validate_registered_generation_campaign(
+        _mapping(
+            protocol.get("registered_generation_campaign"),
+            "protocol.registered_generation_campaign",
+        )
+    )
+    _validate_generation_resource_policy(
+        _mapping(
+            protocol.get("generation_resource_policy"),
+            "protocol.generation_resource_policy",
+        )
+    )
+    _validate_publication_firewall(
+        _mapping(
+            protocol.get("publication_firewall"),
+            "protocol.publication_firewall",
+        )
+    )
 
 
 def _sample_sd(values: Sequence[float]) -> float:
@@ -2481,7 +3356,35 @@ def _deep_validate_scale_up_registry(
     expected_raw_sha256: str,
     expected_canonical_sha256: str,
 ) -> scale_up_registry.ValidatedScaleUpRegistry:
-    """Run the independent registry verifier behind one gate-local seam."""
+    """Replay the independent registry verifier at its immutable source revision.
+
+    The prospective scale-up registry binds repository inputs at R5.  Later
+    reviewed framework commits necessarily edit several of the same paths, so
+    consulting the live worktree would make valid historical training evidence
+    unverifiable.  Repository inputs are therefore read from the exact bound
+    source revision, while project-root artifacts (notably checkpoints) remain
+    stable-file snapshots from the artifact-bearing host.
+    """
+
+    parsed = _mapping(
+        strict_json_loads(payload, label="selection-bound scale-up registry"),
+        "selection-bound scale-up registry",
+    )
+    registry_source_revision = _git_revision(
+        _mapping(parsed.get("source"), "selection-bound scale-up registry source").get(
+            "revision"
+        ),
+        "selection-bound scale-up registry source revision",
+    )
+
+    def historical_loader(
+        root: str, relative_path: PurePosixPath
+    ) -> bytes | scale_up_registry.screen.BlobSnapshot:
+        if root == "repository" and relative_path.parts[:1] != ("output",):
+            return scale_up_registry.screen.git_blob_loader(
+                registry_source_revision, relative_path
+            )
+        return scale_up_registry.screen.local_blob_loader(root, relative_path)
 
     try:
         return scale_up_registry.load_validated_registry(
@@ -2489,6 +3392,7 @@ def _deep_validate_scale_up_registry(
             relative_path=relative_path,
             expected_raw_sha256=expected_raw_sha256,
             expected_canonical_sha256=expected_canonical_sha256,
+            loader=historical_loader,
         )
     except scale_up_registry.ScaleUpValidationError as error:
         raise GateValidationError(
@@ -2560,11 +3464,14 @@ def _validate_selection_bound_scale_up(
 
     binding = _mapping(value, "selection-bound scale-up binding")
     _exact_keys(binding, _SCALE_UP_BINDING_KEYS, "selection-bound scale-up binding")
-    if _integer(
-        binding.get("schema_version"),
-        "selection-bound scale-up schema",
-        minimum=1,
-    ) != 1:
+    if (
+        _integer(
+            binding.get("schema_version"),
+            "selection-bound scale-up schema",
+            minimum=1,
+        )
+        != 1
+    ):
         raise GateValidationError("selection-bound scale-up schema is unsupported")
     registry_reference = _mapping(
         binding.get("registry"), "selection-bound scale-up registry reference"
@@ -2593,12 +3500,17 @@ def _validate_selection_bound_scale_up(
         raise GateValidationError(
             "selection-bound scale-up registry path disagrees with world size"
         )
-    if _integer(
-        registry_reference.get("schema_version"),
-        "selection-bound scale-up registry schema",
-        minimum=1,
-    ) != 1:
-        raise GateValidationError("selection-bound scale-up registry schema is unsupported")
+    if (
+        _integer(
+            registry_reference.get("schema_version"),
+            "selection-bound scale-up registry schema",
+            minimum=1,
+        )
+        != 1
+    ):
+        raise GateValidationError(
+            "selection-bound scale-up registry schema is unsupported"
+        )
     raw_sha256 = _sha256(
         registry_reference.get("sha256"), "selection-bound registry raw digest"
     )
@@ -2735,7 +3647,9 @@ def _live_output_node_identity(
                 relative.parts[-1], dir_fd=directory_fd, follow_symlinks=False
             )
         except OSError as error:
-            raise GateValidationError(f"{label} is unavailable: {normalized}") from error
+            raise GateValidationError(
+                f"{label} is unavailable: {normalized}"
+            ) from error
     finally:
         os.close(directory_fd)
     expected_kind = stat.S_ISDIR if require_directory else stat.S_ISREG
@@ -3826,10 +4740,7 @@ def _validate_predecessor_receipt_chain(
     prefix = predecessor_evidence["predecessor_receipt_chain"]
     if prefix["chain_depth"] != position:
         raise GateValidationError("R/S/E predecessor chain has the wrong depth")
-    if (
-        prefix.get("selection_bound_scale_up_common_sha256")
-        != scale_up_common_sha256
-    ):
+    if prefix.get("selection_bound_scale_up_common_sha256") != scale_up_common_sha256:
         raise GateValidationError(
             "recursive selection-bound scale-up authority is discontinuous"
         )
@@ -6123,7 +7034,7 @@ def _require_completed_pilot_references_at_revision(
 def _validate_completed_pilot_evidence_live(
     evidence: Mapping[str, Any],
 ) -> Mapping[str, Any]:
-    """Validate and independently re-score one live schema-7 pilot run.
+    """Validate and independently re-score one live schema-8 candidate pilot run.
 
     The committed evidence envelope supplies only identities.  This adapter
     validates the producer-shaped files, checks the successful training receipt,
@@ -6186,7 +7097,7 @@ def _validate_completed_pilot_evidence_live(
         )
     except (OSError, ValueError) as error:
         raise GateValidationError(
-            f"pilot schema-7 structural validation failed: {error}"
+            f"pilot schema-8 structural validation failed: {error}"
         ) from error
     if (
         Path(structural["summary_path"]) != summary_path
@@ -6610,10 +7521,27 @@ def _validate_pilot_failure_receipt(
     command = receipt.get("command")
     if (
         not isinstance(command, list)
-        or len(command) != 20
+        or len(command) != 24
         or any(not isinstance(value, str) or not value for value in command)
     ):
-        raise GateValidationError(f"{label} command must contain exactly ten pairs")
+        raise GateValidationError(f"{label} command must contain exactly twelve pairs")
+    output_directory_identity = []
+    for argument_index, identity_label in (
+        (21, "output directory device"),
+        (23, "output directory inode"),
+    ):
+        raw_identity = command[argument_index]
+        try:
+            identity = int(raw_identity)
+        except ValueError as error:
+            raise GateValidationError(
+                f"{label} {identity_label} must be canonical decimal"
+            ) from error
+        if identity < 0 or str(identity) != raw_identity:
+            raise GateValidationError(
+                f"{label} {identity_label} must be canonical nonnegative decimal"
+            )
+        output_directory_identity.append(raw_identity)
     interpreter = Path(command[0])
     if interpreter != _project_training_python_executable():
         raise GateValidationError(f"{label} command interpreter is not project .venv")
@@ -6640,6 +7568,10 @@ def _validate_pilot_failure_receipt(
         "cuda:0",
         "--output-dir",
         str(Path(os.path.abspath(REPOSITORY_ROOT / receipt_path.parent))),
+        "--expected-output-directory-device",
+        output_directory_identity[0],
+        "--expected-output-directory-inode",
+        output_directory_identity[1],
     ]
     if command != expected_command:
         raise GateValidationError(f"{label} command differs from its pilot launch")
@@ -6729,6 +7661,7 @@ def _validate_pilot_failure_receipt(
         "pilot_seed": pilot_seed,
         "pilot_mode": pilot_mode,
         "requested_samples": requested_samples,
+        "nfe": normalized_sampling["num_steps"],
         "started_at": started_at,
         "failed_at": failed_at,
         "source_revision": source_revision,
@@ -6917,7 +7850,7 @@ def validate_candidate_ledger(
     Schema 2 treats every seed as an independent success/failure outcome.  A
     partially failed attempt therefore retains and validates its completed
     seed, but cannot enter selection.  Successful envelopes carry no score:
-    the supplied validator must structurally validate the schema-7 benchmark
+    the supplied validator must structurally validate the schema-8 benchmark
     artifacts and independently re-decode and re-score ``raw_model_text``.
     """
 
@@ -6952,6 +7885,7 @@ def validate_candidate_ledger(
     eligible_attempts: list[dict[str, Any]] = []
     all_completed_outcomes: list[dict[str, Any]] = []
     all_failed_outcomes: list[dict[str, Any]] = []
+    all_attempt_outcomes: list[dict[str, Any]] = []
     artifact_count = 0
     ineligible_completed_attempt_count = 0
     undefined_selection_metric_attempt_count = 0
@@ -7022,6 +7956,7 @@ def validate_candidate_ledger(
 
         evidence_seeds: set[int] = set()
         completed_rows: list[dict[str, Any]] = []
+        outcome_rows_by_seed: dict[int, dict[str, Any]] = {}
         failed_outcomes = 0
         for ref_index, raw_ref in enumerate(refs):
             ref_label = f"candidate attempt {attempt_id} artifact ref {ref_index}"
@@ -7196,11 +8131,20 @@ def validate_candidate_ledger(
                     receipt_ref=receipt_ref,
                 )
                 completed_rows.append(completed_row)
+                outcome_rows_by_seed[ref_seed] = {
+                    "artifact_kind": "pilot_evaluation",
+                    "requested_samples": completed_row["requested_samples"],
+                    "nfe": completed_row["nfe"],
+                    "metric_branch": completed_row["metric_branch"],
+                    "quality": completed_row["quality"],
+                    "diversity": completed_row["diversity"],
+                }
                 all_completed_outcomes.append(
                     {
                         "attempt_id": attempt_id,
                         "pilot_seed": ref_seed,
                         "benchmark_revision": completed_row["benchmark_revision"],
+                        "started_at_utc": completed_row["started_at"].isoformat(),
                         "completed_at_utc": completed_row["completed_at"].isoformat(),
                     }
                 )
@@ -7256,6 +8200,14 @@ def validate_candidate_ledger(
                     artifact_loader=artifact_loader,
                 )
                 all_failed_outcomes.append(failure_result)
+                outcome_rows_by_seed[ref_seed] = {
+                    "artifact_kind": "pilot_failure",
+                    "requested_samples": failure_result["requested_samples"],
+                    "nfe": failure_result["nfe"],
+                    "metric_branch": None,
+                    "quality": None,
+                    "diversity": None,
+                }
                 failed_outcomes += 1
             artifact_count += 1
 
@@ -7306,6 +8258,17 @@ def validate_candidate_ledger(
             failed_attempt_count += 1
             if completed_rows:
                 partially_failed_attempt_count += 1
+            all_attempt_outcomes.append(
+                {
+                    "attempt_id": attempt_id,
+                    "candidate_id": attempt_candidate_id,
+                    "pilot_seeds": list(seeds),
+                    "status": "failed",
+                    "released_quality": None,
+                    "released_diversity": None,
+                    "children": [outcome_rows_by_seed[seed] for seed in seeds],
+                }
+            )
             continue
 
         registered_operating_point = tuple(
@@ -7320,6 +8283,23 @@ def validate_candidate_ledger(
             row["diversity"] is None for row in completed_rows
         )
         derived_eligible = registered_operating_point and not undefined_selection_metric
+        recomputed_quality = statistics.fmean(row["quality"] for row in completed_rows)
+        recomputed_diversity = (
+            None
+            if undefined_selection_metric
+            else statistics.fmean(row["diversity"] for row in completed_rows)
+        )
+        all_attempt_outcomes.append(
+            {
+                "attempt_id": attempt_id,
+                "candidate_id": attempt_candidate_id,
+                "pilot_seeds": list(seeds),
+                "status": "undefined" if undefined_selection_metric else "completed",
+                "released_quality": recomputed_quality,
+                "released_diversity": recomputed_diversity,
+                "children": [outcome_rows_by_seed[seed] for seed in seeds],
+            }
+        )
         if attempt.get("eligible_for_selection") is not derived_eligible:
             raise GateValidationError(
                 "completed pilot eligibility disagrees with the registered operating point"
@@ -7356,10 +8336,10 @@ def validate_candidate_ledger(
             {"mean_released_quality", "mean_released_diversity"},
             f"candidate ledger attempt {attempt_id} selection score",
         )
-        recomputed_quality = statistics.fmean(row["quality"] for row in completed_rows)
-        recomputed_diversity = statistics.fmean(
-            row["diversity"] for row in completed_rows
-        )
+        if recomputed_diversity is None:  # pragma: no cover - eligibility invariant
+            raise GateValidationError(
+                "eligible pilot diversity is unexpectedly undefined"
+            )
         _close(
             score.get("mean_released_quality"),
             recomputed_quality,
@@ -7449,6 +8429,7 @@ def validate_candidate_ledger(
             all_failed_outcomes,
             key=lambda row: (row["attempt_id"], row["pilot_seed"]),
         ),
+        "attempt_outcomes": all_attempt_outcomes,
         "selected_attempt_id": expected_selected["attempt_id"],
         "selected_candidate_id": expected_selected["candidate_id"],
         "selected_checkpoint": selected_identity["checkpoint"],
@@ -7476,6 +8457,891 @@ def validate_candidate_ledger(
     }
 
 
+def _pretty_json_bytes(value: object) -> bytes:
+    """Return the unique publication encoding used by candidate authorities."""
+
+    return (
+        json.dumps(
+            value,
+            indent=2,
+            sort_keys=True,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+
+def _campaign_config_map(registry: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    raw_configs = registry.get("configs")
+    if not isinstance(raw_configs, list) or len(raw_configs) != 36:
+        raise GateValidationError("candidate registry must contain exactly 36 configs")
+    configs: dict[str, Mapping[str, Any]] = {}
+    for index, value in enumerate(raw_configs):
+        config = _mapping(value, f"candidate registry config {index}")
+        config_id = config.get("config_id")
+        if (
+            not isinstance(config_id, str)
+            or CAMPAIGN_CONFIG_ID.fullmatch(config_id) is None
+            or config_id in configs
+        ):
+            raise GateValidationError("candidate registry config IDs are invalid")
+        configs[config_id] = config
+    return configs
+
+
+def _campaign_expected_config_ids(
+    stage_id: str,
+    *,
+    configs: Mapping[str, Mapping[str, Any]],
+    prior_promotions: Mapping[str, list[str]],
+) -> list[str]:
+    if stage_id == "D":
+        selected = ["e_t100_p100"]
+    elif stage_id == "A":
+        selected = [
+            config_id
+            for config_id, config in configs.items()
+            if float(config["raw_loo_top_p"]) == 1.0
+        ]
+    elif stage_id == "B":
+        promoted_temperatures = {
+            config_id.rsplit("_p", 1)[0] for config_id in prior_promotions["A"]
+        }
+        selected = [
+            config_id
+            for config_id in configs
+            if config_id.rsplit("_p", 1)[0] in promoted_temperatures
+        ]
+    elif stage_id in {"C", "eligible"}:
+        predecessor = "B" if stage_id == "C" else "C"
+        selected = list(prior_promotions[predecessor])
+    else:  # pragma: no cover - caller iterates the frozen stage tuple
+        raise GateValidationError(f"unknown campaign stage: {stage_id}")
+    return sorted(selected, key=lambda value: value.encode("ascii"))
+
+
+def _campaign_ranked_entries(
+    entries: Sequence[Mapping[str, Any]],
+) -> list[Mapping[str, Any]]:
+    return sorted(
+        (entry for entry in entries if entry["rankable"]),
+        key=lambda entry: (
+            -entry["selection_score"]["released_quality"],
+            -entry["selection_score"]["released_diversity"],
+            entry["config_id"].encode("ascii"),
+            entry["attempt_id"].encode("ascii"),
+        ),
+    )
+
+
+def _campaign_promotions(
+    stage_id: str, entries: Sequence[Mapping[str, Any]]
+) -> tuple[list[str], str | None]:
+    if stage_id == "D":
+        return [], None
+    ranked = _campaign_ranked_entries(entries)
+    if stage_id == "eligible":
+        if not ranked:
+            raise GateValidationError(
+                "registered campaign has no rankable eligible-stage winner"
+            )
+        return [ranked[0]["config_id"]], ranked[0]["config_id"]
+    quota = CAMPAIGN_PROMOTION_QUOTA[stage_id]
+    if not isinstance(quota, int):  # pragma: no cover - frozen stage invariant
+        raise GateValidationError("ranked campaign stage lacks a promotion quota")
+    promoted: list[str] = []
+    for arm_id in ("R", "S", "E"):
+        arm_ranked = [entry for entry in ranked if entry["arm_id"] == arm_id]
+        if len(arm_ranked) < quota:
+            raise GateValidationError(
+                f"campaign stage {stage_id} has insufficient rankable {arm_id} entries"
+            )
+        promoted.extend(entry["config_id"] for entry in arm_ranked[:quota])
+    return promoted, None
+
+
+def project_candidate_ledger(decision: Mapping[str, Any]) -> dict[str, Any]:
+    """Deterministically flatten a v4 decision into unchanged ledger schema 2."""
+
+    stages = decision.get("stages")
+    if not isinstance(stages, list):
+        raise GateValidationError("candidate decision stages must be a list")
+    attempts: list[dict[str, Any]] = []
+    for stage in stages:
+        stage = _mapping(stage, "candidate decision stage")
+        stage_id = stage.get("stage_id")
+        entries = stage.get("entries")
+        if stage_id not in CAMPAIGN_STAGE_IDS or not isinstance(entries, list):
+            raise GateValidationError("candidate decision stage cannot be projected")
+        for raw_entry in entries:
+            entry = _mapping(raw_entry, "candidate decision entry")
+            status = entry.get("status")
+            rankable = entry.get("rankable") is True
+            if status == "failed":
+                ledger_status = "failed"
+                reason = FAILED_PILOT_REASON
+            elif status in {"completed", "undefined"}:
+                ledger_status = "completed"
+                if stage_id == "eligible" and not rankable:
+                    reason = UNDEFINED_SELECTION_METRIC_REASON
+                elif stage_id != "eligible":
+                    reason = NONREGISTERED_OPERATING_POINT_REASON
+                else:
+                    reason = None
+            else:
+                raise GateValidationError("candidate decision entry status is invalid")
+            eligible = stage_id == "eligible" and rankable and status == "completed"
+            score = entry.get("selection_score")
+            attempts.append(
+                {
+                    "attempt_id": entry.get("attempt_id"),
+                    "candidate_id": entry.get("candidate_id"),
+                    "status": ledger_status,
+                    "eligible_for_selection": eligible,
+                    "ineligibility_reason": None if eligible else reason,
+                    "pilot_seeds": [
+                        child.get("pilot_seed")
+                        for child in entry.get("child_outcomes", [])
+                    ],
+                    "selection_score": (
+                        {
+                            "mean_released_quality": score.get("released_quality"),
+                            "mean_released_diversity": score.get("released_diversity"),
+                        }
+                        if eligible and isinstance(score, Mapping)
+                        else None
+                    ),
+                    "artifact_refs": list(entry.get("child_outcomes", [])),
+                }
+            )
+    if (
+        len(attempts) != 40
+        or sum(len(attempt["artifact_refs"]) for attempt in attempts) != 43
+    ):
+        raise GateValidationError("candidate ledger projection accounting differs")
+    selection = _mapping(decision.get("selection"), "candidate decision selection")
+    return {
+        "schema_version": CANDIDATE_LEDGER_SCHEMA_VERSION,
+        "protocol_id": EXPECTED_PROTOCOL_ID,
+        "status": "closed_before_final_evaluation",
+        "final_seed_results_included": False,
+        "attempts": attempts,
+        "selection": {
+            "candidate_id": selection.get("candidate_id"),
+            "selected_attempt_id": selection.get("selected_attempt_id"),
+            "rule": CANDIDATE_SELECTION_RULE,
+            "checkpoint_selection_rule": CHECKPOINT_SELECTION_RULE,
+            "selected_without_final_seed_results": True,
+        },
+    }
+
+
+def _campaign_child_intervals(
+    ledger_evidence: Mapping[str, Any],
+) -> dict[tuple[str, int], tuple[str, datetime, datetime]]:
+    """Recover immutable child intervals used to prove adaptive-stage ordering."""
+
+    intervals: dict[tuple[str, int], tuple[str, datetime, datetime]] = {}
+    completed = ledger_evidence.get("completed_outcomes")
+    failed = ledger_evidence.get("failed_outcomes")
+    if not isinstance(completed, list) or not isinstance(failed, list):
+        raise GateValidationError(
+            "candidate ledger lacks child-level chronology evidence"
+        )
+
+    def add(
+        row: Mapping[str, Any],
+        *,
+        artifact_kind: str,
+        start_field: str,
+        terminal_field: str,
+    ) -> None:
+        attempt_id = row.get("attempt_id")
+        pilot_seed = row.get("pilot_seed")
+        if not isinstance(attempt_id, str) or type(pilot_seed) is not int:
+            raise GateValidationError("campaign child chronology identity differs")
+
+        def parse(value: object, label: str) -> datetime:
+            if isinstance(value, datetime):
+                if value.tzinfo is None:
+                    raise GateValidationError(f"{label} must include a timezone")
+                return value.astimezone(timezone.utc)
+            return _timestamp(value, label)
+
+        started = parse(
+            row.get(start_field), f"campaign child {attempt_id} seed {pilot_seed} start"
+        )
+        terminal = parse(
+            row.get(terminal_field),
+            f"campaign child {attempt_id} seed {pilot_seed} terminal",
+        )
+        key = (attempt_id, pilot_seed)
+        if key in intervals or not started < terminal:
+            raise GateValidationError(
+                "campaign child chronology is invalid or repeated"
+            )
+        intervals[key] = (artifact_kind, started, terminal)
+
+    for raw_row in completed:
+        add(
+            _mapping(raw_row, "completed campaign child chronology"),
+            artifact_kind="pilot_evaluation",
+            start_field="started_at_utc",
+            terminal_field="completed_at_utc",
+        )
+    for raw_row in failed:
+        add(
+            _mapping(raw_row, "failed campaign child chronology"),
+            artifact_kind="pilot_failure",
+            start_field="started_at",
+            terminal_field="failed_at",
+        )
+    return intervals
+
+
+def validate_candidate_decision(
+    decision: Mapping[str, Any],
+    *,
+    registry: Mapping[str, Any],
+    registry_bytes: bytes,
+    registry_revision: str,
+    ledger_evidence: Mapping[str, Any],
+    artifact_loader: Callable[[Path], bytes],
+) -> dict[str, Any]:
+    """Recompute every v4 campaign advancement from independently scored runs."""
+
+    _exact_keys(
+        decision,
+        {
+            "schema_version",
+            "protocol_id",
+            "status",
+            "final_seed_results_included",
+            "registry",
+            "campaign",
+            "stages",
+            "selection",
+        },
+        "candidate decision",
+    )
+    if (
+        decision.get("schema_version") != 1
+        or decision.get("protocol_id") != EXPECTED_PROTOCOL_ID
+        or decision.get("status") != "closed_before_candidate_ledger"
+        or decision.get("final_seed_results_included") is not False
+    ):
+        raise GateValidationError("candidate decision identity is invalid")
+
+    registry_revision = _git_revision(
+        registry_revision, "candidate registry publication revision"
+    )
+    registry_ref = _mapping(decision.get("registry"), "candidate decision registry")
+    _exact_keys(
+        registry_ref,
+        {
+            "relative_path",
+            "sha256",
+            "schema_version",
+            "registry_id",
+            "registry_revision",
+        },
+        "candidate decision registry",
+    )
+    expected_registry_ref = {
+        "relative_path": CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH.as_posix(),
+        "sha256": _sha256_bytes(registry_bytes),
+        "schema_version": 1,
+        "registry_id": candidate_config_registry.REGISTRY_ID,
+        "registry_revision": registry_revision,
+    }
+    if dict(registry_ref) != expected_registry_ref:
+        raise GateValidationError("candidate decision registry binding differs")
+    source_registry_ref = {
+        "relative_path": CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH.as_posix(),
+        "sha256": _sha256_bytes(registry_bytes),
+        "canonical_sha256": canonical_json_sha256(registry),
+        "size_bytes": len(registry_bytes),
+        "schema_version": 1,
+    }
+
+    campaign = _mapping(decision.get("campaign"), "candidate decision campaign")
+    expected_campaign = {
+        "grid_universe_entry_count": 36,
+        "executed_entry_count": 40,
+        "child_outcome_count": 43,
+        "requested_molecule_count": 3680,
+        "nfe": 128,
+        "no_cross_stage_pooling": True,
+        "no_retries_or_substitutions": True,
+        "failed_or_undefined_children_retained_unrankable": True,
+        "quota_failure_policy": "campaign_incomplete_and_candidate_lock_forbidden",
+        "shared_seed_inference": (
+            "blocking_or_common_random_number_control_only_not_paired_inference"
+        ),
+        "ranking": list(CAMPAIGN_RANKING_ORDER),
+    }
+    if dict(campaign) != expected_campaign:
+        raise GateValidationError("candidate decision campaign contract differs")
+
+    configs = _campaign_config_map(registry)
+    raw_outcomes = ledger_evidence.get("attempt_outcomes")
+    if not isinstance(raw_outcomes, list) or len(raw_outcomes) != 40:
+        raise GateValidationError("candidate ledger lacks all 40 recomputed outcomes")
+    outcomes: dict[str, Mapping[str, Any]] = {}
+    for index, raw_outcome in enumerate(raw_outcomes):
+        outcome = _mapping(raw_outcome, f"recomputed campaign outcome {index}")
+        attempt_id = outcome.get("attempt_id")
+        if not isinstance(attempt_id, str) or attempt_id in outcomes:
+            raise GateValidationError("recomputed campaign attempt IDs are invalid")
+        outcomes[attempt_id] = outcome
+    child_intervals = _campaign_child_intervals(ledger_evidence)
+
+    stages = decision.get("stages")
+    if not isinstance(stages, list) or len(stages) != len(CAMPAIGN_STAGE_IDS):
+        raise GateValidationError("candidate decision stage count differs")
+    prior_promotions: dict[str, list[str]] = {}
+    prior_source_ref: dict[str, Any] | None = None
+    prior_completion: datetime | None = None
+    observed_attempt_ids: set[str] = set()
+    observed_artifact_paths: set[Path] = set()
+    observed_child_keys: set[tuple[str, int]] = set()
+    total_entries = total_children = total_molecules = 0
+    normalized_stages: list[dict[str, Any]] = []
+    for stage_index, (stage_id, raw_stage) in enumerate(
+        zip(CAMPAIGN_STAGE_IDS, stages, strict=True)
+    ):
+        stage = _mapping(raw_stage, f"candidate decision stage {stage_id}")
+        _exact_keys(
+            stage,
+            {
+                "stage_id",
+                "role",
+                "seed_values",
+                "requested_samples_per_child",
+                "scheduled_entry_count",
+                "scheduled_child_count",
+                "entries",
+                "advancement",
+            },
+            f"candidate decision stage {stage_id}",
+        )
+        contract = CAMPAIGN_STAGE_CONTRACT[stage_id]
+        expected_identity = {
+            "stage_id": stage_id,
+            "role": CAMPAIGN_STAGE_ROLES[stage_id],
+            "seed_values": list(contract["seeds"]),
+            "requested_samples_per_child": contract["samples"],
+            "scheduled_entry_count": contract["entries"],
+            "scheduled_child_count": contract["children"],
+        }
+        for field, expected in expected_identity.items():
+            if stage.get(field) != expected:
+                raise GateValidationError(
+                    f"candidate decision stage {stage_id} {field} differs"
+                )
+        expected_config_ids = _campaign_expected_config_ids(
+            stage_id, configs=configs, prior_promotions=prior_promotions
+        )
+        raw_entries = stage.get("entries")
+        if (
+            not isinstance(raw_entries, list)
+            or len(raw_entries) != contract["entries"]
+            or [
+                entry.get("config_id") if isinstance(entry, Mapping) else None
+                for entry in raw_entries
+            ]
+            != expected_config_ids
+        ):
+            raise GateValidationError(
+                f"candidate decision stage {stage_id} entries/order differ"
+            )
+
+        normalized_entries: list[dict[str, Any]] = []
+        stage_child_intervals: list[tuple[datetime, datetime]] = []
+        for entry_index, raw_entry in enumerate(raw_entries):
+            label = f"candidate decision stage {stage_id} entry {entry_index}"
+            entry = _mapping(raw_entry, label)
+            _exact_keys(
+                entry,
+                {
+                    "config_id",
+                    "attempt_id",
+                    "candidate_id",
+                    "arm_id",
+                    "softmax_temp",
+                    "raw_loo_top_p",
+                    "status",
+                    "rankable",
+                    "selection_score",
+                    "child_outcomes",
+                },
+                label,
+            )
+            config_id = entry.get("config_id")
+            if not isinstance(config_id, str) or config_id not in configs:
+                raise GateValidationError(f"{label} config is outside the registry")
+            config = configs[config_id]
+            arm_id = config["arm_id"]
+            attempt_id = f"stage-{stage_id.lower()}-{config_id}"
+            if (
+                CAMPAIGN_ATTEMPT_ID.fullmatch(attempt_id) is None
+                or entry.get("attempt_id") != attempt_id
+                or attempt_id in observed_attempt_ids
+                or entry.get("candidate_id") != CAMPAIGN_CANDIDATE_IDS[arm_id]
+                or entry.get("arm_id") != arm_id
+                or entry.get("softmax_temp") != config["softmax_temp"]
+                or entry.get("raw_loo_top_p") != config["raw_loo_top_p"]
+            ):
+                raise GateValidationError(f"{label} identity differs")
+            observed_attempt_ids.add(attempt_id)
+            outcome = outcomes.get(attempt_id)
+            if outcome is None or outcome.get("candidate_id") != entry.get(
+                "candidate_id"
+            ):
+                raise GateValidationError(f"{label} lacks matching recomputed evidence")
+            if outcome.get("pilot_seeds") != list(contract["seeds"]):
+                raise GateValidationError(f"{label} recomputed seed tuple differs")
+            outcome_children = outcome.get("children")
+            children = entry.get("child_outcomes")
+            if (
+                not isinstance(children, list)
+                or len(children) != len(contract["seeds"])
+                or not isinstance(outcome_children, list)
+                or len(outcome_children) != len(contract["seeds"])
+            ):
+                raise GateValidationError(f"{label} child count differs")
+            normalized_children: list[dict[str, Any]] = []
+            for child_index, (raw_child, outcome_child, seed) in enumerate(
+                zip(children, outcome_children, contract["seeds"], strict=True)
+            ):
+                child_label = f"{label} child {child_index}"
+                child = _mapping(raw_child, child_label)
+                _exact_keys(
+                    child,
+                    {
+                        "artifact_kind",
+                        "pilot_seed",
+                        "relative_path",
+                        "sha256",
+                        "schema_version",
+                    },
+                    child_label,
+                )
+                expected_path = Path(
+                    f"experiments/udlm/pilots/{attempt_id}/seed_{seed}.json"
+                )
+                normalized_path = _relative_path(
+                    child.get("relative_path"), f"{child_label} path", suffix=".json"
+                )
+                if (
+                    child.get("artifact_kind")
+                    not in {"pilot_evaluation", "pilot_failure"}
+                    or child.get("artifact_kind")
+                    != _mapping(outcome_child, child_label).get("artifact_kind")
+                    or child.get("pilot_seed") != seed
+                    or normalized_path != expected_path
+                    or normalized_path in observed_artifact_paths
+                    or child.get("schema_version") != PILOT_EVIDENCE_SCHEMA_VERSION
+                ):
+                    raise GateValidationError(f"{child_label} binding differs")
+                _sha256(child.get("sha256"), f"{child_label} digest")
+                if (
+                    outcome_child.get("requested_samples") != contract["samples"]
+                    or outcome_child.get("nfe") != EXPECTED_NFE
+                    or (
+                        child.get("artifact_kind") == "pilot_evaluation"
+                        and outcome_child.get("metric_branch")
+                        != REGISTERED_SELECTION_METRIC_BRANCH
+                    )
+                ):
+                    raise GateValidationError(f"{child_label} operating point differs")
+                child_key = (attempt_id, seed)
+                interval = child_intervals.get(child_key)
+                if (
+                    interval is None
+                    or interval[0] != child.get("artifact_kind")
+                    or child_key in observed_child_keys
+                ):
+                    raise GateValidationError(
+                        f"{child_label} chronology evidence differs"
+                    )
+                observed_child_keys.add(child_key)
+                stage_child_intervals.append((interval[1], interval[2]))
+                observed_artifact_paths.add(normalized_path)
+                normalized_children.append(dict(child))
+
+            any_failure = any(
+                child["artifact_kind"] == "pilot_failure"
+                for child in normalized_children
+            )
+            if stage_id == "D":
+                derived_status = "failed" if any_failure else "completed"
+            else:
+                derived_status = (
+                    "failed"
+                    if any_failure
+                    else (
+                        "undefined"
+                        if outcome.get("released_diversity") is None
+                        else "completed"
+                    )
+                )
+            rankable = stage_id != "D" and derived_status == "completed"
+            if (
+                entry.get("status") != derived_status
+                or entry.get("rankable") is not rankable
+            ):
+                raise GateValidationError(f"{label} status/rankability differs")
+            if rankable:
+                score = _mapping(entry.get("selection_score"), f"{label} score")
+                _exact_keys(
+                    score,
+                    {"released_quality", "released_diversity"},
+                    f"{label} score",
+                )
+                recomputed_score = {
+                    "released_quality": _finite(
+                        outcome.get("released_quality"), f"{label} released quality"
+                    ),
+                    "released_diversity": _finite(
+                        outcome.get("released_diversity"),
+                        f"{label} released diversity",
+                    ),
+                }
+                if not all(0.0 <= value <= 1.0 for value in recomputed_score.values()):
+                    raise GateValidationError(f"{label} score lies outside [0,1]")
+                for metric, expected in recomputed_score.items():
+                    _close(score.get(metric), expected, f"{label} {metric}")
+                normalized_score: dict[str, float] | None = recomputed_score
+            else:
+                if entry.get("selection_score") is not None:
+                    raise GateValidationError(f"{label} unrankable score must be null")
+                normalized_score = None
+            normalized_entries.append(
+                {
+                    "config_id": config_id,
+                    "attempt_id": attempt_id,
+                    "candidate_id": entry["candidate_id"],
+                    "arm_id": arm_id,
+                    "softmax_temp": config["softmax_temp"],
+                    "raw_loo_top_p": config["raw_loo_top_p"],
+                    "status": derived_status,
+                    "rankable": rankable,
+                    "selection_score": normalized_score,
+                    "child_outcomes": normalized_children,
+                }
+            )
+
+        promoted, global_winner = _campaign_promotions(stage_id, normalized_entries)
+        expected_accounting = {
+            "scheduled_entry_count": contract["entries"],
+            "terminal_entry_count": contract["entries"],
+            "scheduled_child_count": contract["children"],
+            "terminal_child_count": contract["children"],
+            "requested_molecule_count": contract["children"] * contract["samples"],
+        }
+        advancement = _mapping(
+            stage.get("advancement"), f"candidate decision stage {stage_id} advancement"
+        )
+        _exact_keys(
+            advancement,
+            {
+                "predecessor_stage_decision",
+                "ranking_order",
+                "promoted_config_ids",
+                "global_winner_config_id",
+                "required_promotions_per_arm",
+                "no_retry_or_substitution",
+                "on_failed_or_undefined_child",
+                "on_insufficient_rankable_quota",
+                "accounting",
+                "source_stage_decision",
+            },
+            f"candidate decision stage {stage_id} advancement",
+        )
+        source_ref_raw = _mapping(
+            advancement.get("source_stage_decision"),
+            f"candidate decision stage {stage_id} source reference",
+        )
+        _exact_keys(
+            source_ref_raw,
+            {"relative_path", "sha256", "schema_version"},
+            f"candidate decision stage {stage_id} source reference",
+        )
+        source_path = Path(
+            "output/udlm/de_novo_candidate_campaign_v1/stages/"
+            f"{stage_id.lower()}/stage_decision.json"
+        )
+        source_ref = {
+            "relative_path": source_path.as_posix(),
+            "sha256": _sha256(
+                source_ref_raw.get("sha256"),
+                f"candidate decision stage {stage_id} source digest",
+            ),
+            "schema_version": 1,
+        }
+        if dict(source_ref_raw) != source_ref:
+            raise GateValidationError(
+                f"candidate decision stage {stage_id} source binding differs"
+            )
+        expected_advancement = {
+            "predecessor_stage_decision": prior_source_ref,
+            "ranking_order": ([] if stage_id == "D" else list(CAMPAIGN_RANKING_ORDER)),
+            "promoted_config_ids": promoted,
+            "global_winner_config_id": global_winner,
+            "required_promotions_per_arm": CAMPAIGN_PROMOTION_QUOTA[stage_id],
+            "no_retry_or_substitution": True,
+            "on_failed_or_undefined_child": "retain_unrankable",
+            "on_insufficient_rankable_quota": "campaign_incomplete_without_promotion",
+            "accounting": expected_accounting,
+            "source_stage_decision": source_ref,
+        }
+        if dict(advancement) != expected_advancement:
+            raise GateValidationError(
+                f"candidate decision stage {stage_id} advancement differs"
+            )
+
+        try:
+            source_bytes = artifact_loader(source_path)
+        except GateValidationError:
+            raise
+        except Exception as error:
+            raise GateValidationError(
+                f"candidate stage decision is unavailable: {source_path}"
+            ) from error
+        if (
+            not isinstance(source_bytes, bytes)
+            or _sha256_bytes(source_bytes) != source_ref["sha256"]
+        ):
+            raise GateValidationError(
+                f"candidate stage {stage_id} source decision digest differs"
+            )
+        source = _mapping(
+            strict_json_loads(source_bytes, label=f"candidate stage {stage_id} source"),
+            f"candidate stage {stage_id} source",
+        )
+        _exact_keys(
+            source,
+            {
+                "schema_version",
+                "stage_id",
+                "status",
+                "registry",
+                "entries",
+                "advancement",
+                "completed_at_utc",
+            },
+            f"candidate stage {stage_id} source",
+        )
+        if (
+            source.get("schema_version") != 1
+            or source.get("stage_id") != stage_id
+            or source.get("status") != "completed"
+            or source.get("registry") != source_registry_ref
+        ):
+            raise GateValidationError(
+                f"candidate stage {stage_id} source identity differs"
+            )
+        completed_at = _timestamp(
+            source.get("completed_at_utc"), f"candidate stage {stage_id} completion"
+        )
+        if prior_completion is not None and not prior_completion < completed_at:
+            raise GateValidationError(
+                "candidate stage completions are not strictly ordered"
+            )
+        for child_started, child_terminal in stage_child_intervals:
+            if prior_completion is not None and not prior_completion < child_started:
+                raise GateValidationError(
+                    f"candidate stage {stage_id} child did not start strictly after "
+                    "its predecessor decision"
+                )
+            if not child_terminal < completed_at:
+                raise GateValidationError(
+                    f"candidate stage {stage_id} child did not terminate strictly "
+                    "before its stage decision"
+                )
+        prior_completion = completed_at
+        source_entries = source.get("entries")
+        if not isinstance(source_entries, list) or len(source_entries) != len(
+            normalized_entries
+        ):
+            raise GateValidationError(
+                f"candidate stage {stage_id} source entries differ"
+            )
+        for source_entry_index, (raw_source_entry, entry) in enumerate(
+            zip(source_entries, normalized_entries, strict=True)
+        ):
+            source_label = (
+                f"candidate stage {stage_id} source entry {source_entry_index}"
+            )
+            source_entry = _mapping(raw_source_entry, source_label)
+            _exact_keys(
+                source_entry,
+                {
+                    "attempt_id",
+                    "candidate_id",
+                    "config_id",
+                    "arm_id",
+                    "seeds",
+                    "requested_samples_per_seed",
+                    "status",
+                    "rankable",
+                    "released_quality",
+                    "released_diversity",
+                    "diagnostic_structural_passed",
+                    "child_outcomes",
+                },
+                source_label,
+            )
+            expected_source_scalars = {
+                "attempt_id": entry["attempt_id"],
+                "candidate_id": entry["candidate_id"],
+                "config_id": entry["config_id"],
+                "arm_id": entry["arm_id"],
+                "seeds": list(contract["seeds"]),
+                "requested_samples_per_seed": contract["samples"],
+                "status": entry["status"],
+                "rankable": entry["rankable"],
+                "released_quality": (
+                    None
+                    if entry["selection_score"] is None
+                    else entry["selection_score"]["released_quality"]
+                ),
+                "released_diversity": (
+                    None
+                    if entry["selection_score"] is None
+                    else entry["selection_score"]["released_diversity"]
+                ),
+                "diagnostic_structural_passed": True if stage_id == "D" else None,
+            }
+            for field, expected in expected_source_scalars.items():
+                if source_entry.get(field) != expected:
+                    raise GateValidationError(f"{source_label} {field} differs")
+            source_children = source_entry.get("child_outcomes")
+            if not isinstance(source_children, list) or len(source_children) != len(
+                entry["child_outcomes"]
+            ):
+                raise GateValidationError(f"{source_label} child count differs")
+            for child_index, (raw_source_child, tracked_child) in enumerate(
+                zip(source_children, entry["child_outcomes"], strict=True)
+            ):
+                source_child = _mapping(
+                    raw_source_child, f"{source_label} child {child_index}"
+                )
+                _exact_keys(
+                    source_child,
+                    {
+                        "artifact_kind",
+                        "pilot_seed",
+                        "relative_path",
+                        "sha256",
+                        "schema_version",
+                    },
+                    f"{source_label} child {child_index}",
+                )
+                expected_live_path = (
+                    "output/udlm/de_novo_candidate_campaign_v1/evidence/"
+                    f"{entry['attempt_id']}/seed_{tracked_child['pilot_seed']}.json"
+                )
+                if source_child.get("relative_path") != expected_live_path or {
+                    key: source_child.get(key)
+                    for key in (
+                        "artifact_kind",
+                        "pilot_seed",
+                        "sha256",
+                        "schema_version",
+                    )
+                } != {
+                    key: tracked_child[key]
+                    for key in (
+                        "artifact_kind",
+                        "pilot_seed",
+                        "sha256",
+                        "schema_version",
+                    )
+                }:
+                    raise GateValidationError(
+                        f"{source_label} live/tracked child binding differs"
+                    )
+        source_advancement = _mapping(
+            source.get("advancement"),
+            f"candidate stage {stage_id} source advancement",
+        )
+        source_expected_advancement = dict(expected_advancement)
+        del source_expected_advancement["source_stage_decision"]
+        if dict(source_advancement) != source_expected_advancement:
+            raise GateValidationError(
+                f"candidate stage {stage_id} source advancement differs"
+            )
+
+        normalized_stages.append(
+            {
+                **expected_identity,
+                "entries": normalized_entries,
+                "advancement": expected_advancement,
+            }
+        )
+        prior_promotions[stage_id] = promoted
+        prior_source_ref = source_ref
+        total_entries += len(normalized_entries)
+        total_children += contract["children"]
+        total_molecules += contract["children"] * contract["samples"]
+
+    if set(outcomes) != observed_attempt_ids:
+        raise GateValidationError(
+            "candidate decision does not cover every ledger attempt"
+        )
+    if set(child_intervals) != observed_child_keys:
+        raise GateValidationError(
+            "candidate decision does not cover every child chronology record"
+        )
+    if (total_entries, total_children, total_molecules) != (40, 43, 3680):
+        raise GateValidationError("candidate decision campaign accounting differs")
+    winner_config_id = prior_promotions["eligible"][0]
+    winner = next(
+        entry
+        for entry in normalized_stages[-1]["entries"]
+        if entry["config_id"] == winner_config_id
+    )
+    selection = _mapping(decision.get("selection"), "candidate decision selection")
+    _exact_keys(
+        selection,
+        {
+            "candidate_id",
+            "selected_attempt_id",
+            "selected_config_id",
+            "rule",
+            "checkpoint_selection_rule",
+            "selected_without_final_seed_results",
+        },
+        "candidate decision selection",
+    )
+    expected_selection = {
+        "candidate_id": winner["candidate_id"],
+        "selected_attempt_id": winner["attempt_id"],
+        "selected_config_id": winner_config_id,
+        "rule": CANDIDATE_SELECTION_RULE,
+        "checkpoint_selection_rule": CHECKPOINT_SELECTION_RULE,
+        "selected_without_final_seed_results": True,
+    }
+    if dict(selection) != expected_selection:
+        raise GateValidationError("candidate decision winner differs")
+    return {
+        "registry_revision": registry_revision,
+        "attempt_count": total_entries,
+        "child_outcome_count": total_children,
+        "requested_molecule_count": total_molecules,
+        "selected_config_id": winner_config_id,
+        "selected_attempt_id": winner["attempt_id"],
+        "selected_candidate_id": winner["candidate_id"],
+        "stage_source_decisions_exact": True,
+        "adaptive_stage_chronology_verified": True,
+        "eligible_stage_completed_at_utc": prior_completion.isoformat(),
+        "advancement_recomputed_from_raw_model_text": True,
+    }
+
+
 def _git_blob(revision: str, relative_path: Path) -> bytes:
     try:
         result = subprocess.run(
@@ -7496,16 +9362,830 @@ def _git_blob(revision: str, relative_path: Path) -> bytes:
     return result.stdout
 
 
+def _git_single_parent(revision: str, *, label: str) -> str:
+    revision = _git_revision(revision, label)
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(REPOSITORY_ROOT),
+                "rev-list",
+                "--parents",
+                "-n",
+                "1",
+                revision,
+            ],
+            check=True,
+            capture_output=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise GateValidationError(f"cannot inspect {label}") from error
+    fields = result.stdout.decode("ascii", errors="strict").strip().split()
+    if len(fields) != 2 or fields[0] != revision:
+        raise GateValidationError(f"{label} must be a single-parent commit")
+    return _git_revision(fields[1], f"{label} parent")
+
+
+def _git_changed_entries(parent: str, child: str) -> tuple[tuple[str, str], ...]:
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(REPOSITORY_ROOT),
+                "diff",
+                "--name-status",
+                "-z",
+                parent,
+                child,
+                "--",
+            ],
+            check=True,
+            capture_output=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise GateValidationError(
+            "cannot inspect authority publication diff"
+        ) from error
+    payload = result.stdout
+    if payload and not payload.endswith(b"\0"):
+        raise GateValidationError("authority publication diff is truncated")
+    fields = payload[:-1].split(b"\0") if payload else []
+    if len(fields) % 2:
+        raise GateValidationError("authority publication diff has an invalid shape")
+    entries: list[tuple[str, str]] = []
+    for index in range(0, len(fields), 2):
+        try:
+            status = fields[index].decode("ascii")
+            path = os.fsdecode(fields[index + 1])
+        except (UnicodeDecodeError, ValueError) as error:
+            raise GateValidationError(
+                "authority publication diff has an undecodable path"
+            ) from error
+        if status not in {"A", "M", "D", "T"}:
+            raise GateValidationError(
+                "authority publication diff contains a rename/copy or unknown status"
+            )
+        entries.append((status, path))
+    return tuple(entries)
+
+
+def _git_blob_is_absent(revision: str, relative_path: Path) -> bool:
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(REPOSITORY_ROOT),
+                "cat-file",
+                "-e",
+                f"{revision}:{relative_path.as_posix()}",
+            ],
+            check=False,
+            capture_output=True,
+        )
+    except OSError as error:
+        raise GateValidationError("cannot inspect Git blob absence") from error
+    if result.returncode == 0:
+        return False
+    if result.returncode in {1, 128}:
+        return True
+    raise GateValidationError("Git blob absence check was indeterminate")
+
+
+def _git_entry_mode(revision: str, relative_path: Path) -> str:
+    """Return the exact Git tree mode for one unambiguous repository path."""
+
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(REPOSITORY_ROOT),
+                "ls-tree",
+                "-z",
+                revision,
+                "--",
+                relative_path.as_posix(),
+            ],
+            check=True,
+            capture_output=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise GateValidationError("cannot inspect Git entry mode") from error
+    payload = result.stdout
+    if not payload.endswith(b"\0") or payload.count(b"\0") != 1:
+        raise GateValidationError(
+            f"Git path has no unique tree entry: {relative_path.as_posix()}"
+        )
+    metadata, separator, encoded_path = payload[:-1].partition(b"\t")
+    fields = metadata.split(b" ")
+    try:
+        mode = fields[0].decode("ascii")
+        kind = fields[1].decode("ascii")
+        observed_path = os.fsdecode(encoded_path)
+    except (IndexError, UnicodeDecodeError, ValueError) as error:
+        raise GateValidationError("Git tree entry is malformed") from error
+    if (
+        not separator
+        or len(fields) != 3
+        or kind != "blob"
+        or observed_path != relative_path.as_posix()
+    ):
+        raise GateValidationError("Git tree entry identity differs")
+    return mode
+
+
+def _require_regular_git_blob(
+    revision: str, relative_path: Path, *, label: str
+) -> None:
+    if _git_entry_mode(revision, relative_path) != "100644":
+        raise GateValidationError(f"{label} must be a regular non-executable Git blob")
+
+
+def _require_exact_addition_commit(
+    revision: str,
+    relative_path: Path,
+    expected_bytes: bytes,
+    *,
+    label: str,
+) -> str:
+    parent = _git_single_parent(revision, label=label)
+    if _git_changed_entries(parent, revision) != (("A", relative_path.as_posix()),):
+        raise GateValidationError(f"{label} must add only {relative_path.as_posix()}")
+    if not _git_blob_is_absent(parent, relative_path):
+        raise GateValidationError(f"{label} path already existed in its parent")
+    _require_regular_git_blob(revision, relative_path, label=label)
+    if _git_blob(revision, relative_path) != expected_bytes:
+        raise GateValidationError(f"{label} added bytes differ")
+    return parent
+
+
+def _require_git_ancestor(ancestor: str, descendant: str, *, label: str) -> None:
+    try:
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(REPOSITORY_ROOT),
+                "merge-base",
+                "--is-ancestor",
+                ancestor,
+                descendant,
+            ],
+            check=True,
+            capture_output=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise GateValidationError(label) from error
+
+
+def _manifest_reference(
+    value: object,
+    *,
+    label: str,
+    expected_path: str,
+    expected_sha256: str,
+    expected_size: int,
+    expected_schema: int,
+) -> dict[str, Any]:
+    reference = _mapping(value, label)
+    _exact_keys(
+        reference,
+        {"relative_path", "sha256", "size_bytes", "schema_version"},
+        label,
+    )
+    expected = {
+        "relative_path": expected_path,
+        "sha256": expected_sha256,
+        "size_bytes": expected_size,
+        "schema_version": expected_schema,
+    }
+    if dict(reference) != expected:
+        raise GateValidationError(f"{label} differs")
+    return expected
+
+
+def validate_campaign_evidence_manifest(
+    manifest: Mapping[str, Any],
+    *,
+    manifest_bytes: bytes,
+    registry: Mapping[str, Any],
+    registry_bytes: bytes,
+    registry_revision: str,
+    evidence_revision: str,
+    decision: Mapping[str, Any],
+    ledger_evidence: Mapping[str, Any],
+    artifact_loader: Callable[[Path], bytes],
+) -> dict[str, Any]:
+    """Validate the completion-last manifest and exact G→EVIDENCE Git closure."""
+
+    _exact_keys(
+        manifest,
+        {
+            "schema_version",
+            "protocol_id",
+            "status",
+            "registry",
+            "source_revision",
+            "counts",
+            "stage_decisions",
+            "children",
+            "required_git_paths",
+        },
+        "campaign evidence manifest",
+    )
+    if (
+        manifest.get("schema_version") != 1
+        or manifest.get("protocol_id") != EXPECTED_PROTOCOL_ID
+        or manifest.get("status") != "complete_before_candidate_decision"
+        or _pretty_json_bytes(manifest) != manifest_bytes
+    ):
+        raise GateValidationError(
+            "campaign evidence manifest identity/encoding differs"
+        )
+    expected_registry_ref = {
+        "relative_path": CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH.as_posix(),
+        "sha256": _sha256_bytes(registry_bytes),
+        "canonical_sha256": canonical_json_sha256(registry),
+        "size_bytes": len(registry_bytes),
+        "schema_version": 1,
+    }
+    if manifest.get("registry") != expected_registry_ref:
+        raise GateValidationError("campaign evidence manifest registry differs")
+    expected_source = {"head": registry_revision, "upstream": registry_revision}
+    if manifest.get("source_revision") != expected_source:
+        raise GateValidationError("campaign evidence source revision is not exact G")
+
+    expected_stage_refs = []
+    source_children_by_key: dict[tuple[str, str, int], Mapping[str, Any]] = {}
+    decision_stages = decision.get("stages")
+    if not isinstance(decision_stages, list):  # pragma: no cover - validated caller
+        raise GateValidationError("candidate decision stages are unavailable")
+    for stage_id, stage in zip(CAMPAIGN_STAGE_IDS, decision_stages, strict=True):
+        advancement = _mapping(stage.get("advancement"), "decision advancement")
+        source = _mapping(
+            advancement.get("source_stage_decision"), "decision stage source"
+        )
+        source_path = _relative_path(
+            source.get("relative_path"),
+            f"campaign evidence stage {stage_id} path",
+            suffix=".json",
+        )
+        source_sha256 = _sha256(
+            source.get("sha256"), f"campaign evidence stage {stage_id} digest"
+        )
+        source_blob = artifact_loader(source_path)
+        if (
+            not isinstance(source_blob, bytes)
+            or _sha256_bytes(source_blob) != source_sha256
+        ):
+            raise GateValidationError(
+                f"campaign evidence stage {stage_id} Git blob differs"
+            )
+        source_document = _mapping(
+            strict_json_loads(
+                source_blob, label=f"campaign evidence stage {stage_id} decision"
+            ),
+            f"campaign evidence stage {stage_id} decision",
+        )
+        source_entries = source_document.get("entries")
+        if not isinstance(source_entries, list):
+            raise GateValidationError(
+                f"campaign evidence stage {stage_id} entries are unavailable"
+            )
+        for raw_entry in source_entries:
+            source_entry = _mapping(
+                raw_entry, f"campaign evidence stage {stage_id} entry"
+            )
+            attempt_id = source_entry.get("attempt_id")
+            children = source_entry.get("child_outcomes")
+            if not isinstance(attempt_id, str) or not isinstance(children, list):
+                raise GateValidationError(
+                    f"campaign evidence stage {stage_id} child references differ"
+                )
+            for raw_child in children:
+                source_child = _mapping(
+                    raw_child, f"campaign evidence stage {stage_id} child"
+                )
+                _exact_keys(
+                    source_child,
+                    {
+                        "artifact_kind",
+                        "pilot_seed",
+                        "relative_path",
+                        "sha256",
+                        "schema_version",
+                    },
+                    f"campaign evidence stage {stage_id} child",
+                )
+                seed = source_child.get("pilot_seed")
+                if type(seed) is not int:
+                    raise GateValidationError(
+                        "campaign source stage child identity is invalid or repeated"
+                    )
+                key = (stage_id, attempt_id, seed)
+                if key in source_children_by_key:
+                    raise GateValidationError(
+                        "campaign source stage child identity is invalid or repeated"
+                    )
+                source_children_by_key[key] = source_child
+        expected_stage_refs.append(
+            {
+                "stage_id": stage_id,
+                "relative_path": source_path.as_posix(),
+                "sha256": source_sha256,
+                "schema_version": 1,
+            }
+        )
+    if manifest.get("stage_decisions") != expected_stage_refs:
+        raise GateValidationError("campaign evidence stage-decision references differ")
+
+    completed_by_key: dict[tuple[str, int], Mapping[str, Any]] = {}
+    for outcome in ledger_evidence.get("completed_outcomes", []):
+        completed_by_key[(outcome["attempt_id"], outcome["pilot_seed"])] = outcome
+    failed_by_key: dict[tuple[str, int], Mapping[str, Any]] = {}
+    for outcome in ledger_evidence.get("failed_outcomes", []):
+        failed_by_key[(outcome["attempt_id"], outcome["pilot_seed"])] = outcome
+
+    expected_children: list[dict[str, Any]] = []
+    required_paths = {row["relative_path"] for row in expected_stage_refs}
+    for stage in decision_stages:
+        stage_id = stage["stage_id"]
+        for entry in stage["entries"]:
+            for tracked_ref in entry["child_outcomes"]:
+                attempt_id = entry["attempt_id"]
+                seed = tracked_ref["pilot_seed"]
+                tracked_path = Path(tracked_ref["relative_path"])
+                tracked_blob = artifact_loader(tracked_path)
+                if (
+                    not isinstance(tracked_blob, bytes)
+                    or _sha256_bytes(tracked_blob) != tracked_ref["sha256"]
+                ):
+                    raise GateValidationError(
+                        "campaign tracked envelope Git blob differs"
+                    )
+                envelope = _mapping(
+                    strict_json_loads(
+                        tracked_blob,
+                        label=f"campaign tracked envelope {tracked_path.as_posix()}",
+                    ),
+                    f"campaign tracked envelope {tracked_path.as_posix()}",
+                )
+                if _pretty_json_bytes(envelope) != tracked_blob:
+                    raise GateValidationError(
+                        "campaign tracked envelope encoding is not canonical"
+                    )
+                for field, expected in {
+                    "schema_version": PILOT_EVIDENCE_SCHEMA_VERSION,
+                    "artifact_kind": tracked_ref["artifact_kind"],
+                    "attempt_id": attempt_id,
+                    "candidate_id": entry["candidate_id"],
+                    "pilot_seed": seed,
+                    "final_seed_results_included": False,
+                }.items():
+                    if envelope.get(field) != expected:
+                        raise GateValidationError(
+                            "campaign tracked envelope identity differs"
+                        )
+                live_path = (
+                    "output/udlm/de_novo_candidate_campaign_v1/evidence/"
+                    f"{attempt_id}/seed_{seed}.json"
+                )
+                source_child = source_children_by_key.get((stage_id, attempt_id, seed))
+                if source_child is None or dict(source_child) != {
+                    "artifact_kind": tracked_ref["artifact_kind"],
+                    "pilot_seed": seed,
+                    "relative_path": live_path,
+                    "sha256": tracked_ref["sha256"],
+                    "schema_version": PILOT_EVIDENCE_SCHEMA_VERSION,
+                }:
+                    raise GateValidationError(
+                        "campaign source stage live-envelope binding differs"
+                    )
+                live_reference = {
+                    "relative_path": source_child["relative_path"],
+                    "sha256": source_child["sha256"],
+                    "size_bytes": len(tracked_blob),
+                    "schema_version": PILOT_EVIDENCE_SCHEMA_VERSION,
+                }
+                tracked_reference = {
+                    "relative_path": tracked_path.as_posix(),
+                    "sha256": tracked_ref["sha256"],
+                    "size_bytes": len(tracked_blob),
+                    "schema_version": PILOT_EVIDENCE_SCHEMA_VERSION,
+                }
+                required_paths.add(tracked_path.as_posix())
+                supporting: list[dict[str, Any]] = []
+
+                def add_support(
+                    role: str,
+                    relative_path: Path,
+                    sha256: str,
+                    schema_version: int | None,
+                ) -> None:
+                    payload = artifact_loader(relative_path)
+                    if (
+                        not isinstance(payload, bytes)
+                        or _sha256_bytes(payload) != sha256
+                    ):
+                        raise GateValidationError(
+                            f"campaign supporting artifact differs: {relative_path}"
+                        )
+                    supporting.append(
+                        {
+                            "artifact_role": role,
+                            "relative_path": relative_path.as_posix(),
+                            "sha256": sha256,
+                            "size_bytes": len(payload),
+                            "schema_version": schema_version,
+                        }
+                    )
+                    required_paths.add(relative_path.as_posix())
+
+                if tracked_ref["artifact_kind"] == "pilot_evaluation":
+                    receipt = _artifact_reference(
+                        envelope.get("training_exit_receipt"),
+                        label="manifest training receipt",
+                        suffix=".json",
+                        require_schema=True,
+                    )
+                    artifacts = _mapping(
+                        envelope.get("benchmark_artifacts"),
+                        "manifest benchmark artifacts",
+                    )
+                    summary = _artifact_reference(
+                        artifacts.get("summary_json"),
+                        label="manifest benchmark summary",
+                        suffix=".json",
+                        require_schema=True,
+                    )
+                    raw = _artifact_reference(
+                        artifacts.get("raw_samples_csv"),
+                        label="manifest benchmark raw samples",
+                        suffix=".csv",
+                        require_schema=False,
+                    )
+                    add_support(
+                        "training_exit_receipt",
+                        receipt["relative_path"],
+                        receipt["sha256"],
+                        receipt["schema_version"],
+                    )
+                    add_support(
+                        "benchmark_summary_json",
+                        summary["relative_path"],
+                        summary["sha256"],
+                        summary["schema_version"],
+                    )
+                    add_support(
+                        "benchmark_raw_samples_csv",
+                        raw["relative_path"],
+                        raw["sha256"],
+                        None,
+                    )
+                    if (attempt_id, seed) not in completed_by_key:
+                        raise GateValidationError(
+                            "campaign manifest completed child lacks rescored outcome"
+                        )
+                else:
+                    failure = _artifact_reference(
+                        envelope.get("failure_receipt"),
+                        label="manifest failure receipt",
+                        suffix=".json",
+                        require_schema=True,
+                    )
+                    add_support(
+                        "failure_receipt",
+                        failure["relative_path"],
+                        failure["sha256"],
+                        failure["schema_version"],
+                    )
+                    failed = failed_by_key.get((attempt_id, seed))
+                    if failed is None:
+                        raise GateValidationError(
+                            "campaign manifest failed child lacks validated receipt"
+                        )
+                    log = failed["log"]
+                    add_support(
+                        "failure_log",
+                        log["relative_path"],
+                        log["sha256"],
+                        None,
+                    )
+                    for partial_name, role in (
+                        ("summary_json", "partial_summary_json"),
+                        ("raw_samples_csv", "partial_raw_samples_csv"),
+                    ):
+                        partial = failed["partial_artifacts"].get(partial_name)
+                        if partial is not None:
+                            add_support(
+                                role,
+                                partial["relative_path"],
+                                partial["sha256"],
+                                None,
+                            )
+                supporting.sort(
+                    key=lambda row: (
+                        row["artifact_role"].encode("ascii"),
+                        row["relative_path"].encode("ascii"),
+                    )
+                )
+                expected_children.append(
+                    {
+                        "stage_id": stage_id,
+                        "config_id": entry["config_id"],
+                        "attempt_id": attempt_id,
+                        "candidate_id": entry["candidate_id"],
+                        "pilot_seed": seed,
+                        "artifact_kind": tracked_ref["artifact_kind"],
+                        "live_envelope": live_reference,
+                        "tracked_envelope": tracked_reference,
+                        "supporting_artifacts": supporting,
+                    }
+                )
+    if manifest.get("children") != expected_children:
+        raise GateValidationError("campaign evidence child manifest differs")
+    expected_source_child_keys = {
+        (child["stage_id"], child["attempt_id"], child["pilot_seed"])
+        for child in expected_children
+    }
+    if set(source_children_by_key) != expected_source_child_keys:
+        raise GateValidationError(
+            "campaign source stage decisions do not cover exactly 43 children"
+        )
+    expected_required_paths = sorted(
+        required_paths, key=lambda path: path.encode("ascii")
+    )
+    if manifest.get("required_git_paths") != expected_required_paths:
+        raise GateValidationError("campaign evidence required Git closure differs")
+    counts = {
+        "executed_entry_count": 40,
+        "child_outcome_count": 43,
+        "requested_molecule_count": 3680,
+        "stage_decision_count": 5,
+        "tracked_envelope_count": 43,
+        "required_git_path_count": len(expected_required_paths),
+    }
+    if manifest.get("counts") != counts:
+        raise GateValidationError("campaign evidence manifest counts differ")
+
+    if _git_single_parent(evidence_revision, label="campaign evidence publication") != (
+        registry_revision
+    ):
+        raise GateValidationError("campaign evidence revision must have exact parent G")
+    expected_additions = sorted(
+        [*expected_required_paths, CAMPAIGN_EVIDENCE_MANIFEST_RELATIVE_PATH.as_posix()]
+    )
+    changed = _git_changed_entries(registry_revision, evidence_revision)
+    if (
+        any(status != "A" for status, _path in changed)
+        or sorted(path for _status, path in changed) != expected_additions
+    ):
+        raise GateValidationError(
+            "campaign evidence revision addition set differs from its manifest"
+        )
+    for path in expected_additions:
+        relative_path = Path(path)
+        if not _git_blob_is_absent(registry_revision, relative_path):
+            raise GateValidationError(
+                f"campaign evidence path already existed at G: {path}"
+            )
+        _require_regular_git_blob(
+            evidence_revision,
+            relative_path,
+            label=f"campaign evidence path {path}",
+        )
+    return {
+        "manifest_relative_path": CAMPAIGN_EVIDENCE_MANIFEST_RELATIVE_PATH.as_posix(),
+        "manifest_sha256": _sha256_bytes(manifest_bytes),
+        "evidence_revision": evidence_revision,
+        "tracked_envelope_count": 43,
+        "required_git_path_count": len(expected_required_paths),
+        "exact_git_closure_verified": True,
+        "stage_live_hashes_bridge_to_tracked_git_blobs": True,
+    }
+
+
+def validate_registered_campaign_firewall(
+    *,
+    benchmark_revision: str,
+    candidate_lock_path: Path,
+    candidate_lock_bytes: bytes,
+    ledger_blob: bytes,
+    ledger_evidence: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Prove F→C→G→evidence→decision→ledger→lock and recompute selection."""
+
+    if candidate_lock_path != CANDIDATE_LOCK_RELATIVE_PATH:
+        raise GateValidationError("candidate lock must use the frozen v4 path")
+    ledger_revision = _require_exact_addition_commit(
+        benchmark_revision,
+        candidate_lock_path,
+        candidate_lock_bytes,
+        label="candidate-lock publication",
+    )
+    decision_revision = _require_exact_addition_commit(
+        ledger_revision,
+        CANDIDATE_LEDGER_RELATIVE_PATH,
+        ledger_blob,
+        label="candidate-ledger publication",
+    )
+    evidence_revision = _git_single_parent(
+        decision_revision, label="candidate-decision publication"
+    )
+    if _git_changed_entries(evidence_revision, decision_revision) != (
+        ("A", CANDIDATE_DECISION_RELATIVE_PATH.as_posix()),
+    ):
+        raise GateValidationError(
+            "candidate-decision publication must add only the fixed decision path"
+        )
+    if not _git_blob_is_absent(evidence_revision, CANDIDATE_DECISION_RELATIVE_PATH):
+        raise GateValidationError("candidate decision existed before its publication")
+    _require_regular_git_blob(
+        decision_revision,
+        CANDIDATE_DECISION_RELATIVE_PATH,
+        label="candidate-decision publication",
+    )
+    decision_bytes = _git_blob(decision_revision, CANDIDATE_DECISION_RELATIVE_PATH)
+    decision = _mapping(
+        strict_json_loads(decision_bytes, label="candidate decision Git blob"),
+        "candidate decision Git blob",
+    )
+    decision_registry = _mapping(
+        decision.get("registry"), "candidate decision registry"
+    )
+    registry_revision = _git_revision(
+        decision_registry.get("registry_revision"), "candidate registry revision G"
+    )
+    registry_blob = _git_blob(
+        registry_revision, CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH
+    )
+    if (
+        _git_blob(benchmark_revision, CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH)
+        != registry_blob
+    ):
+        raise GateValidationError("candidate registry changed after revision G")
+    registry = _mapping(
+        strict_json_loads(registry_blob, label="candidate registry Git blob"),
+        "candidate registry Git blob",
+    )
+    try:
+        candidate_config_registry.validate_registry_document(
+            registry,
+            payload_loader=lambda path: _git_blob(registry_revision, Path(path)),
+        )
+    except (OSError, ValueError) as error:
+        raise GateValidationError(
+            f"candidate registry validation failed: {error}"
+        ) from error
+
+    publication = _mapping(
+        registry.get("publication"), "candidate registry publication"
+    )
+    framework_revision = _git_revision(
+        publication.get("framework_revision"), "framework revision F"
+    )
+    config_revision = _git_revision(
+        publication.get("config_revision"), "config revision C"
+    )
+    if (
+        _git_single_parent(registry_revision, label="registry publication G")
+        != config_revision
+    ):
+        raise GateValidationError(
+            "registry revision G must have config revision C as parent"
+        )
+    if _git_changed_entries(config_revision, registry_revision) != (
+        ("A", CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH.as_posix()),
+    ):
+        raise GateValidationError("revision G must add only the candidate registry")
+    if not _git_blob_is_absent(
+        config_revision, CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH
+    ):
+        raise GateValidationError("candidate registry already existed at revision C")
+    _require_regular_git_blob(
+        registry_revision,
+        CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH,
+        label="candidate registry",
+    )
+    if (
+        _git_single_parent(config_revision, label="config publication C")
+        != framework_revision
+    ):
+        raise GateValidationError(
+            "config revision C must have framework revision F as parent"
+        )
+    expected_config_paths = tuple(
+        sorted(candidate_config_registry.generated_config_relative_paths())
+    )
+    config_entries = _git_changed_entries(framework_revision, config_revision)
+    if tuple(sorted(path for status, path in config_entries if status == "A")) != (
+        expected_config_paths
+    ) or any(status != "A" for status, _path in config_entries):
+        raise GateValidationError("revision C must add exactly the 33 generated YAMLs")
+    for path in expected_config_paths:
+        relative_path = Path(path)
+        if not _git_blob_is_absent(framework_revision, relative_path):
+            raise GateValidationError(f"candidate config existed before C: {path}")
+        _require_regular_git_blob(
+            config_revision,
+            relative_path,
+            label=f"candidate config {path}",
+        )
+        if _git_blob(config_revision, relative_path) != _git_blob(
+            registry_revision, relative_path
+        ):
+            raise GateValidationError(f"candidate config changed after C: {path}")
+    _require_git_ancestor(
+        registry_revision,
+        evidence_revision,
+        label="candidate evidence is not descended from registry revision G",
+    )
+    for path in (
+        CANDIDATE_DECISION_RELATIVE_PATH,
+        CANDIDATE_LEDGER_RELATIVE_PATH,
+        CANDIDATE_LOCK_RELATIVE_PATH,
+    ):
+        if not _git_blob_is_absent(evidence_revision, path):
+            raise GateValidationError(
+                "candidate authorities existed before the decision-only publication"
+            )
+
+    decision_evidence = validate_candidate_decision(
+        decision,
+        registry=registry,
+        registry_bytes=registry_blob,
+        registry_revision=registry_revision,
+        ledger_evidence=ledger_evidence,
+        artifact_loader=lambda path: _git_blob(benchmark_revision, path),
+    )
+    manifest_bytes = _git_blob(
+        evidence_revision, CAMPAIGN_EVIDENCE_MANIFEST_RELATIVE_PATH
+    )
+    manifest = _mapping(
+        strict_json_loads(manifest_bytes, label="campaign evidence manifest Git blob"),
+        "campaign evidence manifest Git blob",
+    )
+    evidence_manifest = validate_campaign_evidence_manifest(
+        manifest,
+        manifest_bytes=manifest_bytes,
+        registry=registry,
+        registry_bytes=registry_blob,
+        registry_revision=registry_revision,
+        evidence_revision=evidence_revision,
+        decision=decision,
+        ledger_evidence=ledger_evidence,
+        artifact_loader=lambda path: _git_blob(evidence_revision, path),
+    )
+    projected_ledger = project_candidate_ledger(decision)
+    if _pretty_json_bytes(projected_ledger) != ledger_blob:
+        raise GateValidationError(
+            "candidate ledger is not the byte-deterministic decision projection"
+        )
+    for outcome in ledger_evidence["completed_outcomes"]:
+        if outcome["benchmark_revision"] != registry_revision:
+            raise GateValidationError(
+                "every pre-final completed child must use exact registry revision G"
+            )
+    for outcome in ledger_evidence["failed_outcomes"]:
+        if outcome["source_revision"] != registry_revision:
+            raise GateValidationError(
+                "every pre-final failed child must use exact registry revision G"
+            )
+    return {
+        "framework_revision": framework_revision,
+        "config_revision": config_revision,
+        "registry_revision": registry_revision,
+        "evidence_revision": evidence_revision,
+        "candidate_decision_revision": decision_revision,
+        "candidate_ledger_revision": ledger_revision,
+        "candidate_lock_revision": benchmark_revision,
+        "candidate_registry_sha256": _sha256_bytes(registry_blob),
+        "candidate_decision_sha256": _sha256_bytes(decision_bytes),
+        "candidate_ledger_is_exact_decision_projection": True,
+        "publication_commits_are_strictly_ordered_and_path_isolated": True,
+        "campaign_evidence_manifest": evidence_manifest,
+        **decision_evidence,
+    }
+
+
 def validate_git_lock_firewall(
     *,
     benchmark_revision: str,
     candidate_lock_path: Path,
     candidate_lock_bytes: bytes,
     lock: Mapping[str, Any],
+    expected_artifact_io_source_sha256: str,
     pilot_run_validator: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Prove the benchmark revision already contained the lock and ledger."""
 
+    expected_artifact_io_source_sha256 = _sha256(
+        expected_artifact_io_source_sha256,
+        "candidate artifact-I/O source digest",
+    )
     if _git_blob(benchmark_revision, candidate_lock_path) != candidate_lock_bytes:
         raise GateValidationError("benchmark revision candidate-lock blob differs")
     protocol_blob = _git_blob(benchmark_revision, PROTOCOL_RELATIVE_PATH)
@@ -7552,6 +10232,8 @@ def validate_git_lock_firewall(
                 f"baseline rescore source-revision blob differs for {relative_path}"
             )
     ledger_ref = lock["ledger"]
+    if ledger_ref["relative_path"] != CANDIDATE_LEDGER_RELATIVE_PATH:
+        raise GateValidationError("candidate ledger must use the frozen v4 path")
     ledger_blob = _git_blob(benchmark_revision, ledger_ref["relative_path"])
     if _sha256_bytes(ledger_blob) != ledger_ref["sha256"]:
         raise GateValidationError("benchmark revision candidate-ledger blob differs")
@@ -7579,6 +10261,23 @@ def validate_git_lock_firewall(
         ),
         pilot_run_validator=committed_pilot_validator,
     )
+    campaign_firewall = validate_registered_campaign_firewall(
+        benchmark_revision=benchmark_revision,
+        candidate_lock_path=candidate_lock_path,
+        candidate_lock_bytes=candidate_lock_bytes,
+        ledger_blob=ledger_blob,
+        ledger_evidence=ledger_evidence,
+    )
+    if (
+        not _timestamp(
+            campaign_firewall["eligible_stage_completed_at_utc"],
+            "eligible-stage decision completion",
+        )
+        < lock["locked_at"]
+    ):
+        raise GateValidationError(
+            "eligible-stage decision must strictly predate the candidate lock"
+        )
     for outcome in ledger_evidence["completed_outcomes"]:
         if (
             not _timestamp(
@@ -7794,6 +10493,9 @@ def validate_git_lock_firewall(
         raise GateValidationError(
             "benchmark revision independent-rescore dependency blob differs"
         )
+    artifact_io_blob = _git_blob(benchmark_revision, ARTIFACT_IO_RELATIVE_PATH)
+    if _sha256_bytes(artifact_io_blob) != expected_artifact_io_source_sha256:
+        raise GateValidationError("benchmark revision artifact-I/O source blob differs")
     try:
         subprocess.run(
             [
@@ -7849,6 +10551,7 @@ def validate_git_lock_firewall(
         "candidate_ledger_relative_path": ledger_ref["relative_path"].as_posix(),
         "candidate_ledger_sha256": ledger_ref["sha256"],
         "candidate_ledger_exact_blob_at_benchmark_revision": True,
+        "registered_campaign_firewall": campaign_firewall,
         "evaluation_config_exact_blob_at_benchmark_revision": True,
         "ema_sampler_source_exact_blob_at_benchmark_revision": True,
         "benchmark_runner_exact_blob_at_benchmark_revision": True,
@@ -7857,6 +10560,7 @@ def validate_git_lock_firewall(
         "analysis_sources_exact_blobs_at_benchmark_revision": True,
         "independent_rescore_source_exact_blob_at_benchmark_revision": True,
         "independent_rescore_dependency_exact_blob_at_benchmark_revision": True,
+        "artifact_io_source_exact_blob_at_benchmark_revision": True,
         "committed_pilot_artifact_count": ledger_evidence[
             "committed_pilot_artifact_count"
         ],
@@ -8102,6 +10806,27 @@ def _candidate_series(
         raise GateValidationError(
             "candidate sampler source differs from candidate lock"
         )
+    artifact_io_source = _mapping(
+        implementation.get("artifact_io_source"), "candidate artifact_io source"
+    )
+    _exact_keys(
+        artifact_io_source,
+        {"path", "sha256", "size_bytes"},
+        "candidate artifact_io source",
+    )
+    if (
+        artifact_io_source.get("path") != ARTIFACT_IO_RELATIVE_PATH.as_posix()
+        or _integer(
+            artifact_io_source.get("size_bytes"),
+            "candidate artifact_io source size",
+            minimum=1,
+        )
+        < 1
+    ):
+        raise GateValidationError("candidate artifact_io source identity is invalid")
+    artifact_io_source_sha256 = _sha256(
+        artifact_io_source.get("sha256"), "candidate artifact_io source digest"
+    )
     if canonical_json_sha256(implementation) != lock["implementation_inputs_sha256"]:
         raise GateValidationError("candidate implementation inputs differ from lock")
     metric_inputs = _mapping(
@@ -8130,6 +10855,7 @@ def _candidate_series(
         "summary_hashes": summary_hashes,
         "runner_sha256": runner_sha,
         "sampler_source_sha256": lock["sampler_source_sha256"],
+        "artifact_io_source_sha256": artifact_io_source_sha256,
         "inference_weights": inference_weights,
     }
 
@@ -8533,6 +11259,7 @@ def evaluate_candidate_report(
             "nfe": EXPECTED_NFE,
             "inference_weights": candidate["inference_weights"],
             "sampler_source_sha256": candidate["sampler_source_sha256"],
+            "artifact_io_source_sha256": candidate["artifact_io_source_sha256"],
             "implementation_inputs_sha256": lock["implementation_inputs_sha256"],
             "metric_inputs_sha256": lock["metric_inputs_sha256"],
             "raw_samples_sha256_by_seed": [
@@ -8570,7 +11297,9 @@ def evaluate_candidate_report(
     }
 
 
-def validate_analysis_runtime(lock: Mapping[str, Any]) -> dict[str, Any]:
+def validate_analysis_runtime(
+    lock: Mapping[str, Any], *, expected_artifact_io_source_sha256: str | None = None
+) -> dict[str, Any]:
     gate_bytes = _repository_artifact_bytes(
         Path("scripts/udlm/superiority_gate.py"), label="superiority gate source"
     )
@@ -8592,6 +11321,9 @@ def validate_analysis_runtime(lock: Mapping[str, Any]) -> dict[str, Any]:
     pilot_evidence_writer_bytes = _repository_artifact_bytes(
         PILOT_EVIDENCE_WRITER_RELATIVE_PATH,
         label="pilot evidence writer source",
+    )
+    artifact_io_bytes = _repository_artifact_bytes(
+        ARTIFACT_IO_RELATIVE_PATH, label="artifact_io source"
     )
     if _sha256_bytes(gate_bytes) != lock["gate_source_sha256"]:
         raise GateValidationError("runtime superiority-gate source differs from lock")
@@ -8619,6 +11351,18 @@ def validate_analysis_runtime(lock: Mapping[str, Any]) -> dict[str, Any]:
         raise GateValidationError(
             "runtime pilot evidence writer source differs from lock"
         )
+    artifact_io_sha256 = _sha256_bytes(artifact_io_bytes)
+    if (
+        expected_artifact_io_source_sha256 is not None
+        and artifact_io_sha256
+        != _sha256(
+            expected_artifact_io_source_sha256,
+            "expected runtime artifact_io source digest",
+        )
+    ):
+        raise GateValidationError(
+            "runtime artifact_io source differs from candidate generation"
+        )
     import scipy
 
     if scipy.__version__ != lock["scipy_version"]:
@@ -8632,61 +11376,34 @@ def validate_analysis_runtime(lock: Mapping[str, Any]) -> dict[str, Any]:
         "pilot_evidence_writer_source_sha256": lock[
             "pilot_evidence_writer_source_sha256"
         ],
+        "artifact_io_source_sha256": artifact_io_sha256,
         "scipy_version": scipy.__version__,
         "sources_match_prelocked_bytes": True,
+        "artifact_io_matches_candidate_generation": (
+            expected_artifact_io_source_sha256 is not None
+        ),
     }
 
 
 def _atomic_write_json_exclusive(path: Path, value: object) -> None:
-    root = REPOSITORY_ROOT.resolve(strict=True)
+    root = Path(os.path.abspath(REPOSITORY_ROOT))
     absolute = Path(os.path.abspath(path))
     if absolute == root or root not in absolute.parents or absolute.suffix != ".json":
         raise GateValidationError("output must be an in-repository JSON file")
-    try:
-        resolved_parent = absolute.parent.resolve(strict=True)
-    except OSError as error:
-        raise GateValidationError(
-            "output parent must already exist as an in-repository directory"
-        ) from error
-    if (
-        resolved_parent != absolute.parent
-        or (resolved_parent != root and root not in resolved_parent.parents)
-        or not resolved_parent.is_dir()
-    ):
-        raise GateValidationError(
-            "output parent must be a real in-repository directory without symlinks"
-        )
-    absolute = resolved_parent / absolute.name
-    if os.path.lexists(absolute):
-        raise FileExistsError(f"refusing to replace superiority decision: {absolute}")
     encoded = (
         json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n"
     ).encode("utf-8")
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=absolute.parent, prefix=f".{absolute.name}.", suffix=".tmp"
-    )
-    temporary = Path(temporary_name)
     try:
-        with os.fdopen(descriptor, "wb") as handle:
-            os.fchmod(handle.fileno(), 0o644)
-            handle.write(encoded)
-            handle.flush()
-            os.fsync(handle.fileno())
-        try:
-            os.link(temporary, absolute)
-        except FileExistsError as error:
-            raise FileExistsError(
-                f"refusing to replace superiority decision: {absolute}"
-            ) from error
-        temporary.unlink()
-        directory_descriptor = os.open(absolute.parent, os.O_RDONLY)
-        try:
-            os.fsync(directory_descriptor)
-        finally:
-            os.close(directory_descriptor)
-    finally:
-        if temporary.exists():
-            temporary.unlink()
+        relative = absolute.relative_to(root).as_posix()
+        artifact_io.publish_bytes_exclusive(root, relative, encoded)
+    except FileExistsError as error:
+        raise FileExistsError(
+            f"refusing to replace superiority decision: {absolute}"
+        ) from error
+    except artifact_io.ArtifactIOError as error:
+        raise GateValidationError(
+            "output parent must be a real in-repository directory without symlinks"
+        ) from error
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -8735,9 +11452,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     lock = validate_candidate_lock(lock_json, protocol)
     training_evidence = validate_training_evidence(lock)
     matched_panel_completion = validate_completed_matched_panel(lock, training_evidence)
-    analysis_evidence = validate_analysis_runtime(lock)
     candidate_report = denovo_report.collect_report(args.runs_dir)
     candidate = _candidate_series(candidate_report, lock)
+    analysis_evidence = validate_analysis_runtime(
+        lock,
+        expected_artifact_io_source_sha256=candidate["artifact_io_source_sha256"],
+    )
     independent_candidate_rescore = independently_rescore_candidate_runs(
         candidate_report, lock
     )
@@ -8749,6 +11469,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         candidate_lock_path=lock_relative,
         candidate_lock_bytes=lock_bytes,
         lock=lock,
+        expected_artifact_io_source_sha256=candidate["artifact_io_source_sha256"],
     )
     decision = evaluate_candidate_report(
         candidate_report,

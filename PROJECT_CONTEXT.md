@@ -1,10 +1,11 @@
 # GenMol-UDLM project context
 
-Snapshot: 2026-09-07, after the first W=1 scale-up lineage completed R and S
-but stopped at E's CPU-only preflight because of a recursive authority-validator
-defect. A corrected, fully fresh lineage is being prepared. Recheck Git, live
-logs, tmux, launch artifacts, and GPU state rather than treating this snapshot
-as dynamic authority.
+Snapshot: 2026-09-07, after the corrected W=1 scale-up lineage completed and the
+independent terminal validator accepted its full R→S→E chain. Protocol v4 and
+its CPU-tested generation framework are being prepared for the F publication;
+no registered v4 candidate generation has run. Recheck Git, live logs, tmux,
+launch artifacts, and GPU state rather than treating this snapshot as dynamic
+authority.
 
 ## Objective, workspace, and repository
 
@@ -53,11 +54,18 @@ The frozen point gate requires validity at least `1.0`, uniqueness at least
 `0.8180213192558725`, plus every registered one-sided 95% interval criterion.
 Strict and released-compatible repaired decoding must both be reported.
 
-The active protocol is
-`experiments/udlm/protocols/de_novo_superiority_v3.json`, raw SHA-256
-`27a1f3e4fa66988d77eddeb66025eae64b514c452e089bb5c62fff99060c9f16`
+The active pre-generation protocol is
+`experiments/udlm/protocols/de_novo_superiority_v4.json`, currently raw
+SHA-256
+`9432360dad30a01de7ededf62db77470af9a0b8297fc78f06d330dbc73e826b7`
 and canonical SHA-256
-`e7b108dce51cd1445758a9f7dc852532b2ee075a80f783ae009303a7550577ee`.
+`4edb0d193fcedc76913905220f3431fed8f0dd416f900c8da5f433a6071d4bfa`.
+Recompute those two hashes after any reviewed F edit and before publication.
+V4 preserves the v3 claim, baseline, final operating point, selection
+firewall, point gates, uncertainty gates, candidate-lock requirements,
+decision, and claim boundaries exactly; it adds terminal-scale authority,
+raw-LOO top-p semantics, schema-8 evidence, a registered staged campaign,
+generation resource controls, and an acyclic publication firewall.
 The immutable current-code MDLM rescore attestation is
 `experiments/udlm/baselines/mdlm_50000_rescore_attestation.json`, raw SHA-256
 `6326b63c38c7052d0b47282d611618f77637496da2785779af69097fc1441323`.
@@ -213,12 +221,40 @@ The publication firewall is:
 Supported registered GPU counts are 1 through 4. Per-process microbatch is 2;
 accumulation for W=`1,2,3,4` is respectively `8,4,3,2`, yielding effective
 global batch `16,16,18,16`. One registry freezes one W, and all three arms in
-that registry must have identical batch arithmetic and exposure. The current
-first scale-up rung will freeze W=1: the selected full-size E-A1 topology has
-already run for 500 updates at W=1, so 1,000 updates is a controlled twofold
-increase without introducing an untested multi-process topology at the same
-time. Multi-GPU scale-up remains supported for a later separately registered
-rung; never relabel a smoke checkpoint as a registered result.
+that registry must have identical batch arithmetic and exposure. The completed
+first scale-up rung froze W=1: the selected full-size E-A1 topology had already
+run for 500 updates at W=1, so 1,000 updates was a controlled twofold increase
+without introducing an untested multi-process topology at the same time.
+Multi-GPU scale-up remains implemented for a later separately registered rung,
+subject to the current three-GPU user authorization; never relabel a smoke
+checkpoint as a registered result.
+
+### Completed corrected terminal lineage
+
+The corrected R4-prime/R5-prime/R6-prime sequence culminated in clean pushed
+source revision `83c92963690aa0c41fa4d86dcc69fa0f692f656a`. Its W=1 registry is
+`experiments/udlm/protocols/selection_bound_scale_up_registry_gpu1.json`, raw
+SHA-256
+`98e482107e450563947e1d8441900b6cf61115ba6910ca57508cd629ed0df209`
+and canonical SHA-256
+`a147c1e92beadda8c14a9184bc7143286874de15c5c2313d19fbabe6420f0671`.
+Fresh R, S, and E members each completed exactly 1,000 optimizer updates in
+registered order, with every successor bound to the immutable predecessor
+receipt:
+
+| Arm | Candidate ID | Checkpoint SHA-256 | Receipt SHA-256 |
+| --- | --- | --- | --- |
+| R | `r-w1-1000u-dcb271453411` | `d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c` | `1ffc4a69feb33b538c514ff404fe622e37d9f9ccb59f3cb38282ce54bfa6affb` |
+| S | `s-w1-1000u-dcb271453411` | `100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72` | `23eb7ab86a307130b0dc644e6de57fa0c1ce26e3ed35792d55fc65274d1a3121` |
+| E | `e-w1-1000u-dcb271453411` | `dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005` | `4e517ffdb8780422d7fea4e0402a1ec611d4af8dfe795e2ce629ab2b4b585df4` |
+
+The terminal validator reconstructed the exact registry and transitive R→S→E
+chain before F work began. The source revision and artifacts stay immutable;
+validation against a later dirty framework tree is expected to fail and must
+not be misreported as invalidating the historical result. These checkpoints
+are eligible inputs to the v4 campaign only through the frozen terminal
+authority. Their training losses are not molecule-quality scores, cannot rank
+R/S/E, cannot select a sampling configuration, and cannot support superiority.
 
 ### Preserved first-lineage preflight incident
 
@@ -240,15 +276,174 @@ not training failure or artifact corruption.
 The old R/S runs are valid standalone engineering evidence but are ineligible
 for a terminal registered panel: a repaired E would attest a different source
 revision. Recovery therefore preserves those outputs without renaming or
-promotion, rebuilds a corrected R4-prime/R5-prime/R6-prime sequence directly
-from the same R3 selection revision, obtains new revision-derived namespaces,
-and retrains fresh R, S, and E. The frozen optimization-screen decisions and
-MDLM initialization remain unchanged and need not be rerun.
+promotion. The completed recovery rebuilt a corrected
+R4-prime/R5-prime/R6-prime sequence directly from the same R3 selection
+revision, obtained new revision-derived namespaces, and retrained fresh R, S,
+and E. The frozen optimization-screen decisions and MDLM initialization remain
+unchanged and need not be rerun.
+
+## Protocol v4 candidate campaign
+
+V4 freezes a 36-configuration universe before candidate generation:
+R/S/E checkpoints × raw-LOO softmax temperatures
+`{0.50,0.70,0.85,1.00}` × `raw_loo_top_p` values `{1.00,0.98,0.95}`.
+Candidate IDs identify checkpoints only; temperature and top-p live in config
+and attempt IDs. The three `(temperature=1, top-p=1)` historical YAMLs are
+reused byte-for-byte, while C adds exactly 33 new YAMLs.
+
+For UDLM, temperature and stable nucleus filtering act on the active-alphabet
+raw LOO probabilities before the exact uniform or categorical reverse bridge.
+The crossing token is retained, ties use ascending active token ID, and the
+final reverse posterior is never truncated. `raw_loo_top_p=1.0` follows the
+literal pre-v4 arithmetic path with `torch.equal` posterior checks and exact
+sampled IDs under cloned RNG state. MDLM forbids a non-null raw-LOO top-p. This
+is an inference-only hypothesis; training and loss are unchanged, and
+predictor-corrector sampling is deferred.
+
+The fixed small-first stages are:
+
+| Stage | Purpose | Entries / children | Seed(s) | Requests per child | Promotion |
+| --- | --- | ---: | --- | ---: | --- |
+| D | schema-8 structural diagnostic; chemistry ignored | 1 / 1 | 1100 | 32 | structural success only |
+| A | temperature screen at top-p 1 | 12 / 12 | 1101 | 32 | two temperatures per arm |
+| B | promoted temperature × top-p interactions | 18 / 18 | 1102 | 64 | two configs per arm |
+| C | held-out engineering confirmation | 6 / 6 | 1103 | 96 | one config per arm |
+| eligible | registered selection | 3 / 6 | 1000, 1001 | 256 | one global candidate/config |
+| final | locked superiority evaluation | 1 / 3 | 0, 1, 2 | 1,000 | no tuning or retry |
+
+Before final evaluation this is 40 stage/config entries, 43 children, 3,680
+requested molecules, and 471,040 molecule-NFE at 128 NFE. Including final
+evaluation gives 41 entries, 46 children, 6,680 requests, and 855,040
+molecule-NFE. Ranking is current-stage-only by raw unrounded
+released-compatible quality descending, diversity descending, config ID ASCII,
+then attempt ID ASCII. Every scheduled slot must become terminal before
+advancement. Failed or undefined outcomes remain disclosed and unrankable;
+retry, substitution, and cross-stage score pooling are forbidden. Insufficient
+rankable quota makes the campaign incomplete and forbids a candidate lock.
+Every ranked-stage metric must come from a fresh CPU independent rescore of the
+raw child artifacts before advancement, not from a producer summary. Every
+non-D child starts strictly after the predecessor stage decision completes,
+every child is terminal before its own decision completes, and the eligible
+decision completes strictly before the candidate lock is built.
+
+Candidate benchmark schema 8 embeds a bounded `sampled_token_control_audit` in
+the summary: complete sampler input IDs and final IDs as base64 uint16
+little-endian arrays, an MSB-first editable bit mask, and exact control-token
+counts. It verifies the BOS/MASK*/EOS/PAD* template, immutable positions, token
+ranges, zero tail bits, recomputed counts, and row-ordered tokenizer decoding
+against CSV `raw_model_text`. Limits are 1,000 rows, 256 columns, and 2 MiB per
+summary. Audit encoding time is separate from generation timing.
+
+Benchmark publication uses exclusive no-clobber bundle writes:
+`raw_samples.csv` is ordinary and `summary.json` is the completion member
+linked last. Report JSON is likewise the completion member after PDF and CSV.
+The child retains and revalidates its output-directory descriptor and the
+repository-global generation lease before model import and publication. Exact
+owned rollback removes only identities created by the failing writer; ambiguous
+filesystem transitions fail closed.
+
+The generation publication firewall is F → C → G. F contains framework,
+tests, documentation/notebook, and v4; C is its clean pushed child adding only
+33 YAMLs; G is C's clean pushed child adding only the candidate registry. Every
+GPU child binds exact G, and no tracked mutation occurs during the pre-final
+campaign. After all 43 children terminate, the CPU evidence materializer
+independently validates and rescores every outcome before it publishes 43
+tracked envelopes plus a completion-last manifest. Its staging mode force-adds
+and verifies exactly the manifest-derived closure. The addition-only EVIDENCE
+commit has exact sole parent G; decision, ledger, and lock remain absent at G
+and EVIDENCE. Afterwards publish a candidate-decision-only commit, its
+deterministic candidate-ledger-only projection, and the deterministically built
+schema-2 candidate-lock-only commit. There is no hand-authored lock draft. The
+lock must be clean and pushed before final seeds.
+
+### Exact artifact-bearing-host runbook after G
+
+Run this only in
+`/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree`.
+The terminal checkpoints, campaign outputs, live envelopes, and ignored stage
+decisions are required inputs and do not come from Git. A fresh clone is not a
+substitute unless all ignored artifacts have been restored byte-for-byte and
+pass the independent validators. Set `REGISTRY_RAW` and `REGISTRY_CANONICAL` to
+the two registry hashes verified by the G preparer; do not use the v4 protocol
+hashes in their place.
+
+```bash
+cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree
+mkdir -p output/logs
+G="$(git rev-parse HEAD)"
+REGISTRY_RAW='REPLACE_WITH_REGISTRY_RAW_SHA256'
+REGISTRY_CANONICAL='REPLACE_WITH_REGISTRY_CANONICAL_SHA256'
+```
+
+Use five explicit prefix authorizations. Wait for each named controller to
+finish and inspect its durable decision before starting the next command. D is
+hard-limited to one concurrent child; A through `eligible` use at most three.
+
+```bash
+tmux new-session -d -s genmol-udlm-v4-d "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_candidate_campaign.py --registry experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json --expected-registry-sha256 $REGISTRY_RAW --expected-registry-canonical-sha256 $REGISTRY_CANONICAL --through-stage D > output/logs/v4-campaign-D-controller.log 2>&1"
+tmux new-session -d -s genmol-udlm-v4-a "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_candidate_campaign.py --registry experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json --expected-registry-sha256 $REGISTRY_RAW --expected-registry-canonical-sha256 $REGISTRY_CANONICAL --through-stage A > output/logs/v4-campaign-A-controller.log 2>&1"
+tmux new-session -d -s genmol-udlm-v4-b "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_candidate_campaign.py --registry experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json --expected-registry-sha256 $REGISTRY_RAW --expected-registry-canonical-sha256 $REGISTRY_CANONICAL --through-stage B > output/logs/v4-campaign-B-controller.log 2>&1"
+tmux new-session -d -s genmol-udlm-v4-c "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_candidate_campaign.py --registry experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json --expected-registry-sha256 $REGISTRY_RAW --expected-registry-canonical-sha256 $REGISTRY_CANONICAL --through-stage C > output/logs/v4-campaign-C-controller.log 2>&1"
+tmux new-session -d -s genmol-udlm-v4-eligible "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_candidate_campaign.py --registry experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json --expected-registry-sha256 $REGISTRY_RAW --expected-registry-canonical-sha256 $REGISTRY_CANONICAL --through-stage eligible > output/logs/v4-campaign-eligible-controller.log 2>&1"
+```
+
+At this point HEAD must still be exact clean pushed G. Materialize the complete
+tracked evidence bundle, then use the materializer's staging mode. The second
+command performs exact manifest-derived `git add -f` staging and verifies the
+index; it never commits or pushes. `--stage-published-evidence` is deliberately
+not an option on the authority preparer.
+
+```bash
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/materialize_candidate_evidence.py --expected-source-revision "$G" --expected-registry-sha256 "$REGISTRY_RAW" --expected-registry-canonical-sha256 "$REGISTRY_CANONICAL"
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/materialize_candidate_evidence.py --expected-source-revision "$G" --expected-registry-sha256 "$REGISTRY_RAW" --expected-registry-canonical-sha256 "$REGISTRY_CANONICAL" --stage-published-evidence
+git commit -m 'Publish registered v4 campaign evidence'
+git push --no-thin origin codex/udlm-genmol-scale-retry1
+EVIDENCE="$(git rev-parse HEAD)"
+```
+
+Publish the three authority artifacts from separate clean pushed revisions.
+The `lock` phase is the deterministic schema-2 builder; never prepare a draft
+or edit the result by hand.
+
+```bash
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/prepare_candidate_authority.py --phase decision --expected-source-revision "$EVIDENCE" --expected-registry-sha256 "$REGISTRY_RAW" --expected-registry-canonical-sha256 "$REGISTRY_CANONICAL" --registry-revision "$G"
+git add experiments/udlm/candidates/candidate_decision.json
+git commit -m 'Publish registered v4 candidate decision'
+git push --no-thin origin codex/udlm-genmol-scale-retry1
+DECISION="$(git rev-parse HEAD)"
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/prepare_candidate_authority.py --phase ledger --expected-source-revision "$DECISION"
+git add experiments/udlm/candidates/candidate_ledger.json
+git commit -m 'Publish deterministic v4 candidate ledger'
+git push --no-thin origin codex/udlm-genmol-scale-retry1
+LEDGER="$(git rev-parse HEAD)"
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/prepare_candidate_authority.py --phase lock --expected-source-revision "$LEDGER"
+git add experiments/udlm/candidates/candidate_lock.json
+git commit -m 'Lock registered v4 candidate before final evaluation'
+git push --no-thin origin codex/udlm-genmol-scale-retry1
+LOCK="$(git rev-parse HEAD)"
+```
+
+For final evaluation, copy `LOCK_CHECKPOINT` from
+`training.checkpoint.relative_path`, `LOCK_CONFIG` from
+`inference.evaluation_config_relative_path`, and `LOCK_OUTPUT_ROOT` as the
+common parent of the three `inference.final_run_directories_by_seed` paths in
+the committed lock. Choose `GPU_COUNT` in `{1,2,3}`. The fixed candidate-lock
+path and every repeated argument are checked against that committed schema-2
+lock before any final mutation or GPU access.
+
+```bash
+LOCK_CHECKPOINT='REPLACE_WITH_EXACT_LOCK_CHECKPOINT_PATH'
+LOCK_CONFIG='REPLACE_WITH_EXACT_LOCK_CONFIG_PATH'
+LOCK_OUTPUT_ROOT='REPLACE_WITH_EXACT_LOCK_OUTPUT_ROOT'
+GPU_COUNT='REPLACE_WITH_INTEGER_1_TO_3'
+tmux new-session -d -s genmol-udlm-v4-final "cd /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree && env -u CUDA_VISIBLE_DEVICES /home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/exps/denovo/launch_benchmark.py --checkpoint $LOCK_CHECKPOINT --config $LOCK_CONFIG --num-samples 1000 --seeds 0 1 2 --output-root $LOCK_OUTPUT_ROOT --candidate-lock experiments/udlm/candidates/candidate_lock.json --gpu-count $GPU_COUNT --max-utilization-percent 10 --min-free-memory-mib 30000 --log-root output/logs > output/logs/v4-final-controller.log 2>&1"
+```
 
 ## GPU and long-job policy
 
-- The user authorizes up to three GPUs without another permission request, but
-  this registered retry remains fixed at one GPU.
+- The user authorizes up to three GPUs without another permission request.
+  Every generation child uses one isolated logical `cuda:0`; the campaign
+  controller may hand off no more than three qualifying UUIDs concurrently.
 - Immediately before every real launch, inspect all devices and select only
   cards whose utilization is **strictly below 10%**, free memory is at least
   30,000 MiB, and compute mode is not prohibited.
@@ -260,8 +455,8 @@ MDLM initialization remain unchanged and need not be rerun.
   before launch, and map them through `CUDA_VISIBLE_DEVICES`. Logical `cuda:0`
   inside that isolated process is acceptable.
 - Long jobs must run in clearly named detached tmux sessions and log to
-  `output/logs/`. The repository-global lease permits only one reviewed
-  training job at a time.
+  `output/logs/`. Separate repository-global training and generation leases
+  permit only one reviewed controller of each kind at a time.
 
 The earlier failed R health namespace at source `12bdce2` remains immutable:
 `output/udlm/health-w1-r-12bdce22809f9672dbb6666fa3a6e828b39aadb0`.
@@ -272,43 +467,40 @@ ineligible and must never initialize or rank anything.
 
 ## Immediate sequence
 
-1. Finish and independently review corrected R4-prime. Run focused tests, the
-   exact-worktree
-   full CPU suite, Ruff/format checks, `py_compile`, notebook regeneration twice
-   with byte comparison, AST compilation of every notebook code cell, and
-   `git diff --check`. Commit and push the recovery branch to
-   `aamenov/genmol-udlm`.
-2. Use the CPU-only preparer to materialize the three configs for the chosen
-   world size as the only R5-prime change. Review, test, commit, and push.
-3. Use the CPU-only preparer/verifier to freeze the registry as the only R6
-   prime change. Review, test, commit, and push.
-4. Immediately before launch, inspect GPU utilization/memory/processes. If the
-   requested one GPU is eligible under the strict `<10%` rule, launch only the
-   next fresh registered R/S/E member in detached tmux. Validate every receipt
-   before advancing. Validate the terminal E panel while HEAD is still the
-   exact clean, pushed R6-prime revision.
-5. Stop before generation and publish a reviewed R6-descendant workflow that
-   closes the remaining generation/evidence path-write races, adds a
-   repository-global generation lease, and supplies production no-clobber CLIs
-   for candidate-ledger schema 2 and candidate-lock schema 2. The current tree
-   contains their strict validators and synthetic fixtures, but no production
-   ledger/lock builder; never hand-author either artifact. This descendant must
-   preserve and bind the R6 scale receipts rather than relabeling their source.
-6. Then run seed 1100 with only 32 requested molecules as an explicitly
-   ineligible decode diagnostic. It may check memory, decoding, and chemistry
-   failure modes but cannot rank models.
-7. Only after diagnostics are mechanically sound, run registered selection
-   seeds 1000 and 1001, 256 requests each, EMA weights, 128 NFE,
-   released-compatible metrics, with raw-text rescoring. Run all GPU attempts
-   before publishing their tracked evidence envelopes so the clean-source
-   launcher preflight remains satisfied. Lock one candidate before final seeds
-   0, 1, and 2.
+1. Finish and independently review F: framework, compatibility changes, v4,
+   documentation, notebook, and tests. Run focused and full CPU suites,
+   Ruff/Black, `py_compile`, two byte-identical notebook regenerations, AST
+   compilation of every notebook code cell, and `git diff --check`. Commit and
+   push F to `aamenov/genmol-udlm` with no candidate config or registry present.
+2. Use the CPU-only preparer to add exactly 33 candidate YAMLs as the sole C
+   change. Verify the three historical identity YAMLs are unchanged, then
+   commit and push clean C.
+3. Use the CPU-only preparer/verifier to add only
+   `de_novo_candidate_config_registry_v1.json` as G. Review, commit, and push
+   clean G. Every pre-final child must bind this exact G revision.
+4. Follow the artifact-bearing-host runbook above. First launch only
+   `--through-stage D` in its named detached controller. D runs E at temperature
+   1, top-p 1, seed 1100 × 32 with concurrency one. Ignore chemistry metrics
+   for advancement and do not rank D.
+5. After each predecessor decision is terminal, use four new explicit
+   invocations: `--through-stage A`, then B, then C, then `eligible`. A/B/C use
+   engineering seeds 1101/1102/1103 with 32/64/96 requests. Every ranked-stage
+   decision uses its fresh CPU independent rescore. Never retry, substitute,
+   pool scores across stages, or authorize final here.
+6. After the eligible seeds 1000 and 1001 × 256 terminate, remain at exact G.
+   Materialize all 43 outcomes and use
+   `materialize_candidate_evidence.py --stage-published-evidence` to force-add
+   exactly the verified closure. Commit and push EVIDENCE, then publish
+   decision-only, deterministic-ledger-only, and deterministically-built
+   schema-2-lock-only commits from their exact clean pushed predecessors.
+7. Only after the clean pushed lock, use the exact lock-bound
+   `launch_benchmark.py --candidate-lock` CLI above for final seeds 0, 1, and 2
+   once at 1,000 requests each. Do not tune or retry from final results.
 8. If the locked candidate passes all point and interval gates, produce the
    final PDF with configurations, ablations, exact metrics, caveats, and paper
    comparisons. Until then, retain the explicit no-superiority statement.
 
-Post-baseline engineering ideas should remain small-first and use engineering
-seeds 1100+: raw-LOO temperature (`0.5, 0.7, 0.85, 1.0`), then top-p
-(`1.0, 0.98, 0.95`); fixed-NFE Gibbs correctors; reverse-time grids; an exact
-LOO-to-denoiser conversion audit; and a fuller empirical-prior estimate. Final
-seeds 0, 1, and 2 are forbidden for tuning.
+Post-v4 ideas require a new prospective protocol. Candidate examples include
+fixed-NFE Gibbs correctors, reverse-time grids, an exact LOO-to-denoiser
+conversion audit, and a fuller empirical-prior estimate. Final seeds 0, 1, and
+2 are forbidden for tuning.

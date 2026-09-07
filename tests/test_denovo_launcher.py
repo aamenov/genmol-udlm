@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import csv
 import json
+import stat
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 from unittest import mock
 
@@ -30,6 +32,45 @@ def _gpu(
         utilization_percent=utilization_percent,
         compute_mode=compute_mode,
         compute_processes=processes,
+    )
+
+
+def _file_claim(relative_path: str, *, sha256: str = "f" * 64) -> object:
+    return launcher.artifact_io.FileClaim(
+        relative_path=relative_path,
+        device=11,
+        inode=22,
+        mode=stat.S_IFREG | 0o644,
+        link_count=1,
+        size_bytes=1,
+        mtime_ns=33,
+        ctime_ns=44,
+        sha256=sha256,
+    )
+
+
+def _lease() -> launcher.GenerationLease:
+    return launcher.GenerationLease(
+        claim=_file_claim(launcher.GENERATION_LEASE_RELATIVE_PATH),
+        owner_token="a" * 64,
+        payload=b"{}\n",
+        artifact_io_source=_file_claim(
+            launcher.ARTIFACT_IO_RELATIVE_PATH, sha256="e" * 64
+        ),
+    )
+
+
+def _fake_final_authority(
+    expected: launcher.ExpectedRunIdentity, output_root: Path
+) -> launcher.FinalCandidateAuthority:
+    return launcher.FinalCandidateAuthority(
+        claim=_file_claim(launcher.CANDIDATE_LOCK_RELATIVE_PATH),
+        payload=b"{}\n",
+        source_revision=str(expected.source_revision),
+        normalized_lock={},
+        candidate_id="r-w1-1000u-dcb271453411",
+        config_id="r_t050_p100",
+        output_root=output_root,
     )
 
 
@@ -131,6 +172,87 @@ def _expected(tmp_path: Path, *, num_samples: int = 3) -> launcher.ExpectedRunId
     )
 
 
+def _final_expected(tmp_path: Path) -> launcher.ExpectedRunIdentity:
+    expected = _expected(tmp_path, num_samples=1_000)
+    sampling = {
+        "diffusion_type": "udlm",
+        "softmax_temp": 0.5,
+        "raw_loo_top_p": 1.0,
+        "randomness": 0.0,
+        "min_add_len": 40,
+        "num_steps": 128,
+        "inference_eps": 1e-05,
+        "exclude_special_tokens": True,
+        "prior_variant": "release_uniform",
+        "prior_metadata_sha256": None,
+    }
+    implementation_inputs = {
+        **expected.implementation_inputs,
+        "sampler_source": {
+            "path": str(tmp_path / launcher.SAMPLER_SOURCE_RELATIVE_PATH),
+            "sha256": "b" * 64,
+            "size_bytes": 123,
+        },
+        "artifact_io_source": {
+            "path": str(tmp_path / launcher.ARTIFACT_IO_RELATIVE_PATH),
+            "sha256": "e" * 64,
+            "size_bytes": 456,
+        },
+    }
+    return replace(
+        expected,
+        checkpoint_diffusion_type="udlm",
+        checkpoint_udlm_inference_eps=1e-05,
+        checkpoint_udlm_exclude_special_tokens=True,
+        checkpoint_udlm_prior_variant="release_uniform",
+        sampling_config=sampling,
+        sampling_config_sha256=launcher._canonical_json_sha256(sampling),
+        implementation_inputs=implementation_inputs,
+    )
+
+
+def _normalized_final_lock(
+    expected: launcher.ExpectedRunIdentity,
+    *,
+    candidate_id: str = "r-w1-1000u-dcb271453411",
+    config_id: str = "r_t050_p100",
+) -> dict[str, object]:
+    root = Path("output/udlm/final") / candidate_id / config_id
+    return {
+        "candidate_id": candidate_id,
+        "checkpoint": {
+            "relative_path": expected.checkpoint_path.relative_to(
+                launcher.REPOSITORY_ROOT
+            ),
+            "sha256": expected.checkpoint_sha256,
+            "size_bytes": expected.checkpoint_size_bytes,
+            "global_step": expected.checkpoint_global_step,
+        },
+        "evaluation_config_relative_path": expected.config_path.relative_to(
+            launcher.REPOSITORY_ROOT
+        ),
+        "evaluation_config_sha256": expected.source_config_sha256,
+        "sampling_config": dict(expected.sampling_config),
+        "sampling_sha256": expected.sampling_config_sha256,
+        "inference_weights": dict(launcher.FINAL_INFERENCE_WEIGHTS),
+        "benchmark_runner_sha256": expected.benchmark_runner_sha256,
+        "sampler_source_sha256": expected.implementation_inputs["sampler_source"][
+            "sha256"
+        ],
+        "implementation_inputs_sha256": launcher._canonical_json_sha256(
+            expected.implementation_inputs
+        ),
+        "metric_inputs_sha256": launcher._canonical_json_sha256(expected.metric_inputs),
+        "final_run_directories": {seed: root / f"seed_{seed}" for seed in (0, 1, 2)},
+        "gate_source_sha256": "1" * 64,
+        "report_source_sha256": "2" * 64,
+        "rescore_source_sha256": "3" * 64,
+        "rescore_dependency_sha256": "4" * 64,
+        "benchmark_launcher_source_sha256": "5" * 64,
+        "pilot_evidence_writer_source_sha256": "6" * 64,
+    }
+
+
 def _write_raw_csv(path: Path, count: int) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -154,7 +276,7 @@ def _write_matching_artifacts(
     raw_path = run_dir / launcher.benchmark_runner.RAW_SAMPLES_FILENAME
     summary_path = run_dir / launcher.benchmark_runner.SUMMARY_FILENAME
     _write_raw_csv(raw_path, expected.num_samples)
-    command = launcher._command(
+    command = launcher._legacy_schema7_command(
         checkpoint=expected.checkpoint_path,
         expected_checkpoint_sha256=expected.checkpoint_sha256,
         expected_source_revision=expected.source_revision,
@@ -173,7 +295,7 @@ def _write_matching_artifacts(
         "command": command,
     }
     summary = {
-        "schema_version": launcher.benchmark_runner.SCHEMA_VERSION,
+        "schema_version": 7,
         "status": "completed",
         "seed": seed,
         "num_samples": expected.num_samples,
@@ -318,6 +440,17 @@ def _failure_job(
     seed: int,
     started_at_utc: str = "2026-09-06T01:00:00+00:00",
 ) -> launcher.RunningJob:
+    run_dir = output_root / f"seed_{seed}"
+    run_dir.mkdir(parents=True, exist_ok=True)
+    run_state = run_dir.stat(follow_symlinks=False)
+    output_owner = launcher.artifact_io.OwnedDirectory(
+        relative_path=launcher._repository_relative(
+            run_dir, label="test output directory"
+        ),
+        device=int(run_state.st_dev),
+        inode=int(run_state.st_ino),
+        mode=int(run_state.st_mode),
+    )
     command = launcher._command(
         checkpoint=expected.checkpoint_path,
         expected_checkpoint_sha256=expected.checkpoint_sha256,
@@ -326,7 +459,9 @@ def _failure_job(
         expected_config_sha256=expected.source_config_sha256,
         num_samples=expected.num_samples,
         seed=seed,
-        output_dir=output_root / f"seed_{seed}",
+        output_dir=run_dir,
+        expected_output_directory_device=output_owner.device,
+        expected_output_directory_inode=output_owner.inode,
     )
     log_path = log_root / f"seed_{seed}.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -339,10 +474,11 @@ def _failure_job(
         log_path=log_path,
         command=tuple(command),
         started_at_utc=started_at_utc,
+        output_directory_owner=output_owner,
     )
 
 
-def test_gpu_request_accepts_only_a_count_capped_at_two() -> None:
+def test_gpu_request_accepts_only_a_count_capped_at_three() -> None:
     required = [
         "--checkpoint",
         "model.ckpt",
@@ -361,10 +497,11 @@ def test_gpu_request_accepts_only_a_count_capped_at_two() -> None:
     assert parsed.max_utilization_percent == 10
     assert parsed.min_free_memory_mib == 30_000
     assert launcher._validate_gpu_count(2) == 2
+    assert launcher._validate_gpu_count(3) == 3
 
-    with pytest.raises(ValueError, match="must be 1 or 2"):
-        launcher._validate_gpu_count(3)
-    with pytest.raises(ValueError, match="must be 1 or 2"):
+    with pytest.raises(ValueError, match="between 1 and 3"):
+        launcher._validate_gpu_count(4)
+    with pytest.raises(ValueError, match="between 1 and 3"):
         launcher._validate_gpu_count(True)
     with pytest.raises(SystemExit):
         launcher._parse_args([*required, "--gpu-indices", "4", "2"])
@@ -399,6 +536,409 @@ def test_sample_tier_requires_explicit_bounded_pilot() -> None:
         )
     with pytest.raises(ValueError, match="must be an integer"):
         launcher._validate_sample_tier(True, pilot=True)
+
+
+def test_candidate_lock_scope_is_mandatory_only_for_final_tier(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
+    fixed = Path(launcher.CANDIDATE_LOCK_RELATIVE_PATH)
+    assert launcher._validate_candidate_lock_scope(
+        fixed, pilot=False, selection_pilot=False
+    ) == (tmp_path / fixed)
+    assert launcher._validate_candidate_lock_scope(
+        tmp_path / fixed, pilot=False, selection_pilot=False
+    ) == (tmp_path / fixed)
+    with pytest.raises(ValueError, match="require --candidate-lock"):
+        launcher._validate_candidate_lock_scope(
+            None, pilot=False, selection_pilot=False
+        )
+    with pytest.raises(ValueError, match="fixed canonical path exactly"):
+        launcher._validate_candidate_lock_scope(
+            Path("experiments/udlm/candidates/../candidates/candidate_lock.json"),
+            pilot=False,
+            selection_pilot=False,
+        )
+    for pilot, selection_pilot in ((True, False), (False, True)):
+        with pytest.raises(ValueError, match="forbidden"):
+            launcher._validate_candidate_lock_scope(
+                fixed,
+                pilot=pilot,
+                selection_pilot=selection_pilot,
+            )
+        assert (
+            launcher._validate_candidate_lock_scope(
+                None,
+                pilot=pilot,
+                selection_pilot=selection_pilot,
+            )
+            is None
+        )
+
+
+def test_committed_regular_snapshot_rejects_dirty_bytes_and_symlink(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
+    relative = launcher.CANDIDATE_LOCK_RELATIVE_PATH
+    lock_path = tmp_path / relative
+    lock_path.parent.mkdir(parents=True)
+    payload = b'{"schema_version":2}\n'
+    lock_path.write_bytes(payload)
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.email", "test@example.com"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.name", "Test"], check=True
+    )
+    subprocess.run(["git", "-C", str(tmp_path), "add", relative], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-qm", "lock"], check=True)
+    revision = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    claim, observed = launcher._committed_regular_file_snapshot(
+        relative,
+        source_revision=revision,
+        label="candidate lock",
+        expected_sha256=launcher.hashlib.sha256(payload).hexdigest(),
+    )
+    assert observed == payload
+    assert claim.size_bytes == len(payload)
+
+    lock_path.write_bytes(b'{"schema_version":3}\n')
+    with pytest.raises(launcher.FinalCandidateLockError, match="differ from the exact"):
+        launcher._committed_regular_file_snapshot(
+            relative, source_revision=revision, label="candidate lock"
+        )
+
+    lock_path.unlink()
+    target = tmp_path / "foreign-lock.json"
+    target.write_bytes(payload)
+    lock_path.symlink_to(target)
+    with pytest.raises(launcher.FinalCandidateLockError, match="stable candidate lock"):
+        launcher._committed_regular_file_snapshot(
+            relative, source_revision=revision, label="candidate lock"
+        )
+
+
+def test_final_lock_commit_must_be_the_exact_lock_only_head(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.email", "test@example.com"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.name", "Test"], check=True
+    )
+    (tmp_path / "base.txt").write_text("base\n")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "base.txt"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-qm", "base"], check=True)
+    parent = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    lock_path = tmp_path / launcher.CANDIDATE_LOCK_RELATIVE_PATH
+    lock_path.parent.mkdir(parents=True)
+    lock_payload = b'{"schema_version":2}\n'
+    lock_path.write_bytes(lock_payload)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(tmp_path),
+            "add",
+            launcher.CANDIDATE_LOCK_RELATIVE_PATH,
+        ],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-qm", "lock only"], check=True
+    )
+    lock_revision = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    assert (
+        launcher._require_exact_final_lock_commit(
+            source_revision=lock_revision, lock_payload=lock_payload
+        )
+        == parent
+    )
+
+    (tmp_path / "later.txt").write_text("later\n")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "later.txt"], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-qm", "later descendant"],
+        check=True,
+    )
+    descendant = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    with pytest.raises(launcher.FinalCandidateLockError, match="add only"):
+        launcher._require_exact_final_lock_commit(
+            source_revision=descendant, lock_payload=lock_payload
+        )
+
+
+@pytest.mark.parametrize(
+    ("mismatch", "message"),
+    [
+        ("seeds", "ordered list"),
+        ("samples", "exactly 1000"),
+        ("checkpoint", "checkpoint bytes"),
+        ("config", "evaluation config bytes"),
+        ("ema", "locked EMA UDLM"),
+        ("sampler", "sampler source"),
+        ("implementation", "implementation-input map"),
+        ("output", "output root"),
+        ("layout", "fixed layout"),
+    ],
+)
+def test_final_candidate_binding_rejects_every_launch_identity_mismatch(
+    mismatch: str,
+    message: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
+    monkeypatch.setattr(
+        launcher.benchmark_runner,
+        "__file__",
+        str(tmp_path / launcher.BENCHMARK_RUNNER_RELATIVE_PATH),
+    )
+    expected = _final_expected(tmp_path)
+    normalized = _normalized_final_lock(expected)
+    seeds = [0, 1, 2]
+    samples = 1_000
+    output_root = tmp_path / "output/udlm/final/r-w1-1000u-dcb271453411/r_t050_p100"
+    if mismatch == "seeds":
+        seeds = [0, 2, 1]
+    elif mismatch == "samples":
+        samples = 999
+    elif mismatch == "checkpoint":
+        normalized["checkpoint"] = {
+            **normalized["checkpoint"],
+            "sha256": "0" * 64,
+        }
+    elif mismatch == "config":
+        normalized["evaluation_config_sha256"] = "0" * 64
+    elif mismatch == "ema":
+        normalized["inference_weights"] = {
+            **launcher.FINAL_INFERENCE_WEIGHTS,
+            "source": "raw",
+        }
+    elif mismatch == "sampler":
+        normalized["sampler_source_sha256"] = "0" * 64
+    elif mismatch == "implementation":
+        normalized["implementation_inputs_sha256"] = "0" * 64
+    elif mismatch == "output":
+        output_root = tmp_path / "output/wrong"
+    elif mismatch == "layout":
+        directories = dict(normalized["final_run_directories"])
+        directories[2] = directories[2].with_name("seed_1")
+        normalized["final_run_directories"] = directories
+    monkeypatch.setattr(
+        launcher,
+        "_implementation_source_digest",
+        mock.Mock(side_effect=["b" * 64, "e" * 64]),
+    )
+    monkeypatch.setattr(
+        launcher,
+        "_committed_regular_file_snapshot",
+        mock.Mock(return_value=(_file_claim("source"), b"source")),
+    )
+
+    with pytest.raises(launcher.FinalCandidateLockError, match=message):
+        launcher._bind_final_candidate_authority(
+            normalized_lock=normalized,
+            expected=expected,
+            checkpoint=expected.checkpoint_path,
+            config=expected.config_path,
+            seeds=seeds,
+            num_samples=samples,
+            output_root=output_root,
+            source_revision=str(expected.source_revision),
+        )
+
+
+def test_final_candidate_binding_accepts_exact_builder_layout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
+    monkeypatch.setattr(
+        launcher.benchmark_runner,
+        "__file__",
+        str(tmp_path / launcher.BENCHMARK_RUNNER_RELATIVE_PATH),
+    )
+    expected = _final_expected(tmp_path)
+    normalized = _normalized_final_lock(expected)
+    monkeypatch.setattr(
+        launcher,
+        "_implementation_source_digest",
+        mock.Mock(side_effect=["b" * 64, "e" * 64]),
+    )
+    monkeypatch.setattr(
+        launcher,
+        "_committed_regular_file_snapshot",
+        mock.Mock(return_value=(_file_claim("source"), b"source")),
+    )
+    output_root = tmp_path / "output/udlm/final/r-w1-1000u-dcb271453411/r_t050_p100"
+
+    assert launcher._bind_final_candidate_authority(
+        normalized_lock=normalized,
+        expected=expected,
+        checkpoint=expected.checkpoint_path,
+        config=expected.config_path,
+        seeds=[0, 1, 2],
+        num_samples=1_000,
+        output_root=output_root,
+        source_revision=str(expected.source_revision),
+    ) == ("r-w1-1000u-dcb271453411", "r_t050_p100", output_root)
+
+
+def test_final_preflight_invokes_protocol_schema_and_runtime_validators(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from scripts.udlm import superiority_gate
+
+    monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
+    expected = _final_expected(tmp_path)
+    output_root = tmp_path / "output/udlm/final/r-w1-1000u-dcb271453411/r_t050_p100"
+    normalized = _normalized_final_lock(expected)
+    normalized["scipy_version"] = "test"
+    snapshots: list[str] = []
+
+    def committed_snapshot(
+        relative_path: str, **_kwargs: object
+    ) -> tuple[object, bytes]:
+        snapshots.append(relative_path)
+        return _file_claim(relative_path), b"{}\n"
+
+    monkeypatch.setattr(
+        launcher, "_committed_regular_file_snapshot", committed_snapshot
+    )
+    monkeypatch.setattr(launcher, "_require_exact_final_lock_commit", mock.Mock())
+    bind = mock.Mock(
+        return_value=(
+            "r-w1-1000u-dcb271453411",
+            "r_t050_p100",
+            output_root,
+        )
+    )
+    monkeypatch.setattr(launcher, "_bind_final_candidate_authority", bind)
+    validate_protocol = mock.Mock()
+    validate_lock = mock.Mock(return_value=normalized)
+    validate_runtime = mock.Mock(return_value={"sources_match_prelocked_bytes": True})
+    monkeypatch.setattr(
+        superiority_gate, "strict_json_loads", mock.Mock(side_effect=[{}, {}])
+    )
+    monkeypatch.setattr(superiority_gate, "validate_protocol", validate_protocol)
+    monkeypatch.setattr(superiority_gate, "validate_candidate_lock", validate_lock)
+    monkeypatch.setattr(superiority_gate, "validate_analysis_runtime", validate_runtime)
+
+    authority = launcher._preflight_final_candidate_lock(
+        candidate_lock=tmp_path / launcher.CANDIDATE_LOCK_RELATIVE_PATH,
+        expected=expected,
+        checkpoint=expected.checkpoint_path,
+        config=expected.config_path,
+        seeds=[0, 1, 2],
+        num_samples=1_000,
+        output_root=output_root,
+        source_revision=str(expected.source_revision),
+    )
+
+    assert authority.candidate_id == "r-w1-1000u-dcb271453411"
+    assert snapshots[:2] == [
+        launcher.CANDIDATE_LOCK_RELATIVE_PATH,
+        superiority_gate.PROTOCOL_RELATIVE_PATH.as_posix(),
+    ]
+    assert set(snapshots[2:]) == {
+        "scripts/udlm/superiority_gate.py",
+        "scripts/exps/denovo/report.py",
+        "scripts/udlm/rescore_denovo_run.py",
+        "scripts/udlm/rescore_mdlm_baseline.py",
+        "scripts/exps/denovo/launch_benchmark.py",
+        "scripts/udlm/write_pilot_evidence.py",
+    }
+    validate_protocol.assert_called_once_with({})
+    validate_lock.assert_called_once_with({}, {})
+    validate_runtime.assert_called_once_with(
+        normalized,
+        expected_artifact_io_source_sha256="e" * 64,
+    )
+    bind.assert_called_once()
+
+
+def test_final_preflight_rejects_schema_failure_before_input_binding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from scripts.udlm import superiority_gate
+
+    monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
+    expected = _final_expected(tmp_path)
+    monkeypatch.setattr(
+        launcher,
+        "_committed_regular_file_snapshot",
+        lambda relative_path, **_kwargs: (_file_claim(relative_path), b"{}\n"),
+    )
+    monkeypatch.setattr(launcher, "_require_exact_final_lock_commit", mock.Mock())
+    monkeypatch.setattr(
+        superiority_gate, "strict_json_loads", mock.Mock(side_effect=[{}, {}])
+    )
+    monkeypatch.setattr(superiority_gate, "validate_protocol", mock.Mock())
+    monkeypatch.setattr(
+        superiority_gate,
+        "validate_candidate_lock",
+        mock.Mock(side_effect=superiority_gate.GateValidationError("bad lock")),
+    )
+    bind = mock.Mock(side_effect=AssertionError("must not bind rejected lock"))
+    monkeypatch.setattr(launcher, "_bind_final_candidate_authority", bind)
+
+    with pytest.raises(launcher.FinalCandidateLockError, match="schema-2 contract"):
+        launcher._preflight_final_candidate_lock(
+            candidate_lock=tmp_path / launcher.CANDIDATE_LOCK_RELATIVE_PATH,
+            expected=expected,
+            checkpoint=expected.checkpoint_path,
+            config=expected.config_path,
+            seeds=[0, 1, 2],
+            num_samples=1_000,
+            output_root=tmp_path / "output/udlm/final/r/x",
+            source_revision=str(expected.source_revision),
+        )
+    bind.assert_not_called()
+
+
+def test_final_lock_revalidation_rejects_same_bytes_under_replaced_inode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    expected = _expected(tmp_path, num_samples=1_000)
+    authority = _fake_final_authority(expected, tmp_path / "output/final")
+    replacement = replace(authority.claim, inode=authority.claim.inode + 1)
+    monkeypatch.setattr(
+        launcher,
+        "_committed_regular_file_snapshot",
+        mock.Mock(return_value=(replacement, authority.payload)),
+    )
+
+    with pytest.raises(launcher.FinalCandidateLockError, match="identity or bytes"):
+        launcher._revalidate_final_candidate_lock(authority)
 
 
 def test_selection_pilot_cli_modes_are_mutually_exclusive() -> None:
@@ -602,6 +1142,20 @@ def test_selection_pilot_completion_requires_schema7_pilot_ineligible_markers(
         launcher._completed(output_root, 1000, expected)
 
 
+def test_schema7_udlm_final_is_never_recovered_as_locked_final_evidence(
+    tmp_path: Path,
+) -> None:
+    expected = _final_expected(tmp_path)
+    output_root = tmp_path / "final-runs"
+    _write_matching_artifacts(output_root, 0, expected)
+
+    with pytest.raises(
+        launcher.CompletionArtifactError,
+        match="locked UDLM final evidence must use current benchmark schema 8",
+    ):
+        launcher._completed(output_root, 0, expected)
+
+
 def test_selection_failure_receipt_binds_inputs_partial_artifacts_and_no_clobber(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -612,7 +1166,7 @@ def test_selection_failure_receipt_binds_inputs_partial_artifacts_and_no_clobber
     log_root = tmp_path / "output/logs/selection/attempt-a"
     job = _failure_job(output_root, log_root, expected, seed=1000)
     run_dir = output_root / "seed_1000"
-    run_dir.mkdir(parents=True)
+    run_dir.mkdir(parents=True, exist_ok=True)
     summary_path = run_dir / launcher.benchmark_runner.SUMMARY_FILENAME
     raw_path = run_dir / launcher.benchmark_runner.RAW_SAMPLES_FILENAME
     summary_path.write_bytes(b'{"status":"partial"}\n')
@@ -996,7 +1550,7 @@ def test_selection_policy_schema_records_dynamic_full_inventory_semantics() -> N
         "min_free_memory_mib": 30_000,
         "active_compute_processes_allowed": True,
     }
-    with pytest.raises(ValueError, match="must be 1 or 2"):
+    with pytest.raises(ValueError, match="between 1 and 3"):
         launcher._selection_policy(
             requested_gpu_count=True,
             max_utilization_percent=10,
@@ -1004,7 +1558,9 @@ def test_selection_policy_schema_records_dynamic_full_inventory_semantics() -> N
         )
 
 
-def test_probe_gpu_parses_csv_and_allows_fully_recorded_processes_under_policy() -> None:
+def test_probe_gpu_parses_csv_and_allows_fully_recorded_processes_under_policy() -> (
+    None
+):
     responses = [
         subprocess.CompletedProcess(
             [],
@@ -1038,10 +1594,13 @@ def test_probe_gpu_parses_csv_and_allows_fully_recorded_processes_under_policy()
         max_utilization_percent=10,
         min_free_memory_mib=30_000,
     )
-    assert state.rejection_reasons(
-        max_utilization_percent=10,
-        min_free_memory_mib=30_000,
-    ) == []
+    assert (
+        state.rejection_reasons(
+            max_utilization_percent=10,
+            min_free_memory_mib=30_000,
+        )
+        == []
+    )
 
 
 @pytest.mark.parametrize(
@@ -1128,7 +1687,7 @@ def test_final_probe_rechecks_policy_uuid_and_allows_recorded_processes() -> Non
 
     shared_but_below_threshold = _gpu(
         utilization_percent=9,
-        processes=({"pid": 9, "process_name": "/other/python", "used_memory_mib": 20},)
+        processes=({"pid": 9, "process_name": "/other/python", "used_memory_mib": 20},),
     )
     with mock.patch.object(
         launcher,
@@ -1170,12 +1729,18 @@ def test_child_environment_maps_uuid_and_drops_inherited_pythonpath(
     monkeypatch.setenv("PYTHONPYCACHEPREFIX", "/hostile/pycache")
     monkeypatch.setenv("PYTHONWARNINGS", "error")
     monkeypatch.setenv("PYTHONOPTIMIZE", "2")
+    monkeypatch.setenv("GENMOL_BENCHMARK_HOSTILE", "must-be-removed")
+    monkeypatch.setattr(launcher, "_revalidate_generation_lease", lambda _lease: None)
     selection = {"event": "launch", "physical_gpu": _gpu().as_dict()}
+    lease = _lease()
+    authority = {"schema_version": launcher.LAUNCH_AUTHORITY_SCHEMA_VERSION}
     environment = launcher._child_environment(
         seed=17,
         gpu=_gpu(),
         selection=selection,
         run_label="denovo-test",
+        generation_lease=lease,
+        launch_authority=authority,
     )
 
     assert environment["CUDA_VISIBLE_DEVICES"] == "GPU-test-uuid"
@@ -1197,6 +1762,7 @@ def test_child_environment_maps_uuid_and_drops_inherited_pythonpath(
     assert "PYTHONUSERBASE" not in environment
     assert "PYTHONPYCACHEPREFIX" not in environment
     assert "PYTHONWARNINGS" not in environment
+    assert "GENMOL_BENCHMARK_HOSTILE" not in environment
     assert (
         json.loads(environment["GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT"]) == selection
     )
@@ -1209,11 +1775,20 @@ def test_child_environment_maps_uuid_and_drops_inherited_pythonpath(
         num_samples=1_000,
         seed=17,
         output_dir=tmp_path / "seed_17",
+        expected_output_directory_device=123,
+        expected_output_directory_inode=456,
     )
+    assert len(command) == 24
     assert command[command.index("--device") + 1] == "cuda:0"
     assert command[command.index("--expected-checkpoint-sha256") + 1] == "a" * 64
     assert command[command.index("--expected-source-revision") + 1] == "b" * 40
     assert command[command.index("--expected-config-sha256") + 1] == "c" * 64
+    assert command[-4:] == [
+        "--expected-output-directory-device",
+        "123",
+        "--expected-output-directory-inode",
+        "456",
+    ]
     assert "GPU-test-uuid" not in command
 
 
@@ -1223,11 +1798,14 @@ def test_child_environment_sets_worktree_pythonpath_when_unset(
 ) -> None:
     monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
     monkeypatch.delenv("PYTHONPATH", raising=False)
+    monkeypatch.setattr(launcher, "_revalidate_generation_lease", lambda _lease: None)
     environment = launcher._child_environment(
         seed=1,
         gpu=_gpu(),
         selection={"event": "launch"},
         run_label="denovo-test",
+        generation_lease=_lease(),
+        launch_authority={"schema_version": launcher.LAUNCH_AUTHORITY_SCHEMA_VERSION},
     )
     assert environment["PYTHONPATH"].split(launcher.os.pathsep) == [
         str(tmp_path / "src"),
@@ -1604,7 +2182,8 @@ def test_main_skips_matching_run_without_probing_gpus(
         "_require_project_virtual_environment",
         lambda: tmp_path / ".venv/bin/python",
     )
-    _write_matching_artifacts(output_root, 4, expected)
+    for seed in (0, 1, 2):
+        _write_matching_artifacts(output_root, seed, expected)
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
     monkeypatch.delenv("TMUX", raising=False)
@@ -1621,6 +2200,9 @@ def test_main_skips_matching_run_without_probing_gpus(
         "_build_expected_run_identity",
         lambda checkpoint, config, num_samples, **_kwargs: expected,
     )
+    preflight = mock.Mock(return_value=_fake_final_authority(expected, output_root))
+    monkeypatch.setattr(launcher, "_preflight_final_candidate_lock", preflight)
+    monkeypatch.setattr(launcher, "_revalidate_final_candidate_lock", mock.Mock())
     monkeypatch.setattr(
         launcher,
         "_snapshot",
@@ -1641,9 +2223,13 @@ def test_main_skips_matching_run_without_probing_gpus(
             "--num-samples",
             str(expected.num_samples),
             "--seeds",
-            "4",
+            "0",
+            "1",
+            "2",
             "--output-root",
             output_root.name,
+            "--candidate-lock",
+            launcher.CANDIDATE_LOCK_RELATIVE_PATH,
             "--gpu-count",
             "1",
             "--log-root",
@@ -1654,6 +2240,94 @@ def test_main_skips_matching_run_without_probing_gpus(
     assert (
         "already have matching, integrity-checked artifacts" in capsys.readouterr().out
     )
+
+
+def test_final_dry_run_preflights_lock_before_completion_without_mutation_or_gpu(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    expected = _expected(tmp_path, num_samples=1_000)
+    output_root = tmp_path / "final-runs"
+    monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
+    monkeypatch.setattr(
+        launcher,
+        "_require_project_virtual_environment",
+        lambda: tmp_path / ".venv/bin/python",
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
+    monkeypatch.delenv("TMUX", raising=False)
+    monkeypatch.setattr(
+        launcher,
+        "_require_clean_pushed_source",
+        lambda: {
+            "head": expected.source_revision,
+            "upstream": expected.source_revision,
+        },
+    )
+    monkeypatch.setattr(
+        launcher,
+        "_build_expected_run_identity",
+        lambda checkpoint, config, num_samples, **_kwargs: expected,
+    )
+    order: list[str] = []
+
+    def preflight(**_kwargs: object) -> launcher.FinalCandidateAuthority:
+        order.append("preflight")
+        return _fake_final_authority(expected, output_root)
+
+    def completed(_root: Path, seed: int, _expected: object) -> bool:
+        order.append(f"completed-{seed}")
+        return False
+
+    monkeypatch.setattr(launcher, "_preflight_final_candidate_lock", preflight)
+    monkeypatch.setattr(launcher, "_completed", completed)
+    monkeypatch.setattr(launcher, "_revalidate_final_candidate_lock", mock.Mock())
+    monkeypatch.setattr(
+        launcher,
+        "_snapshot",
+        lambda: pytest.fail("final dry-run must not inventory GPUs"),
+    )
+    monkeypatch.setattr(
+        launcher,
+        "_acquire_generation_lease",
+        lambda **_kwargs: pytest.fail("final dry-run must not acquire the lease"),
+    )
+    monkeypatch.setattr(
+        launcher,
+        "_ensure_repository_directory",
+        lambda *_args, **_kwargs: pytest.fail("final dry-run must not create paths"),
+    )
+
+    launcher.main(
+        [
+            "--checkpoint",
+            expected.checkpoint_path.name,
+            "--config",
+            expected.config_path.name,
+            "--num-samples",
+            "1000",
+            "--seeds",
+            "0",
+            "1",
+            "2",
+            "--output-root",
+            output_root.name,
+            "--candidate-lock",
+            launcher.CANDIDATE_LOCK_RELATIVE_PATH,
+            "--gpu-count",
+            "1",
+            "--log-root",
+            "logs",
+            "--dry-run",
+        ]
+    )
+
+    assert order == ["preflight", "completed-0", "completed-1", "completed-2"]
+    assert '"gpu_query_performed": false' in capsys.readouterr().out
+    assert not output_root.exists()
+    assert not (tmp_path / "logs").exists()
 
 
 def test_main_requires_tmux_only_for_real_execution(
@@ -1800,7 +2474,7 @@ def test_main_rejects_partial_output_before_probing_gpus(
 ) -> None:
     expected = _expected(tmp_path, num_samples=1_000)
     output_root = tmp_path / "runs"
-    raw_path, summary_path = _write_matching_artifacts(output_root, 6, expected)
+    raw_path, summary_path = _write_matching_artifacts(output_root, 0, expected)
     summary_path.unlink()
     assert raw_path.exists()
     monkeypatch.setattr(launcher, "REPOSITORY_ROOT", tmp_path)
@@ -1826,6 +2500,12 @@ def test_main_rejects_partial_output_before_probing_gpus(
     )
     monkeypatch.setattr(
         launcher,
+        "_preflight_final_candidate_lock",
+        mock.Mock(return_value=_fake_final_authority(expected, output_root)),
+    )
+    monkeypatch.setattr(launcher, "_revalidate_final_candidate_lock", mock.Mock())
+    monkeypatch.setattr(
+        launcher,
         "_snapshot",
         lambda *_: pytest.fail("partial artifacts must fail before a GPU probe"),
     )
@@ -1842,9 +2522,13 @@ def test_main_rejects_partial_output_before_probing_gpus(
                 "--num-samples",
                 str(expected.num_samples),
                 "--seeds",
-                "6",
+                "0",
+                "1",
+                "2",
                 "--output-root",
                 output_root.name,
+                "--candidate-lock",
+                launcher.CANDIDATE_LOCK_RELATIVE_PATH,
                 "--gpu-count",
                 "1",
                 "--log-root",
@@ -1859,7 +2543,7 @@ def test_main_rejects_mismatched_completion_before_probing_gpus(
 ) -> None:
     expected = _expected(tmp_path, num_samples=1_000)
     output_root = tmp_path / "runs"
-    _, summary_path = _write_matching_artifacts(output_root, 8, expected)
+    _, summary_path = _write_matching_artifacts(output_root, 0, expected)
     summary = _read_summary(summary_path)
     summary["checkpoint"]["global_step"] = 45_000
     _write_summary(summary_path, summary)
@@ -1886,6 +2570,12 @@ def test_main_rejects_mismatched_completion_before_probing_gpus(
     )
     monkeypatch.setattr(
         launcher,
+        "_preflight_final_candidate_lock",
+        mock.Mock(return_value=_fake_final_authority(expected, output_root)),
+    )
+    monkeypatch.setattr(launcher, "_revalidate_final_candidate_lock", mock.Mock())
+    monkeypatch.setattr(
+        launcher,
         "_snapshot",
         lambda *_: pytest.fail("mismatched artifacts must fail before a GPU probe"),
     )
@@ -1902,9 +2592,13 @@ def test_main_rejects_mismatched_completion_before_probing_gpus(
                 "--num-samples",
                 str(expected.num_samples),
                 "--seeds",
-                "8",
+                "0",
+                "1",
+                "2",
                 "--output-root",
                 output_root.name,
+                "--candidate-lock",
+                launcher.CANDIDATE_LOCK_RELATIVE_PATH,
                 "--gpu-count",
                 "1",
                 "--log-root",

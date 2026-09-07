@@ -1,0 +1,1360 @@
+{
+  "schema_version": 4,
+  "protocol_id": "genmol_udlm_de_novo_superiority_v4",
+  "status": "frozen_after_terminal_scale_up_validation_before_registered_candidate_generation",
+  "amends": {
+    "relative_path": "experiments/udlm/protocols/de_novo_superiority_v3.json",
+    "raw_sha256": "27a1f3e4fa66988d77eddeb66025eae64b514c452e089bb5c62fff99060c9f16",
+    "canonical_sha256": "e7b108dce51cd1445758a9f7dc852532b2ee075a80f783ae009303a7550577ee",
+    "reason": "Bind the independently validated terminal R/S/E scale-up panel; freeze raw-LOO temperature and nucleus semantics, schema-8 token-control evidence, a held-out staged candidate campaign, repository-global generation safety, and an acyclic publication firewall before any registered candidate generation.",
+    "scientific_decision_subtrees_unchanged": [
+      "primary_claim",
+      "baseline",
+      "final_operating_point",
+      "selection_firewall",
+      "point_estimate_gates",
+      "uncertainty_gates",
+      "candidate_lock_requirements",
+      "decision",
+      "claim_boundaries"
+    ],
+    "scientific_settings_or_thresholds_changed": false,
+    "registered_candidate_generation_executed_before_amendment": false,
+    "candidate_checkpoint_or_sampling_configuration_ranked_before_amendment": false,
+    "candidate_final_evaluation_executed_before_amendment": false
+  },
+  "terminal_scale_up_authority": {
+    "schema_version": 1,
+    "status": "validated",
+    "claim_scope": "selection_bound_training_health_and_provenance_only",
+    "source_revision": "83c92963690aa0c41fa4d86dcc69fa0f692f656a",
+    "registry": {
+      "relative_path": "experiments/udlm/protocols/selection_bound_scale_up_registry_gpu1.json",
+      "raw_sha256": "98e482107e450563947e1d8441900b6cf61115ba6910ca57508cd629ed0df209",
+      "canonical_sha256": "a147c1e92beadda8c14a9184bc7143286874de15c5c2313d19fbabe6420f0671",
+      "size_bytes": 14469,
+      "schema_version": 1
+    },
+    "validator_sources": {
+      "panel_validator": {
+        "relative_path": "scripts/udlm/validate_scale_up_panel.py",
+        "sha256_at_validation_revision": "493f5cd985e282705dcaa2dc70507ccd4b523bdc567df5e769a3ae1e9656d65f"
+      },
+      "registry_validator": {
+        "relative_path": "scripts/udlm/verify_scale_up_registry.py",
+        "sha256_at_validation_revision": "f299e6e7ca8ad56727ea038261823e175f784af24c1816df871445b34cce6675"
+      }
+    },
+    "matched_panel_spec_sha256": "b7f8abf958fa46d66f0d838a20c10ac8db58386d818ef92834b31afd930348fa",
+    "arm_order": [
+      "R",
+      "S",
+      "E"
+    ],
+    "training_variant_order": [
+      "udlm",
+      "schedule_uniform",
+      "udlm_categorical"
+    ],
+    "terminal_arm_id": "E",
+    "selected_scheduler_arm_id": "E-L1",
+    "selected_conditioning_arm_id": "E-A1",
+    "gpu_count_per_member": 1,
+    "optimizer_updates_per_member": 1000,
+    "initialization_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+    "members": [
+      {
+        "position": 0,
+        "arm_id": "R",
+        "candidate_id": "r-w1-1000u-dcb271453411",
+        "training_variant": "udlm",
+        "registered_config": {
+          "relative_path": "experiments/udlm/protocols/selection_bound_scale_up_configs_gpu1/r_udlm.json",
+          "raw_sha256": "ae426da58cb2e1d63f8291e6a2965e65d86a31159be246451fd94d327f1f8ed2",
+          "canonical_sha256": "b1121ee8ff4f5d3da8a3d3bcf072937cb6d5f3134c779933e827681e6a1bbc6f",
+          "size_bytes": 2648
+        },
+        "launch_manifest": {
+          "relative_path": "output/udlm/scaleup-w1-r-dcb271453411/launch_manifest.json",
+          "sha256": "ca503408815a2bad9027bbd766ec7bac953400701338f82c1ba2c17f60154cea",
+          "size_bytes": 24229,
+          "schema_version": 2
+        },
+        "runtime_config": {
+          "relative_path": "output/udlm/scaleup-w1-r-dcb271453411/runtime_config.json",
+          "sha256": "08c6ea57e90d7edb03dde939bbfd33e91629df5518f34c1e4b033de75be0c4e6",
+          "size_bytes": 11440,
+          "schema_version": 2
+        },
+        "training_summary": {
+          "relative_path": "output/udlm/scaleup-w1-r-dcb271453411/training_summary.json",
+          "sha256": "d8f1861f51b8529d3847d1c096fabff487eee30124eb6039eef3cbb67c3ab233",
+          "size_bytes": 9723,
+          "schema_version": 5
+        },
+        "successful_exit_receipt": {
+          "relative_path": "output/udlm/scaleup-w1-r-dcb271453411/pilot_exit_status.json",
+          "sha256": "1ffc4a69feb33b538c514ff404fe622e37d9f9ccb59f3cb38282ce54bfa6affb",
+          "size_bytes": 10698,
+          "schema_version": 5
+        },
+        "checkpoint": {
+          "relative_path": "output/udlm/scaleup-w1-r-dcb271453411/checkpoints/1000.ckpt",
+          "sha256": "d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c",
+          "size_bytes": 1636474185,
+          "global_step": 1000
+        },
+        "log": {
+          "relative_path": "output/logs/scaleup-w1-r-dcb271453411.log",
+          "sha256": "3b261ec2b0d2f094a2f7236fdc64b236049ab5b3eef1fb938372ba65b1a724c1",
+          "size_bytes": 1296457
+        }
+      },
+      {
+        "position": 1,
+        "arm_id": "S",
+        "candidate_id": "s-w1-1000u-dcb271453411",
+        "training_variant": "schedule_uniform",
+        "registered_config": {
+          "relative_path": "experiments/udlm/protocols/selection_bound_scale_up_configs_gpu1/s_schedule_uniform.json",
+          "raw_sha256": "629998fda01eb19ca4a69730d06a670af8193f22f58cf9b7a8e437546aa574da",
+          "canonical_sha256": "3c74a18ceae9f5945fe8d747aa007ddd83d141de4111dd09c22b468faab56dc5",
+          "size_bytes": 2649
+        },
+        "launch_manifest": {
+          "relative_path": "output/udlm/scaleup-w1-s-dcb271453411/launch_manifest.json",
+          "sha256": "78802d2dc9522f3e739670c71808c7e59160dd3251e6686beca258194fe6eafe",
+          "size_bytes": 26085,
+          "schema_version": 2
+        },
+        "runtime_config": {
+          "relative_path": "output/udlm/scaleup-w1-s-dcb271453411/runtime_config.json",
+          "sha256": "3caae63f8c86ecb14998765272119ea8a9448297b1c1749c990ddd6e22f5ca05",
+          "size_bytes": 11443,
+          "schema_version": 2
+        },
+        "training_summary": {
+          "relative_path": "output/udlm/scaleup-w1-s-dcb271453411/training_summary.json",
+          "sha256": "1576733d5f9bf9ce56c6673ad99d7d856629d78cc67b88f581d893f2b8f87d57",
+          "size_bytes": 9723,
+          "schema_version": 5
+        },
+        "successful_exit_receipt": {
+          "relative_path": "output/udlm/scaleup-w1-s-dcb271453411/pilot_exit_status.json",
+          "sha256": "23eb7ab86a307130b0dc644e6de57fa0c1ce26e3ed35792d55fc65274d1a3121",
+          "size_bytes": 12494,
+          "schema_version": 5
+        },
+        "checkpoint": {
+          "relative_path": "output/udlm/scaleup-w1-s-dcb271453411/checkpoints/1000.ckpt",
+          "sha256": "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72",
+          "size_bytes": 1636491144,
+          "global_step": 1000
+        },
+        "log": {
+          "relative_path": "output/logs/scaleup-w1-s-dcb271453411.log",
+          "sha256": "144c5bdb12ca87b802713228a000d8fd56830bab18a8f0820b60bcc2cc7951dd",
+          "size_bytes": 1296431
+        }
+      },
+      {
+        "position": 2,
+        "arm_id": "E",
+        "candidate_id": "e-w1-1000u-dcb271453411",
+        "training_variant": "udlm_categorical",
+        "registered_config": {
+          "relative_path": "experiments/udlm/protocols/selection_bound_scale_up_configs_gpu1/e_udlm_categorical.json",
+          "raw_sha256": "144588e7a2efc93434214639d8fae24edd26e7ca590fd5ef1d3b39043e25b9ce",
+          "canonical_sha256": "bb2b1d76c065b7a2c5c86e15c56ff46644aeca3129429b4e5eea2c10570d7b21",
+          "size_bytes": 2652
+        },
+        "launch_manifest": {
+          "relative_path": "output/udlm/scaleup-w1-e-dcb271453411/launch_manifest.json",
+          "sha256": "6ffbd659a71785e553238814c97e49b68eefa072c6d857cb2bce75748d010524",
+          "size_bytes": 26127,
+          "schema_version": 2
+        },
+        "runtime_config": {
+          "relative_path": "output/udlm/scaleup-w1-e-dcb271453411/runtime_config.json",
+          "sha256": "e46c9f57c62e86a811a9a6e5cfbb8344781ef06a2c7dbf15eff3c3c849a05774",
+          "size_bytes": 11476,
+          "schema_version": 2
+        },
+        "training_summary": {
+          "relative_path": "output/udlm/scaleup-w1-e-dcb271453411/training_summary.json",
+          "sha256": "7afb20ab5cc9d8b147452dd62be3aae00a44240227e292c3752c5df7894e8bed",
+          "size_bytes": 9723,
+          "schema_version": 5
+        },
+        "successful_exit_receipt": {
+          "relative_path": "output/udlm/scaleup-w1-e-dcb271453411/pilot_exit_status.json",
+          "sha256": "4e517ffdb8780422d7fea4e0402a1ec611d4af8dfe795e2ce629ab2b4b585df4",
+          "canonical_sha256": "d984843fdbca3d20c2dc288242576440ba3b6f4c224c7ab18512c51d566ad739",
+          "size_bytes": 12506,
+          "schema_version": 5
+        },
+        "checkpoint": {
+          "relative_path": "output/udlm/scaleup-w1-e-dcb271453411/checkpoints/1000.ckpt",
+          "sha256": "dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005",
+          "size_bytes": 1636491592,
+          "global_step": 1000
+        },
+        "log": {
+          "relative_path": "output/logs/scaleup-w1-e-dcb271453411.log",
+          "sha256": "5feb20fc4c990b4b7de1798a6487af1c256710e31c4003dd62b7068ff242e0ed",
+          "size_bytes": 1296283
+        }
+      }
+    ],
+    "required_revalidation": "The terminal validator must reconstruct the exact registry, ordered R/S/E artifacts, and recursive predecessor-receipt chain before any registered generation authority is accepted.",
+    "eligibility": {
+      "registered_evaluation_input": true,
+      "generation_without_v4_framework_and_registry": false,
+      "ranking_from_training_artifacts": false,
+      "candidate_lock_from_training_artifacts": false,
+      "superiority_from_training_artifacts": false
+    }
+  },
+  "raw_loo_top_p_semantics": {
+    "schema_version": 1,
+    "public_key": "raw_loo_top_p",
+    "omitted_value_normalizes_to": 1.0,
+    "domain": "finite_non_boolean_real_with_0_less_than_p_less_than_or_equal_to_1",
+    "softmax_temperature_domain": "finite_non_boolean_real_strictly_greater_than_0",
+    "scope": "udlm_active_diffusion_alphabet_only",
+    "operation_order": [
+      "select_raw_loo_logits_on_active_model_token_ids",
+      "divide_raw_loo_logits_by_softmax_temperature",
+      "softmax_to_raw_loo_probabilities",
+      "apply_stable_nucleus_filter_to_raw_loo_probabilities",
+      "renormalize_retained_raw_loo_probabilities",
+      "apply_exact_uniform_or_categorical_reverse_bridge",
+      "sample_from_the_untruncated_reverse_posterior"
+    ],
+    "nucleus_rule": {
+      "sort": "probability_descending_then_active_model_token_id_ascending",
+      "stability_required": true,
+      "crossing_token_retained": true,
+      "at_least_one_token_retained": true,
+      "tokens_after_first_sorted_position_with_cumulative_mass_strictly_greater_than_p_are_zeroed": true,
+      "final_reverse_posterior_truncation_forbidden": true
+    },
+    "identity_branch": {
+      "value": 1.0,
+      "branches_before_sort_exp_mask_or_renormalization": true,
+      "uses_literal_pre_v4_probability_path": true,
+      "adds_no_random_number_draws": true,
+      "required_uniform_and_categorical_posterior_check": "torch.equal",
+      "required_uniform_and_categorical_sample_check": "exact_sampled_ids_under_cloned_rng_state"
+    },
+    "training_or_loss_changes": false,
+    "mdlm_non_null_raw_loo_top_p_forbidden": true,
+    "research_boundary": "Predictor-corrector sampling is deferred because the reviewed reference implementation has an active pc_temperature defect; it is not part of this frozen campaign."
+  },
+  "registered_generation_campaign": {
+    "schema_version": 1,
+    "config_registry_relative_path": "experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json",
+    "config_directory_relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1",
+    "candidate_decision_relative_path": "experiments/udlm/candidates/candidate_decision.json",
+    "tracked_evidence_contract": {
+      "schema_version": 1,
+      "manifest_relative_path": "experiments/udlm/pilots/campaign_evidence_manifest.json",
+      "manifest_schema_version": 1,
+      "manifest_status": "complete_before_candidate_decision",
+      "manifest_exact_top_level_fields": [
+        "schema_version",
+        "protocol_id",
+        "status",
+        "registry",
+        "source_revision",
+        "counts",
+        "stage_decisions",
+        "children",
+        "required_git_paths"
+      ],
+      "registry_exact_fields": [
+        "relative_path",
+        "sha256",
+        "canonical_sha256",
+        "size_bytes",
+        "schema_version"
+      ],
+      "source_revision_exact_fields": [
+        "head",
+        "upstream"
+      ],
+      "counts_exact_fields": [
+        "executed_entry_count",
+        "child_outcome_count",
+        "requested_molecule_count",
+        "stage_decision_count",
+        "tracked_envelope_count",
+        "required_git_path_count"
+      ],
+      "stage_decision_exact_fields": [
+        "stage_id",
+        "relative_path",
+        "sha256",
+        "schema_version"
+      ],
+      "stage_decision_order": [
+        "D",
+        "A",
+        "B",
+        "C",
+        "eligible"
+      ],
+      "child_exact_fields": [
+        "stage_id",
+        "config_id",
+        "attempt_id",
+        "candidate_id",
+        "pilot_seed",
+        "artifact_kind",
+        "live_envelope",
+        "tracked_envelope",
+        "supporting_artifacts"
+      ],
+      "child_artifact_kind_values": [
+        "pilot_evaluation",
+        "pilot_failure"
+      ],
+      "envelope_reference_exact_fields": [
+        "relative_path",
+        "sha256",
+        "size_bytes",
+        "schema_version"
+      ],
+      "live_and_tracked_envelope_sha_size_schema_kind_and_seed_must_match": true,
+      "live_envelope_path_template": "output/udlm/de_novo_candidate_campaign_v1/evidence/{attempt_id}/seed_{pilot_seed}.json",
+      "tracked_envelope_path_template": "experiments/udlm/pilots/{attempt_id}/seed_{pilot_seed}.json",
+      "supporting_artifact_exact_fields": [
+        "artifact_role",
+        "relative_path",
+        "sha256",
+        "size_bytes",
+        "schema_version"
+      ],
+      "completed_supporting_roles_and_schemas": {
+        "training_exit_receipt": 5,
+        "benchmark_summary_json": 8,
+        "benchmark_raw_samples_csv": null
+      },
+      "failed_required_supporting_roles_and_schemas": {
+        "failure_receipt": 1,
+        "failure_log": null
+      },
+      "failed_optional_partial_roles_and_schemas": {
+        "partial_summary_json": null,
+        "partial_raw_samples_csv": null
+      },
+      "supporting_artifact_order": "artifact_role_ascii_then_relative_path_ascii",
+      "required_git_paths": "ascii_sorted_unique_union_of_43_tracked_envelopes_5_stage_decisions_and_all_supporting_artifacts_excluding_manifest",
+      "required_git_paths_exclude": [
+        "live_envelopes",
+        "stage_entries",
+        "checkpoints",
+        "configs",
+        "launcher_source"
+      ],
+      "materialization": {
+        "cpu_only": true,
+        "source_revision_is_exact_clean_pushed_G": true,
+        "all_43_children_are_independently_validated_and_rescored_before_any_target_publication": true,
+        "regenerated_envelope_bytes_and_sha256_equal_live_envelope": true,
+        "publication_api": "scripts.artifact_io.publish_bundle_exclusive",
+        "ordinary_member_count": 43,
+        "completion_member": "campaign_evidence_manifest.json",
+        "completion_linked_last": true,
+        "exclusive_no_clobber": true
+      },
+      "evidence_commit": {
+        "symbol": "EVIDENCE",
+        "exact_sole_parent_is_G": true,
+        "all_changes_are_additions": true,
+        "exact_addition_set": "manifest_union_manifest_required_git_paths",
+        "every_path_absent_at_G": true,
+        "every_blob_matches_manifest_sha256_and_recorded_size_where_size_is_recorded": true,
+        "decision_ledger_and_lock_absent_at_G_and_EVIDENCE": true,
+        "verified_before_candidate_decision_publication": true
+      }
+    },
+    "grid": {
+      "arms": [
+        "R",
+        "S",
+        "E"
+      ],
+      "softmax_temperatures": [
+        0.5,
+        0.7,
+        0.85,
+        1.0
+      ],
+      "raw_loo_top_p_values": [
+        1.0,
+        0.98,
+        0.95
+      ],
+      "universe_config_count": 36,
+      "historical_identity_config_count": 3,
+      "new_config_count": 33
+    },
+    "config_registry_contract": {
+      "schema_version": 1,
+      "registry_id": "genmol_udlm_de_novo_candidate_config_v1",
+      "status": "frozen_before_candidate_generation",
+      "claim_scope": "prospective_greedy_sampler_operating_point_selection",
+      "exact_top_level_fields": [
+        "schema_version",
+        "registry_id",
+        "status",
+        "claim_scope",
+        "publication",
+        "authority",
+        "grid",
+        "configs",
+        "stages"
+      ],
+      "publication_exact_fields": [
+        "framework_revision",
+        "config_revision",
+        "config_directory",
+        "registry_relative_path",
+        "separate_config_and_registry_publications_required"
+      ],
+      "publication_must_bind_F_and_C_but_never_G_or_the_registry_own_digest": true,
+      "authority_exact_fields": [
+        "superiority_protocol",
+        "scale_up_registry",
+        "benchmark_schema_version",
+        "inference_weights",
+        "nfe",
+        "metric_branch"
+      ],
+      "config_entry_exact_fields": [
+        "config_id",
+        "arm_id",
+        "scale_up_member_slug",
+        "softmax_temp",
+        "raw_loo_top_p",
+        "is_reused_identity",
+        "config",
+        "normalized_sampling_sha256"
+      ],
+      "config_blob_exact_fields": [
+        "relative_path",
+        "sha256",
+        "size_bytes",
+        "storage"
+      ],
+      "config_storage_values": [
+        "generated",
+        "historical_identity_reuse"
+      ],
+      "stage_exact_fields": [
+        "stage_id",
+        "role",
+        "candidate_source",
+        "expected_config_count",
+        "expected_child_count",
+        "seeds",
+        "requested_samples_per_seed",
+        "nfe",
+        "ranking",
+        "promotion",
+        "next_stage_id"
+      ],
+      "ranking_exact_fields": [
+        "metric_branch",
+        "aggregation",
+        "order",
+        "all_scheduled_slots_must_be_terminal",
+        "on_failed_or_undefined_child",
+        "on_insufficient_rankable_quota"
+      ],
+      "ranking_order": [
+        "released_quality_descending",
+        "released_diversity_descending",
+        "config_id_ascii_ascending",
+        "attempt_id_ascii_ascending"
+      ],
+      "failed_or_undefined_child_policy": "retain_unrankable",
+      "insufficient_quota_policy": "campaign_incomplete_without_promotion"
+    },
+    "candidate_id_semantics": "A candidate ID identifies only one terminal scale-up training checkpoint; stage, temperature, and top-p belong to config and attempt IDs.",
+    "candidate_id_by_arm": {
+      "R": "r-w1-1000u-dcb271453411",
+      "S": "s-w1-1000u-dcb271453411",
+      "E": "e-w1-1000u-dcb271453411"
+    },
+    "nfe": 128,
+    "nfe_definition": "one full backbone forward evaluation per reverse step",
+    "stages": [
+      {
+        "stage_id": "D",
+        "name": "diagnostic",
+        "scheduled_entry_count": 1,
+        "generation_child_count": 1,
+        "arm_ids": [
+          "E"
+        ],
+        "softmax_temperatures": [
+          1.0
+        ],
+        "raw_loo_top_p_values": [
+          1.0
+        ],
+        "seeds": [
+          1100
+        ],
+        "requested_samples_per_child": 32,
+        "requested_molecules": 32,
+        "advancement": "structural_schema8_and_audit_success_only",
+        "chemistry_metrics_read_for_advancement": false,
+        "ranked": false
+      },
+      {
+        "stage_id": "A",
+        "name": "temperature_small",
+        "scheduled_entry_count": 12,
+        "generation_child_count": 12,
+        "arm_ids": [
+          "R",
+          "S",
+          "E"
+        ],
+        "softmax_temperatures": [
+          0.5,
+          0.7,
+          0.85,
+          1.0
+        ],
+        "raw_loo_top_p_values": [
+          1.0
+        ],
+        "seeds": [
+          1101
+        ],
+        "requested_samples_per_child": 32,
+        "requested_molecules": 384,
+        "retained_per_arm": 2,
+        "retained_object": "temperature"
+      },
+      {
+        "stage_id": "B",
+        "name": "interaction_screen",
+        "scheduled_entry_count": 18,
+        "generation_child_count": 18,
+        "arm_ids": [
+          "R",
+          "S",
+          "E"
+        ],
+        "temperatures_per_arm_from_stage_A": 2,
+        "raw_loo_top_p_values": [
+          1.0,
+          0.98,
+          0.95
+        ],
+        "seeds": [
+          1102
+        ],
+        "requested_samples_per_child": 64,
+        "requested_molecules": 1152,
+        "retained_per_arm": 2,
+        "retained_object": "temperature_and_raw_loo_top_p_config"
+      },
+      {
+        "stage_id": "C",
+        "name": "held_out_confirmation",
+        "scheduled_entry_count": 6,
+        "generation_child_count": 6,
+        "arm_ids": [
+          "R",
+          "S",
+          "E"
+        ],
+        "configs_per_arm_from_stage_B": 2,
+        "seeds": [
+          1103
+        ],
+        "requested_samples_per_child": 96,
+        "requested_molecules": 576,
+        "retained_per_arm": 1,
+        "retained_object": "arm_operating_point"
+      },
+      {
+        "stage_id": "eligible",
+        "name": "registered_selection_pilot",
+        "scheduled_entry_count": 3,
+        "generation_child_count": 6,
+        "arm_ids": [
+          "R",
+          "S",
+          "E"
+        ],
+        "configs_per_arm_from_stage_C": 1,
+        "seeds": [
+          1000,
+          1001
+        ],
+        "requested_samples_per_child": 256,
+        "requested_molecules": 1536,
+        "retained_global": 1,
+        "retained_object": "candidate_checkpoint_and_sampling_operating_point"
+      },
+      {
+        "stage_id": "final",
+        "name": "locked_candidate_evaluation",
+        "scheduled_entry_count": 1,
+        "generation_child_count": 3,
+        "configs_from_locked_candidate": 1,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "requested_samples_per_child": 1000,
+        "requested_molecules": 3000,
+        "eligible_only_after_clean_pushed_candidate_lock": true,
+        "retry_or_tuning_from_final_results_forbidden": true
+      }
+    ],
+    "accounting": {
+      "prefinal_distinct_stage_config_entries": 40,
+      "prefinal_generation_children": 43,
+      "prefinal_requested_molecules": 3680,
+      "prefinal_molecule_nfe": 471040,
+      "complete_distinct_stage_config_entries": 41,
+      "complete_generation_children": 46,
+      "complete_requested_molecules": 6680,
+      "complete_molecule_nfe": 855040
+    },
+    "ranking": {
+      "uses_only_current_stage": true,
+      "cross_stage_pooling_forbidden": true,
+      "values": "raw_unrounded_released_compatible_metrics",
+      "ranked_stage_metrics_must_come_from_fresh_cpu_independent_rescore_before_advancement": true,
+      "key": [
+        "released_quality_descending",
+        "released_diversity_descending",
+        "config_id_ascii_ascending",
+        "attempt_id_ascii_ascending"
+      ],
+      "shared_seed_interpretation": "blocking_or_common_random_number_control_only_not_paired_inference",
+      "config_id_grammar": "[rse]_t{050,070,085,100}_p{095,098,100}",
+      "attempt_id_grammar": "stage-{d,a,b,c,eligible}-{config_id}",
+      "attempts_aggregate_the_exact_fixed_seed_tuple_for_their_stage": true,
+      "eligible_attempt_ascii_order_is_config_id_major_and_therefore_equivalent_to_the_v3_attempt_id_tie_break": true
+    },
+    "adaptive_stage_chronology": {
+      "schema_version": 1,
+      "completed_and_failed_child_intervals_recovered_from_committed_evidence": true,
+      "every_non_d_child_start_strictly_after_predecessor_stage_decision_completion": true,
+      "every_child_terminal_strictly_before_own_stage_decision_completion": true,
+      "eligible_stage_decision_completion_strictly_before_candidate_lock": true
+    },
+    "failure_policy": {
+      "all_scheduled_stage_slots_terminal_before_advancement": true,
+      "failed_or_undefined_outcomes_retained": true,
+      "failed_or_undefined_outcomes_rankable": false,
+      "retry_forbidden": true,
+      "substitution_forbidden": true,
+      "insufficient_quota_result": "campaign_incomplete_and_candidate_lock_forbidden",
+      "already_running_siblings_complete_after_failure": true
+    },
+    "candidate_decision_contract": {
+      "schema_version": 1,
+      "status": "closed_before_candidate_ledger",
+      "final_seed_results_included": false,
+      "exact_top_level_fields": [
+        "schema_version",
+        "protocol_id",
+        "status",
+        "final_seed_results_included",
+        "registry",
+        "campaign",
+        "stages",
+        "selection"
+      ],
+      "registry_exact_fields": [
+        "relative_path",
+        "sha256",
+        "schema_version",
+        "registry_id",
+        "registry_revision"
+      ],
+      "campaign_exact_fields": [
+        "grid_universe_entry_count",
+        "executed_entry_count",
+        "child_outcome_count",
+        "requested_molecule_count",
+        "nfe",
+        "no_cross_stage_pooling",
+        "no_retries_or_substitutions",
+        "failed_or_undefined_children_retained_unrankable",
+        "quota_failure_policy",
+        "shared_seed_inference",
+        "ranking"
+      ],
+      "stage_exact_fields": [
+        "stage_id",
+        "role",
+        "seed_values",
+        "requested_samples_per_child",
+        "scheduled_entry_count",
+        "scheduled_child_count",
+        "entries",
+        "advancement"
+      ],
+      "entry_exact_fields": [
+        "config_id",
+        "attempt_id",
+        "candidate_id",
+        "arm_id",
+        "softmax_temp",
+        "raw_loo_top_p",
+        "status",
+        "rankable",
+        "selection_score",
+        "child_outcomes"
+      ],
+      "child_outcome_exact_fields": [
+        "artifact_kind",
+        "pilot_seed",
+        "relative_path",
+        "sha256",
+        "schema_version"
+      ],
+      "advancement_exact_fields": [
+        "predecessor_stage_decision",
+        "ranking_order",
+        "promoted_config_ids",
+        "global_winner_config_id",
+        "required_promotions_per_arm",
+        "no_retry_or_substitution",
+        "on_failed_or_undefined_child",
+        "on_insufficient_rankable_quota",
+        "accounting",
+        "source_stage_decision"
+      ],
+      "advancement_accounting_exact_fields": [
+        "scheduled_entry_count",
+        "terminal_entry_count",
+        "scheduled_child_count",
+        "terminal_child_count",
+        "requested_molecule_count"
+      ],
+      "source_stage_decision_exact_fields": [
+        "relative_path",
+        "sha256",
+        "schema_version"
+      ],
+      "source_stage_decision_schema_version": 1,
+      "selection_exact_fields": [
+        "candidate_id",
+        "selected_attempt_id",
+        "selected_config_id",
+        "rule",
+        "checkpoint_selection_rule",
+        "selected_without_final_seed_results"
+      ],
+      "ledger_schema2_projection": "byte_deterministic_flattening_of_all_and_only_executed_decision_entries_with_exact_child_outcome_references_and_unchanged_legacy_selection_fields",
+      "unadvanced_universe_members": "derived_not_advanced_from_registry_and_decision_and_absent_from_ledger",
+      "candidate_decision_must_be_a_strict_git_predecessor_of_candidate_ledger": true
+    },
+    "search_limitation": "Stage A greedily retains two of four temperatures at p=1 before testing top-p interactions; this is a lean interaction search, not exhaustive optimization over all 36 settings."
+  },
+  "schema8_evidence_contract": {
+    "schema_version": 1,
+    "candidate_benchmark_schema_version": 8,
+    "candidate_report_schema_version": 7,
+    "historical_exact_mdlm_benchmark_schema_version": 7,
+    "historical_exact_mdlm_report_schema_version": 6,
+    "candidate_pilot_evidence_schema_version": 2,
+    "candidate_failure_receipt_schema_version": 1,
+    "candidate_ledger_schema_version": 2,
+    "candidate_lock_schema_version": 2,
+    "candidate_decision_schema_version": 1,
+    "audit_top_level_key": "sampled_token_control_audit",
+    "sidecar_audit_forbidden": true,
+    "summary_maximum_size_bytes": 2097152,
+    "maximum_rows": 1000,
+    "maximum_columns": 256,
+    "model_vocab_size": 1880,
+    "tokenizer_effective_size": 1882,
+    "control_token_ids": {
+      "unk": 0,
+      "bos": 1,
+      "eos": 2,
+      "pad": 3,
+      "mask": 4
+    },
+    "uint16_array_fields": {
+      "names": [
+        "sampler_input_ids",
+        "final_sampled_ids"
+      ],
+      "encoding": "rfc4648_base64",
+      "dtype": "uint16",
+      "byte_order": "little",
+      "array_order": "C",
+      "compression": "none",
+      "required_metadata": [
+        "element_count",
+        "decoded_byte_count",
+        "decoded_sha256",
+        "data_base64"
+      ]
+    },
+    "editable_mask_field": {
+      "encoding": "rfc4648_base64",
+      "packing": "one_bit_per_position",
+      "bit_order": "msb0",
+      "array_order": "C",
+      "compression": "none",
+      "required_metadata": [
+        "logical_bit_count",
+        "decoded_byte_count",
+        "unused_tail_bit_count",
+        "decoded_sha256",
+        "data_base64"
+      ]
+    },
+    "control_token_count_fields": [
+      "sampler_input_all_positions",
+      "final_sampled_all_positions",
+      "final_sampled_editable_positions"
+    ],
+    "audit_exact_fields": [
+      "schema_version",
+      "rows",
+      "columns",
+      "model_vocab_size",
+      "tokenizer_effective_size",
+      "control_token_ids",
+      "sampler_input_ids",
+      "final_sampled_ids",
+      "editable_mask",
+      "control_token_counts"
+    ],
+    "control_token_count_exact_keys": [
+      "unk",
+      "bos",
+      "eos",
+      "pad",
+      "mask"
+    ],
+    "required_semantic_checks": [
+      "canonical_base64_reencoding",
+      "decoded_lengths_and_hashes",
+      "token_id_ranges",
+      "bos_mask_plus_eos_pad_star_template",
+      "editable_mask_equals_sampler_input_mask_positions",
+      "immutable_positions_unchanged",
+      "unused_tail_bits_are_zero",
+      "control_token_counts_recomputed",
+      "special_editable_tokens_allowed_only_when_checkpoint_exclusion_is_false",
+      "tokenizer_batch_decode_final_ids_skip_special_tokens_true_equals_csv_raw_model_text_in_row_order"
+    ],
+    "runtime_accounting": {
+      "generation_timing_semantics_unchanged": true,
+      "audit_encoding_excluded_from_generation_timing": true,
+      "separate_field": "runtime_seconds.sampled_token_control_audit"
+    },
+    "normative_vector": {
+      "rows": 2,
+      "columns": 5,
+      "sampler_input_ids": {
+        "values": [
+          1,
+          4,
+          4,
+          2,
+          3,
+          1,
+          4,
+          2,
+          3,
+          3
+        ],
+        "data_base64": "AQAEAAQAAgADAAEABAACAAMAAwA=",
+        "decoded_sha256": "e4414736945d993eb61ada7a21bce9f77957f816ccaa8e4a5c376329608afd95"
+      },
+      "final_sampled_ids": {
+        "values": [
+          1,
+          7,
+          8,
+          2,
+          3,
+          1,
+          9,
+          2,
+          3,
+          3
+        ],
+        "data_base64": "AQAHAAgAAgADAAEACQACAAMAAwA=",
+        "decoded_sha256": "7d64fdd9d93604a26e67b6e4ffbbb04e767f7c1eb4e3097c558117667f1ddcf3"
+      },
+      "editable_mask": {
+        "decoded_hex": "6200",
+        "data_base64": "YgA=",
+        "decoded_sha256": "1e57b933b0a78203e21d41cc4b16d731b255b04058d48a4ac2731f0089312129",
+        "logical_bit_count": 10,
+        "decoded_byte_count": 2,
+        "unused_tail_bit_count": 6
+      }
+    },
+    "publication": {
+      "benchmark_bundle_members": [
+        "raw_samples.csv",
+        "summary.json"
+      ],
+      "benchmark_completion_member": "summary.json",
+      "report_bundle_members": [
+        "pdf",
+        "csv",
+        "json"
+      ],
+      "report_completion_member": "json",
+      "completion_last_no_clobber_owned_rollback": true,
+      "artifact_io_source_sha256_required": true,
+      "rescore_is_stdout_only": true
+    },
+    "execution_authority_contract": {
+      "execution_authority_path": "run.execution_authority",
+      "execution_authority_exact_fields": [
+        "schema_version",
+        "launch_authority",
+        "launch_authority_canonical_sha256",
+        "output_directory_descriptor_retained_until_after_bundle_publication",
+        "validated_before_model_import",
+        "revalidated_immediately_before_publication"
+      ],
+      "execution_authority_schema_version": 1,
+      "execution_authority_required_true_fields": [
+        "output_directory_descriptor_retained_until_after_bundle_publication",
+        "validated_before_model_import",
+        "revalidated_immediately_before_publication"
+      ],
+      "launch_authority_exact_fields": [
+        "schema_version",
+        "generation_lease",
+        "artifact_io_source",
+        "output_directory",
+        "command",
+        "command_sha256"
+      ],
+      "launch_authority_schema_version": 1,
+      "generation_lease_exact_fields": [
+        "path",
+        "relative_path",
+        "sha256",
+        "device",
+        "inode",
+        "owner_token"
+      ],
+      "generation_lease_relative_path": "output/.single_generation_job.lock",
+      "artifact_io_source_exact_fields": [
+        "path",
+        "sha256",
+        "device",
+        "inode"
+      ],
+      "artifact_io_source_relative_path": "scripts/artifact_io.py",
+      "output_directory_exact_fields": [
+        "path",
+        "relative_path",
+        "device",
+        "inode"
+      ],
+      "command_sha256_encoding": "sha256_of_ascii_json_dumps_separators_comma_colon_ensure_ascii_true",
+      "launch_authority_environment_json_encoding": "json_dumps_sort_keys_true_separators_comma_colon",
+      "implementation_inputs_artifact_io_source_exact_fields": [
+        "path",
+        "sha256",
+        "size_bytes"
+      ],
+      "artifact_io_source_sha256_must_match_across_authority_and_implementation_inputs": true
+    },
+    "launch_environment_contract": {
+      "path": "environment.launch_environment",
+      "all_values_are_nonempty_strings": true,
+      "exact_fields": [
+        "CUDA_VISIBLE_DEVICES",
+        "PYTHONPATH",
+        "PYTHONNOUSERSITE",
+        "PYTHONOPTIMIZE",
+        "PYTHONDONTWRITEBYTECODE",
+        "PYTHONUTF8",
+        "PYTHONIOENCODING",
+        "GENMOL_BENCHMARK_GPU_PHYSICAL_INDEX",
+        "GENMOL_BENCHMARK_GPU_UUID",
+        "GENMOL_BENCHMARK_GPU_SELECTION_SNAPSHOT",
+        "GENMOL_BENCHMARK_RUN_LABEL",
+        "GENMOL_BENCHMARK_GENERATION_LEASE_PATH",
+        "GENMOL_BENCHMARK_EXPECTED_GENERATION_LEASE_SHA256",
+        "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN",
+        "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON"
+      ]
+    },
+    "benchmark_bundle_contract": {
+      "path": "artifacts.bundle",
+      "exact_value": {
+        "publication_api": "scripts.artifact_io.publish_bundle_exclusive",
+        "ordinary_members": [
+          "raw_samples.csv"
+        ],
+        "completion_member": "summary.json",
+        "exclusive_no_clobber": true,
+        "completion_linked_last": true,
+        "precompletion_failure_rollback": "exact_owned_members_only"
+      }
+    }
+  },
+  "generation_resource_policy": {
+    "schema_version": 1,
+    "maximum_gpus_without_additional_user_permission": 3,
+    "minimum_gpus": 1,
+    "diagnostic_gpu_count": 1,
+    "idle_definition": {
+      "utilization_percent_strictly_less_than": 10,
+      "exactly_10_percent_is_idle": false,
+      "minimum_free_memory_mib": 30000,
+      "prohibited_compute_mode_rejected": true,
+      "active_processes_allowed_when_live_telemetry_qualifies": true,
+      "active_processes_recorded_and_never_interrupted": true
+    },
+    "selection": {
+      "full_inventory_immediately_before_each_launch": true,
+      "selected_uuid_final_reprobe_required": true,
+      "cuda_visible_devices_uses_gpu_uuids": true,
+      "physical_gpu_zero_assumption_forbidden": true,
+      "logical_cuda_zero_inside_each_isolated_child_allowed": true
+    },
+    "generation_lease": {
+      "relative_path": "output/.single_generation_job.lock",
+      "schema_version": 1,
+      "payload_exact_fields": [
+        "schema_version",
+        "status",
+        "purpose",
+        "source_revision",
+        "owner_token",
+        "launcher_pid_at_acquisition",
+        "acquired_at_utc",
+        "artifact_io",
+        "owner_process_exit_does_not_make_lock_stale",
+        "stale_lock_policy",
+        "release_policy"
+      ],
+      "payload_status": "held",
+      "payload_purpose": "enforce_one_repository_generation_controller_at_a_time",
+      "payload_artifact_io_exact_fields": [
+        "relative_path",
+        "device",
+        "inode",
+        "sha256"
+      ],
+      "payload_owner_token_is_64_lowercase_hex": true,
+      "payload_source_revision_is_exact_G": true,
+      "owner_process_exit_does_not_make_lock_stale": true,
+      "acquired_before_first_real_gpu_inventory": true,
+      "held_across_all_handed_off_children": true,
+      "revalidated_before_each_inventory_and_launch": true,
+      "revalidated_by_child_before_model_or_cuda_and_before_publication": true,
+      "unknown_or_stale_lease_policy": "fail_closed_and_require_manual_review",
+      "release_policy": "exact_owner_only_after_all_handed_off_children_terminal_and_required_ignored_decisions_or_failure_receipts_are_durable"
+    },
+    "output_directory": {
+      "controller_exclusively_pre_reserves": true,
+      "child_retains_descriptor": true,
+      "child_validates_argv_device_and_inode_before_model_or_cuda": true,
+      "symlink_or_identity_change_rejected": true
+    },
+    "child_argv": {
+      "element_count": 24,
+      "exact_option_order": [
+        "python",
+        "benchmark.py",
+        "--checkpoint",
+        "checkpoint_path",
+        "--expected-checkpoint-sha256",
+        "checkpoint_sha256",
+        "--expected-source-revision",
+        "source_revision_G",
+        "--config",
+        "config_path",
+        "--expected-config-sha256",
+        "config_sha256",
+        "--num-samples",
+        "sample_count",
+        "--seed",
+        "seed",
+        "--device",
+        "cuda:0",
+        "--output-dir",
+        "absolute_output_directory",
+        "--expected-output-directory-device",
+        "device_decimal",
+        "--expected-output-directory-inode",
+        "inode_decimal"
+      ],
+      "overwrite_option_forbidden": true,
+      "historical_exact_mdlm_schema7_command_element_count": 20
+    },
+    "long_job_policy": "detached_clearly_named_tmux_with_logs_under_output/logs",
+    "artifact_io_source_bound_everywhere": true
+  },
+  "publication_firewall": {
+    "schema_version": 1,
+    "no_separate_pre_framework_authority_revision": true,
+    "ordered_phases": [
+      {
+        "phase": "F",
+        "content": "framework_implementation_tests_docs_notebook_and_this_v4_protocol",
+        "must_be_clean_and_pushed_before_next_phase": true
+      },
+      {
+        "phase": "C",
+        "parent": "F",
+        "content": "exactly_33_new_candidate_yaml_files_only",
+        "historical_identity_yaml_files_referenced_without_byte_changes": 3,
+        "must_be_clean_and_pushed_before_next_phase": true
+      },
+      {
+        "phase": "G",
+        "parent": "C",
+        "content": "candidate_config_registry_json_only",
+        "must_be_clean_and_pushed_before_any_gpu_child": true
+      },
+      {
+        "phase": "registered_prefinal_gpu_campaign",
+        "source_revision": "exact_G_for_every_child",
+        "tracked_mutation_during_campaign_forbidden": true
+      },
+      {
+        "phase": "tracked_envelopes_and_evidence",
+        "after_all_prefinal_children": true
+      },
+      {
+        "phase": "candidate_decision_only",
+        "relative_path": "experiments/udlm/candidates/candidate_decision.json"
+      },
+      {
+        "phase": "candidate_ledger_only",
+        "relative_path": "experiments/udlm/candidates/candidate_ledger.json"
+      },
+      {
+        "phase": "candidate_lock_only",
+        "relative_path": "experiments/udlm/candidates/candidate_lock.json",
+        "clean_pushed_lock_required_before_final_seeds": true
+      },
+      {
+        "phase": "final_gpu_evaluation",
+        "seeds": [
+          0,
+          1,
+          2
+        ]
+      }
+    ],
+    "historical_identity_yamls": [
+      {
+        "arm_id": "R",
+        "relative_path": "scripts/exps/denovo/hparams_udlm.yaml",
+        "sha256": "bc28eb26297702624e009eed77d13b2a600aeba341b21fbc938d7d01d4c0d84d",
+        "size_bytes": 613
+      },
+      {
+        "arm_id": "S",
+        "relative_path": "scripts/exps/denovo/hparams_udlm_schedule_uniform.yaml",
+        "sha256": "8f07751d3504eabc938dbccf91b90217df809945cb06b2fc8f96671cde59f739",
+        "size_bytes": 518
+      },
+      {
+        "arm_id": "E",
+        "relative_path": "scripts/exps/denovo/hparams_udlm_categorical_floor0002.yaml",
+        "sha256": "309bbed7b67ad2090def3ba5429f00f4e56b4fb7af2f6be245b9e79619aa3c06",
+        "size_bytes": 602
+      }
+    ],
+    "hash_cycle_rules": [
+      "F_protocol_may_pin_v3_R6_and_completed_output_bytes_but_not_F_commit_or_its_own_hash",
+      "F_code_may_pin_the_protocol_hash_because_the_protocol_does_not_pin_F_code_hashes",
+      "C_configs_may_pin_F_but_not_C_commit_or_self_hash",
+      "G_registry_may_pin_F_C_and_config_bytes_but_not_G_commit_or_self_hash",
+      "GPU_artifacts_bind_actual_G",
+      "tracked_evidence_may_bind_GPU_artifacts_but_not_its_own_commit",
+      "candidate_decision_may_bind_the_evidence_parent_but_not_itself",
+      "candidate_ledger_schema2_is_a_deterministic_projection_and_gains_no_fields",
+      "candidate_lock_schema2_binds_ledger_and_terminal_E_and_gains_no_fields"
+    ]
+  },
+  "primary_claim": "A locked UDLM checkpoint and sampling configuration beats the audited local GenMol MDLM checkpoint on the released-compatible de-novo metric gate.",
+  "baseline": {
+    "manifest_relative_path": "experiments/udlm/baselines/mdlm_50000.json",
+    "manifest_sha256": "6da46fc615dedbcca436da087a2c1e9145f5d110036e0c15bb431ded3c2e5539",
+    "rescore_attestation_relative_path": "experiments/udlm/baselines/mdlm_50000_rescore_attestation.json",
+    "rescore_attestation_sha256": "6326b63c38c7052d0b47282d611618f77637496da2785779af69097fc1441323",
+    "rescore_source_revision": "74482c2742ab5ad15def122c809a6b4e403e94cf",
+    "rescore_status": "completed_exact_match",
+    "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+    "metric_branch": "released_comparable",
+    "status": "audited_local_control_not_exact_paper_reproduction"
+  },
+  "final_operating_point": {
+    "candidate_diffusion_type": "udlm",
+    "generation_seeds": [
+      0,
+      1,
+      2
+    ],
+    "requested_samples_per_seed": 1000,
+    "seed_count": 3,
+    "total_requested_samples": 3000,
+    "nfe": 128,
+    "nfe_definition": "one full backbone forward evaluation per reverse step",
+    "inference_weights": "ema",
+    "metric_branch": "released_comparable",
+    "strict_diagnostic_branch_required": true
+  },
+  "selection_firewall": {
+    "pilot_seed_minimum_inclusive": 1000,
+    "final_seeds_forbidden_during_selection": true,
+    "candidate_ledger_required": true,
+    "candidate_ledger_must_disclose_all_pilot_attempts": true,
+    "candidate_lock_must_be_a_git_blob_at_benchmark_revision": true,
+    "candidate_must_be_selected_without_final_seed_results": true,
+    "selection_rule": "maximize_mean_released_quality_then_mean_released_diversity_then_lexicographically_smallest_attempt_id",
+    "checkpoint_selection_rule": "last_completed_optimizer_step",
+    "eligible_pilot_generation_seeds": [
+      1000,
+      1001
+    ],
+    "eligible_requested_samples_per_seed": 256,
+    "eligible_nfe": 128,
+    "eligible_metric_branch": "released_comparable",
+    "nonregistered_completed_pilots_are_disclosed_but_ineligible": true,
+    "final_attempts_per_seed": 1,
+    "final_retry_policy": "No selection, tuning, deletion, replacement, or retry based on a final-seed outcome; infrastructure failures remain disclosed and make the registered three-seed claim incomplete until separately adjudicated."
+  },
+  "point_estimate_gates": {
+    "validity": {
+      "comparison": "candidate_mean_greater_than_or_equal_to_baseline_mean",
+      "threshold": 1.0
+    },
+    "uniqueness": {
+      "comparison": "candidate_mean_greater_than_or_equal_to_baseline_mean",
+      "threshold": 0.9986666666666667
+    },
+    "quality": {
+      "comparison": "candidate_mean_strictly_greater_than_baseline_mean",
+      "threshold": 0.858
+    },
+    "diversity": {
+      "comparison": "candidate_mean_minus_baseline_mean_greater_than_or_equal_to_margin",
+      "margin": -0.005,
+      "threshold": 0.8180213192558725
+    }
+  },
+  "uncertainty_gates": {
+    "confidence_level_one_sided": 0.95,
+    "normal_quantile": 1.6448536269514722,
+    "validity": {
+      "method": "newcombe_wilson_method_10_independent_proportions",
+      "inputs": "pooled valid counts over pooled requested counts",
+      "candidate_minus_baseline_lower_bound_strictly_greater_than": -0.005
+    },
+    "uniqueness": {
+      "method": "welch_t_independent_seed_level_estimates",
+      "inputs": "three seed-level uniqueness fractions per method",
+      "candidate_minus_baseline_lower_bound_strictly_greater_than": -0.005
+    },
+    "quality": {
+      "method": "welch_t_independent_seed_level_estimates",
+      "inputs": "three seed-level quality fractions per method",
+      "candidate_minus_baseline_lower_bound_strictly_greater_than": 0.0
+    },
+    "diversity": {
+      "method": "welch_t_independent_seed_level_estimates",
+      "inputs": "three seed-level diversity scores per method",
+      "candidate_minus_baseline_lower_bound_strictly_greater_than": -0.005
+    },
+    "multiple_metric_decision": "intersection_union_all_four_point_gates_and_all_four_interval_gates_must_pass",
+    "forbidden_method": "row bootstrap that re-deduplicates resampled molecule identities"
+  },
+  "candidate_lock_requirements": {
+    "candidate_lock_schema_version": 2,
+    "candidate_ledger_schema_version": 2,
+    "pilot_evidence_schema_version": 2,
+    "pilot_failure_receipt_schema_version": 1,
+    "training_summary_and_successful_exit_receipt_hashes_required": true,
+    "runtime_config_resolved_config_and_training_argv_hashes_required": true,
+    "accepted_training_artifact_schema_versions": {
+      "launch_manifest": 2,
+      "runtime_config": 2,
+      "training_summary": 5,
+      "successful_exit_receipt": 5
+    },
+    "immutable_launch_manifest_relative_path_raw_hash_and_schema_required": true,
+    "exact_selected_gpu_uuids_and_final_idle_telemetry_bound_through_launch_runtime_summary_and_receipt_required": true,
+    "global_single_training_job_lease_acquired_before_gpu_probe_and_validated_before_receipt_publication_required": true,
+    "matched_r_s_e_registered_order_and_receipt_gated_advancement_machine_enforced": true,
+    "predecessor_receipt_chain_is_machine_enforced_by_each_per_run_launch_manifest": true,
+    "predecessor_artifacts_revalidated_unchanged_before_successful_exit_receipt": true,
+    "predecessor_receipt_must_predate_successor_lock_and_gpu_probe": true,
+    "terminal_e_successful_exit_receipt_hash_and_full_chain_required": true,
+    "terminal_e_receipt_must_predate_candidate_lock": true,
+    "selected_candidate_receipt_must_predate_candidate_lock": true,
+    "selected_candidate_receipt_must_be_exact_member_of_terminal_r_s_e_chain": true,
+    "terminal_e_and_selected_candidate_must_share_matched_panel": true,
+    "audited_empirical_prior_floor": {
+      "empirical_uniform_mix": 0.0002,
+      "consumed_only_by_prior_variant": "empirical_frequency",
+      "audit_relative_path": "experiments/udlm/prior_geometry/floor_selection_train_rows_10001_30000.json",
+      "audit_raw_sha256": "02908dafaf589ca9a49e560aa1eab470a18d6bfe616b781164784c489f54a9f1",
+      "audit_source_revision": "6424b323084358ea050ba22d7e13ef8d45962496",
+      "selection_scope": "retrospective_training_only_engineering_selection"
+    },
+    "checkpoint_hash_size_step_and_ema_required": true,
+    "training_summary_checkpoint_audit_excludes_only_exact_live_bound_lightning_sentinel_required": true,
+    "training_summary_checkpoint_exact_top_level_schema_and_nonfinite_python_numpy_rejection_required": true,
+    "training_summary_checkpoint_hyperparameters_loop_progress_and_live_trainer_configuration_match_required": true,
+    "training_summary_optimizer_scheduler_sampler_and_model_checkpoint_live_state_matches_required": true,
+    "independent_optimization_screen_exact_closed_schema_and_cross_artifact_bindings_required": true,
+    "failed_health_namespaces_are_immutable_and_never_eligible_for_candidate_selection": true,
+    "initialization_mode_and_checkpoint_hash_required": true,
+    "training_seed_updates_data_exposure_and_parameter_counts_required": true,
+    "sampling_config_and_config_hash_required": true,
+    "benchmark_runner_and_sampler_source_hashes_with_runtime_ema_application_required": true,
+    "full_implementation_and_metric_input_map_hashes_required": true,
+    "gate_report_rescore_launcher_writer_source_hashes_plus_scipy_version_required": true,
+    "exact_final_output_directory_per_seed_required": true,
+    "candidate_ledger_hash_and_selection_rule_required": true,
+    "per_seed_success_failure_outcomes_and_partial_failure_retention_required": true,
+    "completed_pilot_summary_raw_receipt_hashes_required": true,
+    "completed_pilot_training_receipt_full_validation_required": true,
+    "pilot_quality_diversity_independently_recomputed_from_raw_model_text": true,
+    "producer_authored_failure_receipt_command_source_log_and_partial_hashes_required": true,
+    "pilot_failure_receipt_mode_and_requested_samples_required": true,
+    "all_pilot_outcomes_must_predate_lock_and_source_revisions_be_ancestors": true,
+    "selected_pilot_checkpoint_config_sampling_ema_source_metric_and_receipt_identity_must_equal_lock": true,
+    "final_candidate_qed_sa_diversity_independently_recomputed_from_raw_model_text": true,
+    "independent_rescore_source_and_dependency_hashes_required": true,
+    "candidate_ledger_winner_checkpoint_must_equal_locked_training_checkpoint": true,
+    "benchmark_revision_must_contain_exact_lock_and_ledger_blobs": true
+  },
+  "decision": {
+    "pass_condition": "Every point-estimate gate and every one-sided uncertainty gate passes for the one pre-locked candidate.",
+    "failure_condition": "Any failed or unverifiable gate, provenance binding, final operating-point requirement, or selection-firewall requirement prevents the superiority claim."
+  },
+  "claim_boundaries": {
+    "warm_start": "Passing supports only a locked operational MDLM-to-UDLM continuation-system claim on these molecular metrics. It does not isolate diffusion-method causality and is not an inference-speed claim.",
+    "scratch": "Passing supports a locked single-training-trajectory checkpoint comparison. One training seed does not establish population-level diffusion-method superiority.",
+    "method_only_requirement": "A causal method claim additionally requires a from-scratch matched training panel or an equal-extra-update MDLM continuation control under a separately frozen protocol.",
+    "uncertainty_limitation": "Welch intervals use only three generation seeds per method and condition on each locked checkpoint; they do not measure training-seed uncertainty."
+  }
+}

@@ -39,6 +39,8 @@ if str(REPOSITORY_ROOT) not in sys.path:
 # Keeping one source of truth makes schema drift fail immediately.
 from scripts.exps.denovo.benchmark import (  # noqa: E402
     AUDITED_BENCHMARK_REQUIRES_EMA,
+    IMPLEMENTATION_INPUT_PATHS,
+    LAUNCH_ENVIRONMENT_KEYS,
     METRIC_INPUT_SCHEMA_VERSION,
     RAW_SAMPLE_FIELDS,
     RAW_SAMPLES_FILENAME,
@@ -63,9 +65,12 @@ from scripts.exps.denovo.benchmark import (  # noqa: E402
     validate_udlm_prior_metadata_record,
     validate_sampling_config,
 )
+from scripts import artifact_io  # noqa: E402
 
 
-REPORT_SCHEMA_VERSION = 6
+REPORT_SCHEMA_VERSION = 7
+HISTORICAL_MDLM_REPORT_SCHEMA_VERSION = 6
+HISTORICAL_MDLM_RUN_SCHEMA_VERSION = 7
 EXPECTED_SEEDS = (0, 1, 2)
 EXPECTED_SAMPLES_PER_SEED = 1_000
 EXPECTED_GLOBAL_STEP = 50_000
@@ -77,12 +82,18 @@ PAPER_V1_SAMPLING_CONFIG = {
     "diffusion_type": "mdlm",
     "softmax_temp": 0.5,
     "randomness": 0.5,
+    "raw_loo_top_p": None,
     "min_add_len": 40,
     "num_steps": None,
     "inference_eps": None,
     "exclude_special_tokens": None,
     "prior_variant": None,
     "prior_metadata_sha256": None,
+}
+HISTORICAL_PAPER_V1_SAMPLING_CONFIG = {
+    key: value
+    for key, value in PAPER_V1_SAMPLING_CONFIG.items()
+    if key != "raw_loo_top_p"
 }
 EXPECTED_MDLM_EMA_METADATA = {
     "shadow_parameter_count": 202,
@@ -108,6 +119,7 @@ EXPECTED_GENERATION_PROTOCOL = {
     "prior_metadata_sha256": None,
     "temperature": 0.5,
     "randomness": 0.5,
+    "raw_loo_top_p": None,
     "randomness_used_by_sampler": True,
     "model_use_bracket_safe": False,
     "single_generation_batch": True,
@@ -800,6 +812,7 @@ def _validate_cuda_provenance(
     git_commit: Any,
     summary_path: Path,
     expected_samples: int = EXPECTED_SAMPLES_PER_SEED,
+    historical_mdlm: bool = False,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Validate the launcher's point-in-time idle-GPU selection evidence."""
     context = f"{summary_path}: environment"
@@ -881,6 +894,18 @@ def _validate_cuda_provenance(
     launch = _mapping(
         environment.get("launch_environment"), f"{context}.launch_environment"
     )
+    expected_launch_keys = set(LAUNCH_ENVIRONMENT_KEYS)
+    if historical_mdlm:
+        expected_launch_keys -= {
+            "GENMOL_BENCHMARK_GENERATION_LEASE_PATH",
+            "GENMOL_BENCHMARK_EXPECTED_GENERATION_LEASE_SHA256",
+            "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN",
+            "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON",
+        }
+    if set(launch) != expected_launch_keys:
+        raise ReportValidationError(
+            f"{context}.launch_environment fields differ from its schema"
+        )
     expected_pythonpath = os.pathsep.join(
         [str(REPOSITORY_ROOT / "src"), str(REPOSITORY_ROOT)]
     )
@@ -944,18 +969,24 @@ def _validate_cuda_provenance(
     selection_schema_version = snapshot.get("gpu_selection_schema_version")
     inventory_snapshot_completed_at_utc = None
     final_uuid_probe_completed_at_utc = None
+    expected_selection_schema = 2 if historical_mdlm else 3
     if selection_schema_version is None:
         raise ReportValidationError(
-            f"{context} schema-{RUN_SCHEMA_VERSION} runs require the dynamic "
-            "gpu_selection_schema_version 2 launch contract"
+            f"{context} requires gpu_selection_schema_version "
+            f"{expected_selection_schema} for this benchmark schema"
         )
     if (
         _integer(
             selection_schema_version,
             f"{context} launch snapshot gpu_selection_schema_version",
         )
-        == 2
+        != expected_selection_schema
     ):
+        raise ReportValidationError(
+            f"{context} requires gpu_selection_schema_version "
+            f"{expected_selection_schema} for this benchmark schema"
+        )
+    if historical_mdlm:
         expected_snapshot_fields = {
             "event",
             "gpu_selection_schema_version",
@@ -969,39 +1000,58 @@ def _validate_cuda_provenance(
             "policy",
             "command",
         }
-        if set(snapshot) != expected_snapshot_fields:
-            raise ReportValidationError(
-                f"{context} schema-v2 launch snapshot fields must be exactly "
-                f"{sorted(expected_snapshot_fields)}"
-            )
-        physical_gpu_field = "physical_gpu_at_final_uuid_probe"
-        selected_gpu_telemetry_stage = "final_exact_uuid_probe"
-        inventory_snapshot_completed_at_utc = snapshot.get(
-            "inventory_snapshot_completed_at_utc"
-        )
-        final_uuid_probe_completed_at_utc = snapshot.get(
-            "final_uuid_probe_completed_at_utc"
-        )
-        inventory_timestamp = _utc_datetime(
-            inventory_snapshot_completed_at_utc,
-            f"{context} launch snapshot inventory_snapshot_completed_at_utc",
-        )
-        final_probe_timestamp = _utc_datetime(
-            final_uuid_probe_completed_at_utc,
-            f"{context} launch snapshot final_uuid_probe_completed_at_utc",
-        )
-        if final_probe_timestamp != selection_timestamp:
-            raise ReportValidationError(
-                f"{context} schema-v2 launch and final-probe timestamps disagree"
-            )
-        if final_probe_timestamp < inventory_timestamp:
-            raise ReportValidationError(
-                f"{context} final UUID probe predates the inventory snapshot"
-            )
     else:
+        expected_snapshot_fields = {
+            "event",
+            "gpu_selection_schema_version",
+            "timestamp_utc",
+            "inventory_snapshot_completed_at_utc",
+            "final_uuid_probe_completed_at_utc",
+            "source_revision",
+            "gpu_inventory_at_selection",
+            "running_gpu_uuids_at_selection",
+            "physical_gpu_at_final_uuid_probe",
+            "policy",
+            "launch_authority",
+            "command",
+        }
+        execution_authority = _mapping(
+            run.get("execution_authority"), f"{context} execution authority"
+        )
+        if snapshot.get("launch_authority") != execution_authority.get(
+            "launch_authority"
+        ):
+            raise ReportValidationError(
+                f"{context} snapshot launch authority differs from run authority"
+            )
+    if set(snapshot) != expected_snapshot_fields:
         raise ReportValidationError(
-            f"{context} has unsupported gpu_selection_schema_version "
-            f"{selection_schema_version!r}"
+            f"{context} schema-v{expected_selection_schema} launch snapshot fields "
+            f"must be exactly {sorted(expected_snapshot_fields)}"
+        )
+    physical_gpu_field = "physical_gpu_at_final_uuid_probe"
+    selected_gpu_telemetry_stage = "final_exact_uuid_probe"
+    inventory_snapshot_completed_at_utc = snapshot.get(
+        "inventory_snapshot_completed_at_utc"
+    )
+    final_uuid_probe_completed_at_utc = snapshot.get(
+        "final_uuid_probe_completed_at_utc"
+    )
+    inventory_timestamp = _utc_datetime(
+        inventory_snapshot_completed_at_utc,
+        f"{context} launch snapshot inventory_snapshot_completed_at_utc",
+    )
+    final_probe_timestamp = _utc_datetime(
+        final_uuid_probe_completed_at_utc,
+        f"{context} launch snapshot final_uuid_probe_completed_at_utc",
+    )
+    if final_probe_timestamp != selection_timestamp:
+        raise ReportValidationError(
+            f"{context} launch and final-probe timestamps disagree"
+        )
+    if final_probe_timestamp < inventory_timestamp:
+        raise ReportValidationError(
+            f"{context} final UUID probe predates the inventory snapshot"
         )
     source_revision = _mapping(
         snapshot.get("source_revision"), f"{context} launch snapshot source_revision"
@@ -1144,9 +1194,9 @@ def _validate_cuda_provenance(
             policy.get("requested_gpu_count"),
             f"{context} policy.requested_gpu_count",
         )
-        if requested_gpu_count not in (1, 2):
+        if requested_gpu_count not in (1, 2, 3):
             raise ReportValidationError(
-                f"{context} policy.requested_gpu_count must be 1 or 2"
+                f"{context} policy.requested_gpu_count must be 1, 2, or 3"
             )
         selected_indices = None
         inventory_value = snapshot.get("gpu_inventory_at_selection")
@@ -1234,23 +1284,47 @@ def _validate_cuda_provenance(
             for item in validated_inventory
             if item["index"] == physical_index and item["uuid"] == visible_uuid
         )
-        running_indices = snapshot.get("running_physical_indices_at_selection")
-        if (
-            not isinstance(running_indices, list)
-            or any(
-                isinstance(index, bool) or not isinstance(index, int) or index < 0
-                for index in running_indices
-            )
-            or len(running_indices) != len(set(running_indices))
-            or any(
-                index not in {item_index for item_index, _ in inventory_identities}
-                for index in running_indices
-            )
-            or physical_index in running_indices
-        ):
-            raise ReportValidationError(
-                f"{context} dynamic launch snapshot has invalid running GPU indices"
-            )
+        if historical_mdlm:
+            running_indices = snapshot.get("running_physical_indices_at_selection")
+            if (
+                not isinstance(running_indices, list)
+                or any(
+                    isinstance(index, bool) or not isinstance(index, int) or index < 0
+                    for index in running_indices
+                )
+                or len(running_indices) != len(set(running_indices))
+                or any(
+                    index not in {item_index for item_index, _ in inventory_identities}
+                    for index in running_indices
+                )
+                or physical_index in running_indices
+            ):
+                raise ReportValidationError(
+                    f"{context} dynamic launch snapshot has invalid running GPU indices"
+                )
+            running_uuids = [
+                uuid for index, uuid in inventory_identities if index in running_indices
+            ]
+        else:
+            running_uuids = snapshot.get("running_gpu_uuids_at_selection")
+            inventory_uuid_to_index = {
+                uuid: index for index, uuid in inventory_identities
+            }
+            if (
+                not isinstance(running_uuids, list)
+                or any(
+                    not isinstance(uuid, str) or not uuid.startswith("GPU-")
+                    for uuid in running_uuids
+                )
+                or running_uuids != sorted(set(running_uuids))
+                or any(uuid not in inventory_uuid_to_index for uuid in running_uuids)
+                or visible_uuid in running_uuids
+                or len(running_uuids) >= requested_gpu_count
+            ):
+                raise ReportValidationError(
+                    f"{context} dynamic launch snapshot has invalid running GPU UUIDs"
+                )
+            running_indices = [inventory_uuid_to_index[uuid] for uuid in running_uuids]
     else:
         raise ReportValidationError(
             f"{context} launch policy fields must match either the legacy explicit "
@@ -1275,6 +1349,10 @@ def _validate_cuda_provenance(
     if type(active_processes_allowed) is not bool:
         raise ReportValidationError(
             f"{context} launch policy active-process flag must be boolean"
+        )
+    if not historical_mdlm and active_processes_allowed is not True:
+        raise ReportValidationError(
+            f"{context} schema-v3 policy must retain observable compute processes"
         )
     if selected_inventory_item is not None:
         initial_processes = _validate_compute_processes(
@@ -1380,9 +1458,11 @@ def _validate_cuda_provenance(
                 f"{summary_path}: run.command {option} disagrees with its "
                 "recorded artifact path"
             )
-    if len(command) != 20:
+    expected_command_length = 20 if historical_mdlm else 24
+    if len(command) != expected_command_length:
         raise ReportValidationError(
-            f"{summary_path}: run.command must contain only the nine bound options"
+            f"{summary_path}: run.command must contain exactly "
+            f"{expected_command_length} elements"
         )
     working_directory = environment.get("working_directory")
     executable = environment.get("executable")
@@ -1709,8 +1789,11 @@ def _validate_generation_protocol(
     sampling: Mapping[str, Any],
     *,
     context: str,
+    historical_mdlm: bool = False,
 ) -> dict[str, Any]:
     expected_keys = set(EXPECTED_GENERATION_PROTOCOL)
+    if historical_mdlm:
+        expected_keys.remove("raw_loo_top_p")
     if set(protocol) != expected_keys:
         raise ReportValidationError(
             f"{context} fields must be exactly {sorted(expected_keys)}"
@@ -1738,6 +1821,11 @@ def _validate_generation_protocol(
         raise ReportValidationError(f"{context}.temperature disagrees with config")
     if protocol.get("randomness") != sampling["randomness"]:
         raise ReportValidationError(f"{context}.randomness disagrees with config")
+    if (
+        not historical_mdlm
+        and protocol.get("raw_loo_top_p") != sampling["raw_loo_top_p"]
+    ):
+        raise ReportValidationError(f"{context}.raw_loo_top_p disagrees with config")
     if protocol.get("prior_variant") != sampling["prior_variant"]:
         raise ReportValidationError(f"{context}.prior_variant disagrees with config")
     if protocol.get("prior_metadata_sha256") != sampling["prior_metadata_sha256"]:
@@ -1819,6 +1907,11 @@ def _validate_summary_and_rows(
     expected_tier: str = "final",
     final_protocol_eligible: bool = True,
 ) -> dict[str, Any]:
+    # Keep the strict token-audit validator shared with the independent worker,
+    # but import it lazily: the historical MDLM worker imports this report
+    # module and a module-level import would form a bootstrap cycle.
+    from scripts.udlm import rescore_denovo_run as denovo_rescore
+
     if type(expected_samples) is not int or expected_samples <= 0:
         raise ReportValidationError("expected_samples must be a positive integer")
     if expected_tier not in {"pilot", "final"}:
@@ -1842,6 +1935,8 @@ def _validate_summary_and_rows(
     summary_payload = _stable_regular_file_bytes(
         summary_path, label="benchmark summary JSON"
     )
+    if len(summary_payload) > denovo_rescore.MAXIMUM_SUMMARY_SIZE_BYTES:
+        raise ReportValidationError("benchmark summary exceeds the 2 MiB limit")
     try:
         summary_value = json.loads(summary_payload.decode("utf-8"))
     except UnicodeDecodeError as exc:
@@ -1849,7 +1944,7 @@ def _validate_summary_and_rows(
     except json.JSONDecodeError as exc:
         raise ReportValidationError(f"invalid JSON: {summary_path}") from exc
     summary = dict(_mapping(summary_value, str(summary_path)))
-    required_top_level = {
+    base_top_level = {
         "schema_version",
         "status",
         "seed",
@@ -1867,15 +1962,25 @@ def _validate_summary_and_rows(
         "tokenizer",
         "artifacts",
     }
-    missing = required_top_level - summary.keys()
-    if missing:
+    schema_version = summary.get("schema_version")
+    if schema_version not in {
+        RUN_SCHEMA_VERSION,
+        HISTORICAL_MDLM_RUN_SCHEMA_VERSION,
+    }:
         raise ReportValidationError(
-            f"{summary_path} is missing top-level field(s): {sorted(missing)}"
+            f"{summary_path} schema_version={schema_version!r}; expected 8, "
+            "except for the exact pinned historical MDLM schema-7 baseline"
         )
-    if summary["schema_version"] != RUN_SCHEMA_VERSION:
+    historical_mdlm = schema_version == HISTORICAL_MDLM_RUN_SCHEMA_VERSION
+    expected_top_level = (
+        base_top_level
+        if historical_mdlm
+        else base_top_level | {"sampled_token_control_audit"}
+    )
+    if set(summary) != expected_top_level:
         raise ReportValidationError(
-            f"{summary_path} schema_version={summary['schema_version']!r}; "
-            f"expected {RUN_SCHEMA_VERSION}"
+            f"{summary_path} top-level fields differ: "
+            f"{sorted(summary)} != {sorted(expected_top_level)}"
         )
     if summary["status"] != "completed":
         raise ReportValidationError(
@@ -1883,6 +1988,13 @@ def _validate_summary_and_rows(
         )
 
     run = _mapping(summary["run"], f"{summary_path}: run")
+    expected_run_fields = (
+        denovo_rescore.HISTORICAL_MDLM_RUN_FIELDS
+        if historical_mdlm
+        else denovo_rescore.RUN_FIELDS
+    )
+    if set(run) != expected_run_fields:
+        raise ReportValidationError(f"{summary_path} run fields differ")
     nested_seed = _integer(_required(run, "seed", "run"), "run.seed")
     alias_seed = _integer(summary["seed"], "seed")
     nested_count = _integer(
@@ -1962,6 +2074,10 @@ def _validate_summary_and_rows(
     if checkpoint_diffusion_type not in {"mdlm", "udlm"}:
         raise ReportValidationError(
             f"seed {expected_seed} has invalid checkpoint diffusion_type"
+        )
+    if historical_mdlm and checkpoint_diffusion_type != "mdlm":
+        raise ReportValidationError(
+            "schema-7 compatibility is restricted to the pinned historical MDLM baseline"
         )
     checkpoint_udlm_inference_eps = checkpoint.get("udlm_inference_eps")
     checkpoint_udlm_exclude_special_tokens = checkpoint.get(
@@ -2067,24 +2183,27 @@ def _validate_summary_and_rows(
     sampling = _mapping(config.get("sampling"), "config.sampling")
     if _sha256_json(sampling) != config["sampling_sha256"]:
         raise ReportValidationError(f"{summary_path} config.sampling_sha256 is invalid")
-    try:
-        normalized_sampling = validate_sampling_config(sampling)
-    except ValueError as exc:
-        raise ReportValidationError(
-            f"{summary_path} sampling config is invalid: {exc}"
-        ) from exc
-    if dict(sampling) != normalized_sampling:
-        raise ReportValidationError(
-            f"{summary_path} sampling config is not canonical: "
-            f"expected {normalized_sampling}, found {dict(sampling)}"
-        )
-    if (
-        sampling["diffusion_type"] == "mdlm"
-        and dict(sampling) != PAPER_V1_SAMPLING_CONFIG
+    if not historical_mdlm:
+        try:
+            normalized_sampling = validate_sampling_config(sampling)
+        except ValueError as exc:
+            raise ReportValidationError(
+                f"{summary_path} sampling config is invalid: {exc}"
+            ) from exc
+        if dict(sampling) != normalized_sampling:
+            raise ReportValidationError(
+                f"{summary_path} sampling config is not canonical: "
+                f"expected {normalized_sampling}, found {dict(sampling)}"
+            )
+    if sampling["diffusion_type"] == "mdlm" and dict(sampling) != (
+        HISTORICAL_PAPER_V1_SAMPLING_CONFIG
+        if historical_mdlm
+        else PAPER_V1_SAMPLING_CONFIG
     ):
         raise ReportValidationError(
             f"{summary_path} sampling config is not the exact GenMol V1 MDLM protocol: "
-            f"expected {PAPER_V1_SAMPLING_CONFIG}, found {dict(sampling)}"
+            "expected the exact pinned MDLM sampling identity, "
+            f"found {dict(sampling)}"
         )
     if sampling["diffusion_type"] != checkpoint_diffusion_type:
         raise ReportValidationError(
@@ -2130,6 +2249,7 @@ def _validate_summary_and_rows(
         generation_protocol,
         sampling,
         context=f"{summary_path}: run.generation_protocol",
+        historical_mdlm=historical_mdlm,
     )
     source = _mapping(config.get("source"), "config.source")
     for key, expected in sampling.items():
@@ -2140,6 +2260,12 @@ def _validate_summary_and_rows(
             and sampling["diffusion_type"] == "udlm"
         ):
             source_value = "release_uniform"
+        if (
+            key == "raw_loo_top_p"
+            and key not in source
+            and sampling["diffusion_type"] == "udlm"
+        ):
+            source_value = 1.0
         if source_value != expected:
             raise ReportValidationError(
                 f"{summary_path} config.source.{key}={source.get(key)!r}; "
@@ -2155,6 +2281,8 @@ def _validate_summary_and_rows(
             f"{summary_path} config.effective_sha256 is invalid"
         )
     expected_effective = dict(source)
+    if not historical_mdlm:
+        expected_effective["raw_loo_top_p"] = sampling["raw_loo_top_p"]
     expected_effective.update(
         {
             "model_path": checkpoint.get("path"),
@@ -2178,6 +2306,10 @@ def _validate_summary_and_rows(
         _required(artifacts, "raw_samples_csv", "artifacts"),
         "artifacts.raw_samples_csv",
     )
+    if set(raw_artifact) != {"path", "sha256", "row_count", "fields"}:
+        raise ReportValidationError(
+            f"{summary_path} raw_samples_csv artifact fields differ"
+        )
     if (
         _sha256_value(raw_artifact.get("sha256"), "raw_samples_csv.sha256")
         != raw_sha256
@@ -2252,6 +2384,8 @@ def _validate_summary_and_rows(
         "decode_and_metrics",
         "total_before_summary_write",
     }
+    if not historical_mdlm:
+        required_runtime.add("sampled_token_control_audit")
     if set(runtime) != required_runtime:
         raise ReportValidationError(
             f"{summary_path} runtime fields must be exactly {sorted(required_runtime)}"
@@ -2318,32 +2452,41 @@ def _validate_summary_and_rows(
         git_commit=git_commit,
         summary_path=summary_path,
         expected_samples=expected_samples,
+        historical_mdlm=historical_mdlm,
     )
     tokenizer = _validate_tokenizer_provenance(
         summary["tokenizer"], summary_path=summary_path
     )
+    sampled_token_control_audit = None
+    if not historical_mdlm:
+        try:
+            sampled_token_control_audit = (
+                denovo_rescore.validate_sampled_token_control_audit(
+                    summary.get("sampled_token_control_audit"),
+                    expected_rows=expected_samples,
+                    exclude_special_tokens=sampling["exclude_special_tokens"],
+                    raw_model_texts=[record["raw_model_text"] for record in records],
+                    tokenizer_batch_decode=(
+                        denovo_rescore._load_pinned_tokenizer_batch_decode()  # noqa: SLF001
+                    ),
+                )
+            )
+        except (OSError, ValueError) as exc:
+            raise ReportValidationError(
+                f"{summary_path} sampled token audit is invalid: {exc}"
+            ) from exc
     metric_inputs = _validate_metric_inputs(
         summary["metric_inputs"], summary_path=summary_path
     )
     implementation_inputs = _mapping(
         summary["implementation_inputs"], f"{summary_path}: implementation_inputs"
     )
-    if set(implementation_inputs) != {
-        "genmol_package_init_source",
-        "genmol_utils_package_init_source",
-        "sampler_source",
-        "model_source",
-        "ema_source",
-        "checkpoint_io_source",
-        "diffusion_source",
-        "backbone_source",
-        "chemistry_utils_source",
-        "data_utils_source",
-        "moco_utils_source",
-        "save_utils_source",
-        "bracket_safe_converter_source",
-        "length_distribution",
-    }:
+    expected_implementation_inputs = set(IMPLEMENTATION_INPUT_PATHS)
+    if historical_mdlm:
+        expected_implementation_inputs.discard("artifact_io_source")
+    else:
+        expected_implementation_inputs.add("artifact_io_source")
+    if set(implementation_inputs) != expected_implementation_inputs:
         raise ReportValidationError(
             f"{summary_path} has unexpected direct implementation-input fields"
         )
@@ -2388,6 +2531,46 @@ def _validate_summary_and_rows(
             "length distribution was not retained from verified bytes for generation"
         )
 
+    execution_authority = None
+    if not historical_mdlm:
+        try:
+            execution_authority = denovo_rescore._validate_execution_authority(  # noqa: SLF001
+                run.get("execution_authority"),
+                run_command=run.get("command"),
+                checkpoint_path=str(checkpoint.get("path")),
+                checkpoint_sha256=checkpoint_sha,
+                source_revision=git_commit,
+                config_path=str(config.get("path")),
+                config_sha256=str(config.get("sha256")),
+                expected_sample_count=expected_samples,
+                expected_seed=expected_seed,
+                environment=environment,
+                implementation_inputs=implementation_inputs,
+            )
+        except (OSError, ValueError) as exc:
+            raise ReportValidationError(
+                f"{summary_path} execution authority is invalid: {exc}"
+            ) from exc
+
+    expected_artifact_fields = {"raw_samples_csv", "summary_json"}
+    if not historical_mdlm:
+        expected_artifact_fields.add("bundle")
+    if set(artifacts) != expected_artifact_fields:
+        raise ReportValidationError(f"{summary_path} artifact fields differ")
+    summary_artifact = _mapping(artifacts.get("summary_json"), "artifacts.summary_json")
+    if (
+        set(summary_artifact) != {"path"}
+        or Path(str(summary_artifact.get("path", ""))).resolve()
+        != summary_path.resolve()
+    ):
+        raise ReportValidationError(
+            f"{summary_path} summary artifact path binding differs"
+        )
+    if not historical_mdlm:
+        bundle = _mapping(artifacts.get("bundle"), "artifacts.bundle")
+        if dict(bundle) != denovo_rescore.ARTIFACT_BUNDLE:
+            raise ReportValidationError(f"{summary_path} artifact bundle differs")
+
     return {
         "seed": expected_seed,
         "started_at_utc": run["started_at_utc"],
@@ -2417,6 +2600,9 @@ def _validate_summary_and_rows(
             for name, value in implementation_inputs.items()
         },
         "metric_inputs": metric_inputs,
+        "sampled_token_control_audit": sampled_token_control_audit,
+        "execution_authority": execution_authority,
+        "historical_mdlm_compatibility": historical_mdlm,
     }
 
 
@@ -4210,6 +4396,10 @@ def write_report_bundle(
     pdf_path: Path,
     overwrite: bool = False,
 ) -> dict[str, Path]:
+    if overwrite:
+        raise ReportValidationError(
+            "report bundles are immutable; overwrite mode is forbidden"
+        )
     if payload.get("schema_version") != REPORT_SCHEMA_VERSION:
         raise ReportValidationError(
             "report payload schema_version="
@@ -4226,35 +4416,76 @@ def write_report_bundle(
     duplicate_targets = len({path.resolve() for path in targets}) != len(targets)
     if duplicate_targets:
         raise ReportValidationError("JSON, CSV, and PDF output paths must be distinct")
-    existing = [path for path in targets if path.exists()]
-    if existing and not overwrite:
+    existing = [path for path in targets if os.path.lexists(path)]
+    if existing:
         raise FileExistsError(
-            "refusing to overwrite report artifact(s): "
+            "refusing to replace report artifact(s): "
             + ", ".join(str(path) for path in existing)
-            + "; pass --overwrite only after reviewing the existing files"
         )
+    for parent in {output_dir, pdf_path.parent}:
+        parent.mkdir(parents=True, exist_ok=True)
 
-    render_pdf(payload, pdf_path)
-    pdf_metadata = validate_pdf(
-        pdf_path,
-        expected_checkpoint_sha256=payload["checkpoint"]["sha256"],
-        expected_report_generator_sha256=report_generator["sha256"],
-    )
+    with tempfile.TemporaryDirectory(
+        dir=REPOSITORY_ROOT, prefix=".denovo-report-render-"
+    ) as temporary_directory:
+        temporary_pdf = Path(temporary_directory) / "report.pdf"
+        render_pdf(payload, temporary_pdf)
+        pdf_metadata = validate_pdf(
+            temporary_pdf,
+            expected_checkpoint_sha256=payload["checkpoint"]["sha256"],
+            expected_report_generator_sha256=report_generator["sha256"],
+        )
+        pdf_payload = temporary_pdf.read_bytes()
+
+    pdf_metadata["path"] = str(pdf_path)
     payload["artifacts"] = {
         "report_pdf": pdf_metadata,
         "aggregate_json": {"path": str(json_path)},
         "aggregate_csv": {"path": str(csv_path)},
+        "bundle": {
+            "publication_api": "scripts.artifact_io.publish_bundle_exclusive",
+            "ordinary_members": [str(csv_path), str(pdf_path)],
+            "completion_member": str(json_path),
+            "exclusive_no_clobber": True,
+            "completion_linked_last": True,
+        },
     }
     rows = aggregate_csv_rows(payload)
-    _write_csv(csv_path, rows)
+    csv_handle = io.StringIO(newline="")
+    csv_writer = csv.DictWriter(csv_handle, fieldnames=CSV_FIELDS, extrasaction="raise")
+    csv_writer.writeheader()
+    csv_writer.writerows(rows)
+    csv_payload = csv_handle.getvalue().encode("utf-8")
     payload["artifacts"]["aggregate_csv"].update(
         {
-            "sha256": _sha256_file(csv_path),
+            "sha256": hashlib.sha256(csv_payload).hexdigest(),
             "row_count": len(rows),
             "fields": list(CSV_FIELDS),
         }
     )
-    _write_json(json_path, payload)
+    json_payload = (
+        json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    ).encode("utf-8")
+    relative_csv = csv_path.relative_to(REPOSITORY_ROOT)
+    relative_pdf = pdf_path.relative_to(REPOSITORY_ROOT)
+    relative_json = json_path.relative_to(REPOSITORY_ROOT)
+    publication = artifact_io.publish_bundle_exclusive(
+        REPOSITORY_ROOT,
+        (
+            artifact_io.PublishItem(relative_csv.as_posix(), csv_payload),
+            artifact_io.PublishItem(relative_pdf.as_posix(), pdf_payload),
+        ),
+        completion=artifact_io.PublishItem(relative_json.as_posix(), json_payload),
+    )
+    claims = {claim.relative_path: claim for claim in publication.members}
+    if (
+        claims[relative_csv.as_posix()].sha256
+        != payload["artifacts"]["aggregate_csv"]["sha256"]
+        or claims[relative_pdf.as_posix()].sha256 != pdf_metadata["sha256"]
+        or publication.completion.relative_path != relative_json.as_posix()
+        or publication.completion.sha256 != hashlib.sha256(json_payload).hexdigest()
+    ):
+        raise RuntimeError("report artifact_io publication claims differ")
 
     # Re-open final artifacts rather than trusting the writers.
     loaded = json.loads(json_path.read_text(encoding="utf-8"))

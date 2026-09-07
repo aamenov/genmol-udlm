@@ -4,7 +4,10 @@ import pytest
 import torch
 from torch.nn import functional as F
 
-from genmol.diffusion import ContinuousUniformDiffusion
+from genmol.diffusion import (
+    ContinuousCategoricalDiffusion,
+    ContinuousUniformDiffusion,
+)
 
 
 def _official_literal_loss(logits, x0, xt, t):
@@ -192,3 +195,140 @@ def test_global_mean_uses_only_selected_tokens():
 
     assert per_token[0, 1] == 0
     assert torch.allclose(reduced, per_token[[0, 0], [0, 2]].mean())
+
+
+@pytest.mark.parametrize(
+    ("keyword", "value"),
+    [
+        ("temperature", True),
+        ("temperature", "1.0"),
+        ("temperature", 0.0),
+        ("temperature", float("nan")),
+        ("temperature", float("inf")),
+        ("raw_loo_top_p", True),
+        ("raw_loo_top_p", "1.0"),
+        ("raw_loo_top_p", 0.0),
+        ("raw_loo_top_p", 1.01),
+        ("raw_loo_top_p", float("nan")),
+        ("raw_loo_top_p", float("inf")),
+    ],
+)
+def test_sampling_transforms_require_strict_finite_real_scalars(keyword, value):
+    process = ContinuousUniformDiffusion(4)
+    arguments = {keyword: value}
+
+    with pytest.raises(ValueError, match=keyword):
+        process.clean_log_probs(torch.zeros(1, 1, 4), **arguments)
+
+
+def test_raw_loo_nucleus_retains_crossing_token_and_breaks_ties_by_model_id():
+    process = ContinuousUniformDiffusion(6, excluded_token_ids=(1, 3))
+    logits = torch.full((1, 1, 6), -torch.inf, dtype=torch.float64)
+    # Active IDs are [0, 2, 4, 5].  At p=.5, ID 2 is the crossing token and
+    # wins the exact .2 tie because it is the lowest active model token ID.
+    logits[..., process.diffusion_token_ids] = torch.tensor(
+        [0.4, 0.2, 0.2, 0.2], dtype=torch.float64
+    ).log()
+
+    filtered = process.clean_log_probs(logits, raw_loo_top_p=0.5).exp()
+    top_one = process.clean_log_probs(logits, raw_loo_top_p=0.01).exp()
+    equality_logits = torch.tensor(
+        [[[0.0, -torch.inf, 0.0, -torch.inf, -torch.inf, -torch.inf]]],
+        dtype=torch.float64,
+    )
+    equality_filtered = process.clean_log_probs(
+        equality_logits, raw_loo_top_p=0.5
+    )
+
+    assert torch.equal(
+        torch.isfinite(filtered.log())[0, 0],
+        torch.tensor([True, True, False, False]),
+    )
+    assert filtered.sum() == pytest.approx(1.0)
+    assert torch.equal(
+        torch.isfinite(top_one.log())[0, 0],
+        torch.tensor([True, False, False, False]),
+    )
+    # The frozen `cumulative > p`, then right-shift rule intentionally keeps
+    # one additional token when cumulative mass is exactly p at a boundary.
+    assert torch.equal(
+        torch.isfinite(equality_filtered)[0, 0],
+        torch.tensor([True, True, False, False]),
+    )
+
+
+@pytest.mark.parametrize("prior", ["uniform", "categorical"])
+def test_raw_loo_top_p_one_is_exact_posterior_and_rng_identity(prior):
+    if prior == "uniform":
+        process = ContinuousUniformDiffusion(5, noise_eps=0.03)
+    else:
+        process = ContinuousCategoricalDiffusion(
+            5,
+            torch.tensor([0.52, 0.23, 0.13, 0.08, 0.04], dtype=torch.float64),
+            noise_eps=0.03,
+        )
+    logits = torch.randn(
+        3,
+        4,
+        5,
+        dtype=torch.float64,
+        generator=torch.Generator().manual_seed(91),
+    )
+    xt = torch.tensor(
+        [[0, 1, 2, 3], [4, 3, 2, 1], [1, 1, 0, 4]], dtype=torch.long
+    )
+    t = torch.tensor([0.91, 0.73, 0.44], dtype=torch.float64)
+    s = torch.tensor([0.51, 0.32, 0.12], dtype=torch.float64)
+
+    historical = process.posterior_probs(logits, xt, t, s, temperature=0.85)
+    explicit_identity = process.posterior_probs(
+        logits,
+        xt,
+        t,
+        s,
+        temperature=0.85,
+        raw_loo_top_p=1.0,
+    )
+    first_generator = torch.Generator().manual_seed(2026)
+    second_generator = torch.Generator().manual_seed(2026)
+    historical_ids = process.step(
+        logits, xt, t, s, temperature=0.85, generator=first_generator
+    )
+    explicit_identity_ids = process.step(
+        logits,
+        xt,
+        t,
+        s,
+        temperature=0.85,
+        raw_loo_top_p=1.0,
+        generator=second_generator,
+    )
+
+    assert torch.equal(historical, explicit_identity)
+    assert torch.equal(historical_ids, explicit_identity_ids)
+    assert torch.equal(first_generator.get_state(), second_generator.get_state())
+
+
+@pytest.mark.parametrize("prior", ["uniform", "categorical"])
+def test_nucleus_filters_raw_loo_but_never_final_reverse_posterior(prior):
+    if prior == "uniform":
+        process = ContinuousUniformDiffusion(4, noise_eps=0.02)
+    else:
+        process = ContinuousCategoricalDiffusion(
+            4,
+            torch.tensor([0.7, 0.2, 0.08, 0.02], dtype=torch.float64),
+            noise_eps=0.02,
+        )
+    logits = torch.tensor([[[9.0, 1.0, 0.0, -1.0]]], dtype=torch.float64)
+    filtered_loo = process.clean_log_probs(logits, raw_loo_top_p=0.5).exp()
+    posterior = process.posterior_probs(
+        logits,
+        torch.tensor([[0]]),
+        torch.tensor([0.8], dtype=torch.float64),
+        torch.tensor([0.35], dtype=torch.float64),
+        raw_loo_top_p=0.5,
+    )
+
+    assert torch.count_nonzero(filtered_loo) == 1
+    assert torch.all(posterior > 0)
+    assert posterior.sum() == pytest.approx(1.0)

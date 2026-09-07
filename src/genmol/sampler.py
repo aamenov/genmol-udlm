@@ -57,6 +57,18 @@ def _copy_inference_weights_receipt(receipt):
     }
 
 
+def _finite_positive_sampling_scalar(value, name, *, at_most_one=False):
+    """Validate a public sampling scalar without accepting booleans or strings."""
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        raise ValueError(f'{name} must be a finite real number')
+    result = float(value)
+    if not math.isfinite(result) or result <= 0:
+        raise ValueError(f'{name} must be finite and positive')
+    if at_most_one and result > 1:
+        raise ValueError(f'{name} must lie in (0, 1]')
+    return result
+
+
 def _ema_metadata_and_parameters(model):
     """Validate the EMA state against the trainable backbone parameters."""
     parameters = list(model.backbone.parameters())
@@ -215,10 +227,19 @@ class Sampler:
         gamma=0,
         w=2,
         num_steps=None,
+        raw_loo_top_p=1.0,
         return_token_ids=False,
         **kwargs,
     ):
         """Generate molecules or raw IDs; ``randomness`` is MDLM-only."""
+        softmax_temp = _finite_positive_sampling_scalar(
+            softmax_temp, 'softmax_temp'
+        )
+        raw_loo_top_p = _finite_positive_sampling_scalar(
+            raw_loo_top_p,
+            'raw_loo_top_p',
+            at_most_one=True,
+        )
         x = x.to(self.model.device)
         attention_mask = x != self.pad_index
         if self.diffusion_type == 'udlm':
@@ -257,6 +278,7 @@ class Sampler:
                     s,
                     mutable_mask=editable_mask,
                     temperature=softmax_temp,
+                    raw_loo_top_p=raw_loo_top_p,
                 )
         else:
             num_steps = max(self.mdlm.get_num_steps_confidence(x), 2)

@@ -1,4 +1,4 @@
-"""Independently re-decode and re-score one schema-7 de-novo run.
+"""Independently re-decode and re-score one schema-8 de-novo run.
 
 The benchmark summary is not treated as a source of metric truth.  This module
 retains the exact summary/CSV bytes, verifies their caller-pinned digests, takes
@@ -17,6 +17,8 @@ interpreter startup.
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import hashlib
 import json
 import math
@@ -37,7 +39,20 @@ from scripts.exps.denovo import benchmark  # noqa: E402
 from scripts.udlm import rescore_mdlm_baseline as baseline_rescore  # noqa: E402
 
 
-SUMMARY_SCHEMA_VERSION = 7
+SUMMARY_SCHEMA_VERSION = 8
+HISTORICAL_MDLM_SUMMARY_SCHEMA_VERSION = 7
+MAXIMUM_SUMMARY_SIZE_BYTES = 2 * 1024 * 1024
+TOKEN_AUDIT_SCHEMA_VERSION = 1
+MODEL_VOCAB_SIZE = 1_880
+TOKENIZER_EFFECTIVE_SIZE = 1_882
+MAXIMUM_TOKEN_AUDIT_ROWS = 1_000
+MAXIMUM_TOKEN_AUDIT_COLUMNS = 256
+CONTROL_TOKEN_IDS = {"unk": 0, "bos": 1, "eos": 2, "pad": 3, "mask": 4}
+HISTORICAL_MDLM_CHECKPOINT_SHA256 = (
+    "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6"
+)
+HISTORICAL_MDLM_CHECKPOINT_SIZE_BYTES = 1_396_998_679
+HISTORICAL_MDLM_GLOBAL_STEP = 50_000
 NUMERIC_ABSOLUTE_TOLERANCE = baseline_rescore.NUMERIC_ABSOLUTE_TOLERANCE
 RescoreValidationError = baseline_rescore.RescoreValidationError
 RetainedArtifact = baseline_rescore.RetainedArtifact
@@ -72,8 +87,10 @@ SUMMARY_FIELDS = frozenset(
         "metric_inputs",
         "tokenizer",
         "artifacts",
+        "sampled_token_control_audit",
     }
 )
+HISTORICAL_MDLM_SUMMARY_FIELDS = SUMMARY_FIELDS - {"sampled_token_control_audit"}
 RUN_FIELDS = frozenset(
     {
         "seed",
@@ -87,8 +104,10 @@ RUN_FIELDS = frozenset(
         "generation_protocol",
         "command",
         "seed_configuration",
+        "execution_authority",
     }
 )
+HISTORICAL_MDLM_RUN_FIELDS = RUN_FIELDS - {"execution_authority"}
 CHECKPOINT_FIELDS = frozenset(
     {
         "path",
@@ -145,6 +164,7 @@ GENERATION_PROTOCOL_FIELDS = frozenset(
         "prior_metadata_sha256",
         "temperature",
         "randomness",
+        "raw_loo_top_p",
         "randomness_used_by_sampler",
         "model_use_bracket_safe",
         "single_generation_batch",
@@ -154,7 +174,109 @@ GENERATION_PROTOCOL_FIELDS = frozenset(
         "inference_weights",
     }
 )
-IMPLEMENTATION_INPUT_NAMES = frozenset(benchmark.IMPLEMENTATION_INPUT_PATHS)
+HISTORICAL_MDLM_GENERATION_PROTOCOL_FIELDS = GENERATION_PROTOCOL_FIELDS - {
+    "raw_loo_top_p"
+}
+HISTORICAL_MDLM_IMPLEMENTATION_INPUT_NAMES = frozenset(
+    benchmark.IMPLEMENTATION_INPUT_PATHS
+) - {"artifact_io_source"}
+IMPLEMENTATION_INPUT_NAMES = HISTORICAL_MDLM_IMPLEMENTATION_INPUT_NAMES | {
+    "artifact_io_source"
+}
+RUNTIME_FIELDS = frozenset(
+    {
+        "model_load_and_device_move",
+        "model_sampling_and_tokenizer",
+        "sampled_token_control_audit",
+        "released_postprocessing",
+        "generation",
+        "decode_and_metrics",
+        "total_before_summary_write",
+    }
+)
+HISTORICAL_MDLM_RUNTIME_FIELDS = RUNTIME_FIELDS - {"sampled_token_control_audit"}
+ARTIFACT_BUNDLE = {
+    "publication_api": "scripts.artifact_io.publish_bundle_exclusive",
+    "ordinary_members": ["raw_samples.csv"],
+    "completion_member": "summary.json",
+    "exclusive_no_clobber": True,
+    "completion_linked_last": True,
+    "precompletion_failure_rollback": "exact_owned_members_only",
+}
+EXECUTION_AUTHORITY_FIELDS = frozenset(
+    {
+        "schema_version",
+        "launch_authority",
+        "launch_authority_canonical_sha256",
+        "output_directory_descriptor_retained_until_after_bundle_publication",
+        "validated_before_model_import",
+        "revalidated_immediately_before_publication",
+    }
+)
+LAUNCH_AUTHORITY_FIELDS = frozenset(
+    {
+        "schema_version",
+        "generation_lease",
+        "artifact_io_source",
+        "output_directory",
+        "command",
+        "command_sha256",
+    }
+)
+GENERATION_LEASE_FIELDS = frozenset(
+    {"path", "relative_path", "sha256", "device", "inode", "owner_token"}
+)
+AUTHORITY_SOURCE_FIELDS = frozenset({"path", "sha256", "device", "inode"})
+AUTHORITY_OUTPUT_FIELDS = frozenset({"path", "relative_path", "device", "inode"})
+
+TOKEN_AUDIT_FIELDS = frozenset(
+    {
+        "schema_version",
+        "rows",
+        "columns",
+        "model_vocab_size",
+        "tokenizer_effective_size",
+        "control_token_ids",
+        "sampler_input_ids",
+        "final_sampled_ids",
+        "editable_mask",
+        "control_token_counts",
+    }
+)
+UINT16_ARRAY_FIELDS = frozenset(
+    {
+        "encoding",
+        "dtype",
+        "byte_order",
+        "array_order",
+        "compression",
+        "element_count",
+        "decoded_byte_count",
+        "decoded_sha256",
+        "data_base64",
+    }
+)
+EDITABLE_MASK_FIELDS = frozenset(
+    {
+        "encoding",
+        "packing",
+        "bit_order",
+        "array_order",
+        "compression",
+        "logical_bit_count",
+        "decoded_byte_count",
+        "unused_tail_bit_count",
+        "decoded_sha256",
+        "data_base64",
+    }
+)
+CONTROL_COUNT_FIELDS = frozenset(
+    {
+        "sampler_input_all_positions",
+        "final_sampled_all_positions",
+        "final_sampled_editable_positions",
+    }
+)
 
 
 def _mapping(value: Any, label: str) -> Mapping[str, Any]:
@@ -217,6 +339,479 @@ def _assert_expected(actual: Any, expected: Any, label: str) -> None:
         raise RescoreValidationError(f"{label} differs: {actual!r} != {expected!r}")
 
 
+def _canonical_base64(value: Any, label: str) -> bytes:
+    if not isinstance(value, str):
+        raise RescoreValidationError(f"{label} must be an RFC 4648 base64 string")
+    try:
+        decoded = base64.b64decode(value, validate=True)
+    except (binascii.Error, ValueError) as error:
+        raise RescoreValidationError(
+            f"{label} must be valid RFC 4648 base64"
+        ) from error
+    canonical = base64.b64encode(decoded).decode("ascii")
+    if value != canonical:
+        raise RescoreValidationError(f"{label} is not canonical RFC 4648 base64")
+    return decoded
+
+
+def _validate_encoded_uint16_array(
+    value: Any,
+    *,
+    label: str,
+    expected_elements: int,
+) -> list[int]:
+    record = _mapping(value, label)
+    _exact_keys(record, UINT16_ARRAY_FIELDS, label)
+    expected_identity = {
+        "encoding": "rfc4648_base64",
+        "dtype": "uint16",
+        "byte_order": "little",
+        "array_order": "C",
+        "compression": "none",
+    }
+    for field, expected in expected_identity.items():
+        if record.get(field) != expected:
+            raise RescoreValidationError(f"{label}.{field} differs")
+    element_count = _integer(
+        record.get("element_count"), f"{label}.element_count", minimum=0
+    )
+    decoded_byte_count = _integer(
+        record.get("decoded_byte_count"),
+        f"{label}.decoded_byte_count",
+        minimum=0,
+    )
+    if element_count != expected_elements:
+        raise RescoreValidationError(f"{label}.element_count differs from shape")
+    if decoded_byte_count != 2 * expected_elements:
+        raise RescoreValidationError(f"{label}.decoded_byte_count differs from shape")
+    decoded = _canonical_base64(record.get("data_base64"), f"{label}.data_base64")
+    if len(decoded) != decoded_byte_count:
+        raise RescoreValidationError(f"{label} decoded byte length differs")
+    digest = _sha256(record.get("decoded_sha256"), f"{label}.decoded_sha256")
+    if hashlib.sha256(decoded).hexdigest() != digest:
+        raise RescoreValidationError(f"{label}.decoded_sha256 differs")
+    return [
+        int.from_bytes(decoded[offset : offset + 2], "little", signed=False)
+        for offset in range(0, len(decoded), 2)
+    ]
+
+
+def _validate_editable_mask(
+    value: Any,
+    *,
+    expected_bits: int,
+) -> list[bool]:
+    label = "sampled_token_control_audit.editable_mask"
+    record = _mapping(value, label)
+    _exact_keys(record, EDITABLE_MASK_FIELDS, label)
+    expected_identity = {
+        "encoding": "rfc4648_base64",
+        "packing": "one_bit_per_position",
+        "bit_order": "msb0",
+        "array_order": "C",
+        "compression": "none",
+    }
+    for field, expected in expected_identity.items():
+        if record.get(field) != expected:
+            raise RescoreValidationError(f"{label}.{field} differs")
+    logical_bits = _integer(
+        record.get("logical_bit_count"), f"{label}.logical_bit_count", minimum=0
+    )
+    byte_count = _integer(
+        record.get("decoded_byte_count"), f"{label}.decoded_byte_count", minimum=0
+    )
+    unused_tail_bits = _integer(
+        record.get("unused_tail_bit_count"),
+        f"{label}.unused_tail_bit_count",
+        minimum=0,
+    )
+    expected_bytes = (expected_bits + 7) // 8
+    expected_unused = expected_bytes * 8 - expected_bits
+    if logical_bits != expected_bits or byte_count != expected_bytes:
+        raise RescoreValidationError(f"{label} length differs from shape")
+    if unused_tail_bits != expected_unused or unused_tail_bits > 7:
+        raise RescoreValidationError(f"{label}.unused_tail_bit_count differs")
+    decoded = _canonical_base64(record.get("data_base64"), f"{label}.data_base64")
+    if len(decoded) != byte_count:
+        raise RescoreValidationError(f"{label} decoded byte length differs")
+    digest = _sha256(record.get("decoded_sha256"), f"{label}.decoded_sha256")
+    if hashlib.sha256(decoded).hexdigest() != digest:
+        raise RescoreValidationError(f"{label}.decoded_sha256 differs")
+    if unused_tail_bits and decoded and decoded[-1] & ((1 << unused_tail_bits) - 1):
+        raise RescoreValidationError(f"{label} unused tail bits must be zero")
+    return [
+        bool(decoded[index // 8] & (1 << (7 - index % 8)))
+        for index in range(expected_bits)
+    ]
+
+
+def _control_counts(values: Sequence[int]) -> dict[str, int]:
+    return {
+        name: sum(value == token_id for value in values)
+        for name, token_id in CONTROL_TOKEN_IDS.items()
+    }
+
+
+def _validate_control_counts(
+    value: Any,
+    *,
+    sampler_input_ids: Sequence[int],
+    final_sampled_ids: Sequence[int],
+    editable: Sequence[bool],
+) -> dict[str, dict[str, int]]:
+    label = "sampled_token_control_audit.control_token_counts"
+    record = _mapping(value, label)
+    _exact_keys(record, CONTROL_COUNT_FIELDS, label)
+    expected = {
+        "sampler_input_all_positions": _control_counts(sampler_input_ids),
+        "final_sampled_all_positions": _control_counts(final_sampled_ids),
+        "final_sampled_editable_positions": _control_counts(
+            [
+                token_id
+                for token_id, is_editable in zip(final_sampled_ids, editable)
+                if is_editable
+            ]
+        ),
+    }
+    for scope, expected_counts in expected.items():
+        counts = _mapping(record.get(scope), f"{label}.{scope}")
+        _exact_keys(counts, frozenset(CONTROL_TOKEN_IDS), f"{label}.{scope}")
+        for name, expected_count in expected_counts.items():
+            observed = _integer(counts.get(name), f"{label}.{scope}.{name}", minimum=0)
+            if observed != expected_count:
+                raise RescoreValidationError(
+                    f"{label}.{scope}.{name} differs from decoded IDs"
+                )
+    return expected
+
+
+def validate_sampled_token_control_audit(
+    value: Any,
+    *,
+    expected_rows: int,
+    exclude_special_tokens: bool,
+    raw_model_texts: Sequence[str],
+    tokenizer_batch_decode: Callable[..., Sequence[str]],
+) -> dict[str, Any]:
+    """Validate and independently decode the complete schema-8 token audit."""
+
+    label = "sampled_token_control_audit"
+    audit = _mapping(value, label)
+    _exact_keys(audit, TOKEN_AUDIT_FIELDS, label)
+    if audit.get("schema_version") != TOKEN_AUDIT_SCHEMA_VERSION:
+        raise RescoreValidationError(f"{label}.schema_version differs")
+    rows = _integer(audit.get("rows"), f"{label}.rows", minimum=1)
+    columns = _integer(audit.get("columns"), f"{label}.columns", minimum=1)
+    if rows != expected_rows or rows > MAXIMUM_TOKEN_AUDIT_ROWS:
+        raise RescoreValidationError(f"{label}.rows differs or exceeds 1000")
+    if columns > MAXIMUM_TOKEN_AUDIT_COLUMNS:
+        raise RescoreValidationError(f"{label}.columns exceeds 256")
+    if audit.get("model_vocab_size") != MODEL_VOCAB_SIZE:
+        raise RescoreValidationError(f"{label}.model_vocab_size differs")
+    if audit.get("tokenizer_effective_size") != TOKENIZER_EFFECTIVE_SIZE:
+        raise RescoreValidationError(f"{label}.tokenizer_effective_size differs")
+    control_ids = _mapping(audit.get("control_token_ids"), f"{label}.control_token_ids")
+    if dict(control_ids) != CONTROL_TOKEN_IDS:
+        raise RescoreValidationError(f"{label}.control_token_ids differs")
+
+    element_count = rows * columns
+    sampler_input_ids = _validate_encoded_uint16_array(
+        audit.get("sampler_input_ids"),
+        label=f"{label}.sampler_input_ids",
+        expected_elements=element_count,
+    )
+    final_sampled_ids = _validate_encoded_uint16_array(
+        audit.get("final_sampled_ids"),
+        label=f"{label}.final_sampled_ids",
+        expected_elements=element_count,
+    )
+    editable = _validate_editable_mask(
+        audit.get("editable_mask"), expected_bits=element_count
+    )
+    for name, values in (
+        ("sampler_input_ids", sampler_input_ids),
+        ("final_sampled_ids", final_sampled_ids),
+    ):
+        if any(value < 0 or value >= MODEL_VOCAB_SIZE for value in values):
+            raise RescoreValidationError(f"{label}.{name} contains an out-of-range ID")
+
+    final_rows: list[list[int]] = []
+    for row_index in range(rows):
+        start = row_index * columns
+        stop = start + columns
+        input_row = sampler_input_ids[start:stop]
+        final_row = final_sampled_ids[start:stop]
+        editable_row = editable[start:stop]
+        if input_row[0] != CONTROL_TOKEN_IDS["bos"]:
+            raise RescoreValidationError(f"{label} row {row_index} lacks BOS")
+        try:
+            eos_index = input_row.index(CONTROL_TOKEN_IDS["eos"], 1)
+        except ValueError as error:
+            raise RescoreValidationError(
+                f"{label} row {row_index} lacks EOS"
+            ) from error
+        if eos_index <= 1:
+            raise RescoreValidationError(
+                f"{label} row {row_index} has no editable MASK body"
+            )
+        expected_input = (
+            [CONTROL_TOKEN_IDS["bos"]]
+            + [CONTROL_TOKEN_IDS["mask"]] * (eos_index - 1)
+            + [CONTROL_TOKEN_IDS["eos"]]
+            + [CONTROL_TOKEN_IDS["pad"]] * (columns - eos_index - 1)
+        )
+        if input_row != expected_input:
+            raise RescoreValidationError(
+                f"{label} row {row_index} is not BOS MASK+ EOS PAD*"
+            )
+        expected_editable = [value == CONTROL_TOKEN_IDS["mask"] for value in input_row]
+        if editable_row != expected_editable:
+            raise RescoreValidationError(
+                f"{label} row {row_index} editable mask differs from input MASK"
+            )
+        for column_index, (before, after, is_editable) in enumerate(
+            zip(input_row, final_row, editable_row)
+        ):
+            if not is_editable and before != after:
+                raise RescoreValidationError(
+                    f"{label} immutable ID changed at row {row_index}, "
+                    f"column {column_index}"
+                )
+            if (
+                is_editable
+                and exclude_special_tokens
+                and after in CONTROL_TOKEN_IDS.values()
+            ):
+                raise RescoreValidationError(
+                    f"{label} editable special ID violates exclusion policy"
+                )
+        final_rows.append(final_row)
+
+    counts = _validate_control_counts(
+        audit.get("control_token_counts"),
+        sampler_input_ids=sampler_input_ids,
+        final_sampled_ids=final_sampled_ids,
+        editable=editable,
+    )
+    if len(raw_model_texts) != rows or any(
+        not isinstance(value, str) for value in raw_model_texts
+    ):
+        raise RescoreValidationError("raw_model_text rows differ from token audit")
+    decoded = tokenizer_batch_decode(final_rows, skip_special_tokens=True)
+    if not isinstance(decoded, Sequence) or isinstance(decoded, (str, bytes)):
+        raise RescoreValidationError("tokenizer batch_decode returned an invalid value")
+    normalized_decoded = [str(value) for value in decoded]
+    if normalized_decoded != list(raw_model_texts):
+        raise RescoreValidationError(
+            "tokenizer batch_decode(final_sampled_ids, skip_special_tokens=True) "
+            "differs from raw_samples.csv raw_model_text order"
+        )
+    return {
+        "schema_version": TOKEN_AUDIT_SCHEMA_VERSION,
+        "rows": rows,
+        "columns": columns,
+        "sampler_input_ids_sha256": audit["sampler_input_ids"]["decoded_sha256"],
+        "final_sampled_ids_sha256": audit["final_sampled_ids"]["decoded_sha256"],
+        "editable_mask_sha256": audit["editable_mask"]["decoded_sha256"],
+        "control_token_counts": counts,
+        "exact_batch_decode_match": True,
+    }
+
+
+def _nonnegative_identity(value: Any, label: str) -> int:
+    return _integer(value, label, minimum=0)
+
+
+def _validate_execution_authority(
+    value: Any,
+    *,
+    run_command: Sequence[str],
+    checkpoint_path: str,
+    checkpoint_sha256: str,
+    source_revision: str,
+    config_path: str,
+    config_sha256: str,
+    expected_sample_count: int,
+    expected_seed: int,
+    environment: Mapping[str, Any],
+    implementation_inputs: Mapping[str, Any],
+) -> dict[str, Any]:
+    label = "run.execution_authority"
+    execution = _mapping(value, label)
+    _exact_keys(execution, EXECUTION_AUTHORITY_FIELDS, label)
+    if execution.get("schema_version") != 1:
+        raise RescoreValidationError(f"{label}.schema_version differs")
+    for flag in (
+        "output_directory_descriptor_retained_until_after_bundle_publication",
+        "validated_before_model_import",
+        "revalidated_immediately_before_publication",
+    ):
+        if execution.get(flag) is not True:
+            raise RescoreValidationError(f"{label}.{flag} must be true")
+
+    authority = _mapping(execution.get("launch_authority"), f"{label}.launch_authority")
+    _exact_keys(authority, LAUNCH_AUTHORITY_FIELDS, f"{label}.launch_authority")
+    if authority.get("schema_version") != 1:
+        raise RescoreValidationError(f"{label}.launch_authority.schema_version differs")
+    authority_digest = _sha256(
+        execution.get("launch_authority_canonical_sha256"),
+        f"{label}.launch_authority_canonical_sha256",
+    )
+    if baseline_rescore.canonical_json_sha256(authority) != authority_digest:
+        raise RescoreValidationError(f"{label} launch-authority digest differs")
+
+    lease = _mapping(
+        authority.get("generation_lease"), f"{label}.launch_authority.generation_lease"
+    )
+    _exact_keys(lease, GENERATION_LEASE_FIELDS, "generation lease authority")
+    if lease.get("relative_path") != "output/.single_generation_job.lock":
+        raise RescoreValidationError("generation lease relative path differs")
+    lease_path = lease.get("path")
+    if not isinstance(lease_path, str) or not Path(lease_path).is_absolute():
+        raise RescoreValidationError("generation lease path must be absolute")
+    if (
+        Path(lease_path).as_posix()
+        != (
+            Path(lease_path).parents[1] / "output/.single_generation_job.lock"
+        ).as_posix()
+    ):
+        raise RescoreValidationError("generation lease absolute/relative paths differ")
+    lease_sha256 = _sha256(lease.get("sha256"), "generation lease sha256")
+    owner_token = _sha256(lease.get("owner_token"), "generation lease owner token")
+    _nonnegative_identity(lease.get("device"), "generation lease device")
+    _nonnegative_identity(lease.get("inode"), "generation lease inode")
+
+    artifact_source = _mapping(
+        authority.get("artifact_io_source"),
+        f"{label}.launch_authority.artifact_io_source",
+    )
+    _exact_keys(artifact_source, AUTHORITY_SOURCE_FIELDS, "artifact_io authority")
+    artifact_source_path = artifact_source.get("path")
+    if (
+        not isinstance(artifact_source_path, str)
+        or not Path(artifact_source_path).is_absolute()
+        or Path(artifact_source_path).as_posix().endswith("/scripts/artifact_io.py")
+        is not True
+    ):
+        raise RescoreValidationError("artifact_io authority path differs")
+    artifact_source_sha256 = _sha256(
+        artifact_source.get("sha256"), "artifact_io authority sha256"
+    )
+    _nonnegative_identity(artifact_source.get("device"), "artifact_io source device")
+    _nonnegative_identity(artifact_source.get("inode"), "artifact_io source inode")
+    implementation_artifact_source = _mapping(
+        implementation_inputs.get("artifact_io_source"),
+        "implementation_inputs.artifact_io_source",
+    )
+    if (
+        implementation_artifact_source.get("path") != artifact_source_path
+        or implementation_artifact_source.get("sha256") != artifact_source_sha256
+    ):
+        raise RescoreValidationError(
+            "artifact_io launch authority differs from implementation input"
+        )
+
+    output = _mapping(
+        authority.get("output_directory"),
+        f"{label}.launch_authority.output_directory",
+    )
+    _exact_keys(output, AUTHORITY_OUTPUT_FIELDS, "output-directory authority")
+    output_path = output.get("path")
+    output_relative = output.get("relative_path")
+    if (
+        not isinstance(output_path, str)
+        or not Path(output_path).is_absolute()
+        or not isinstance(output_relative, str)
+        or not output_relative
+        or Path(output_relative).is_absolute()
+        or ".." in Path(output_relative).parts
+        or not output_relative.startswith("output/")
+        or not output_path.endswith("/" + output_relative)
+    ):
+        raise RescoreValidationError("output-directory authority paths differ")
+    output_device = _nonnegative_identity(
+        output.get("device"), "output-directory device"
+    )
+    output_inode = _nonnegative_identity(output.get("inode"), "output-directory inode")
+
+    authority_command = authority.get("command")
+    if authority_command != list(run_command):
+        raise RescoreValidationError(
+            "launch-authority command differs from run.command"
+        )
+    expected_command = [
+        run_command[0],
+        run_command[1],
+        "--checkpoint",
+        checkpoint_path,
+        "--expected-checkpoint-sha256",
+        checkpoint_sha256,
+        "--expected-source-revision",
+        source_revision,
+        "--config",
+        config_path,
+        "--expected-config-sha256",
+        config_sha256,
+        "--num-samples",
+        str(expected_sample_count),
+        "--seed",
+        str(expected_seed),
+        "--device",
+        "cuda:0",
+        "--output-dir",
+        output_path,
+        "--expected-output-directory-device",
+        str(output_device),
+        "--expected-output-directory-inode",
+        str(output_inode),
+    ]
+    if list(run_command) != expected_command:
+        raise RescoreValidationError("schema-8 run.command ordering or value differs")
+    command_digest = _sha256(
+        authority.get("command_sha256"), "launch-authority command sha256"
+    )
+    encoded_command = json.dumps(
+        list(run_command), separators=(",", ":"), ensure_ascii=True
+    ).encode("ascii")
+    if hashlib.sha256(encoded_command).hexdigest() != command_digest:
+        raise RescoreValidationError("launch-authority command digest differs")
+
+    launch_environment = _mapping(
+        environment.get("launch_environment"), "environment.launch_environment"
+    )
+    authority_json = json.dumps(
+        dict(authority), separators=(",", ":"), sort_keys=True, ensure_ascii=True
+    )
+    expected_environment = {
+        "GENMOL_BENCHMARK_GENERATION_LEASE_PATH": lease_path,
+        "GENMOL_BENCHMARK_EXPECTED_GENERATION_LEASE_SHA256": lease_sha256,
+        "GENMOL_BENCHMARK_GENERATION_LEASE_OWNER_TOKEN": owner_token,
+        "GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON": authority_json,
+    }
+    for key, expected in expected_environment.items():
+        if launch_environment.get(key) != expected:
+            raise RescoreValidationError(
+                f"environment.launch_environment.{key} differs"
+            )
+    try:
+        parsed_environment_authority = json.loads(
+            launch_environment["GENMOL_BENCHMARK_LAUNCH_AUTHORITY_JSON"]
+        )
+    except (TypeError, json.JSONDecodeError) as error:
+        raise RescoreValidationError(
+            "launch authority environment JSON is invalid"
+        ) from error
+    if parsed_environment_authority != dict(authority):
+        raise RescoreValidationError("parsed environment launch authority differs")
+    return {
+        "generation_lease_sha256": lease_sha256,
+        "artifact_io_source_sha256": artifact_source_sha256,
+        "output_directory": dict(output),
+        "command_sha256": command_digest,
+        "launch_authority_canonical_sha256": authority_digest,
+    }
+
+
 def _validate_summary_identity(
     summary: Mapping[str, Any],
     *,
@@ -232,7 +827,7 @@ def _validate_summary_identity(
     expected_implementation_inputs_sha256: str | None,
     expected_metric_inputs_sha256: str | None,
 ) -> dict[str, Any]:
-    """Validate the identity-bearing schema-7 fields without trusting metrics."""
+    """Validate identity-bearing schema-8 fields without trusting metrics."""
 
     for value, label in (
         (expected_checkpoint_sha256, "expected checkpoint SHA-256"),
@@ -251,10 +846,20 @@ def _validate_summary_identity(
     if expected_source_revision is not None:
         _git_revision(expected_source_revision, "expected source revision")
 
-    _exact_keys(summary, SUMMARY_FIELDS, "benchmark summary")
-    if summary.get("schema_version") != SUMMARY_SCHEMA_VERSION:
+    schema_version = summary.get("schema_version")
+    historical_mdlm = schema_version == HISTORICAL_MDLM_SUMMARY_SCHEMA_VERSION
+    _exact_keys(
+        summary,
+        HISTORICAL_MDLM_SUMMARY_FIELDS if historical_mdlm else SUMMARY_FIELDS,
+        "benchmark summary",
+    )
+    if schema_version not in {
+        SUMMARY_SCHEMA_VERSION,
+        HISTORICAL_MDLM_SUMMARY_SCHEMA_VERSION,
+    }:
         raise RescoreValidationError(
-            f"benchmark summary schema must equal {SUMMARY_SCHEMA_VERSION}"
+            "benchmark summary schema must equal 8, except for the exact pinned "
+            "historical MDLM schema-7 baseline"
         )
     if summary.get("status") != "completed":
         raise RescoreValidationError("benchmark summary is not completed")
@@ -264,7 +869,11 @@ def _validate_summary_identity(
         raise RescoreValidationError("benchmark summary sample count differs")
 
     run = _mapping(summary.get("run"), "benchmark summary.run")
-    _exact_keys(run, RUN_FIELDS, "benchmark summary.run")
+    _exact_keys(
+        run,
+        HISTORICAL_MDLM_RUN_FIELDS if historical_mdlm else RUN_FIELDS,
+        "benchmark summary.run",
+    )
     if (
         run.get("seed") != expected_seed
         or run.get("requested_sample_count") != expected_sample_count
@@ -344,13 +953,18 @@ def _validate_summary_identity(
         raise RescoreValidationError("config.sampling_sha256 is invalid")
     if baseline_rescore.canonical_json_sha256(effective) != effective_sha256:
         raise RescoreValidationError("config.effective_sha256 is invalid")
-    try:
-        normalized_sampling = benchmark.validate_sampling_config(sampling)
-    except ValueError as error:
-        raise RescoreValidationError(f"sampling config is invalid: {error}") from error
-    if dict(sampling) != normalized_sampling:
-        raise RescoreValidationError("sampling config is not canonical")
+    if not historical_mdlm:
+        try:
+            normalized_sampling = benchmark.validate_sampling_config(sampling)
+        except ValueError as error:
+            raise RescoreValidationError(
+                f"sampling config is invalid: {error}"
+            ) from error
+        if dict(sampling) != normalized_sampling:
+            raise RescoreValidationError("sampling config is not canonical")
     expected_effective = dict(source_config)
+    if not historical_mdlm:
+        expected_effective["raw_loo_top_p"] = sampling["raw_loo_top_p"]
     expected_effective.update(
         {
             "model_path": checkpoint_path,
@@ -364,7 +978,15 @@ def _validate_summary_identity(
         )
 
     protocol = _mapping(run.get("generation_protocol"), "run.generation_protocol")
-    _exact_keys(protocol, GENERATION_PROTOCOL_FIELDS, "run.generation_protocol")
+    _exact_keys(
+        protocol,
+        (
+            HISTORICAL_MDLM_GENERATION_PROTOCOL_FIELDS
+            if historical_mdlm
+            else GENERATION_PROTOCOL_FIELDS
+        ),
+        "run.generation_protocol",
+    )
     if protocol.get("diffusion_type") != sampling["diffusion_type"]:
         raise RescoreValidationError("generation/checkpoint config diffusion differs")
     if checkpoint.get("diffusion_type") != sampling["diffusion_type"]:
@@ -441,6 +1063,11 @@ def _validate_summary_identity(
             raise RescoreValidationError(
                 f"generation_protocol.{protocol_key} differs from config"
             )
+    if not historical_mdlm:
+        if protocol.get("raw_loo_top_p") != sampling.get("raw_loo_top_p"):
+            raise RescoreValidationError(
+                "generation_protocol.raw_loo_top_p differs from config"
+            )
     expected_common_protocol = {
         "nfe_definition": "one full backbone forward evaluation per reverse step",
         "model_use_bracket_safe": False,
@@ -461,6 +1088,36 @@ def _validate_summary_identity(
         raise RescoreValidationError(
             f"inference weights are invalid: {error}"
         ) from error
+
+    if historical_mdlm:
+        expected_sampling = {
+            "diffusion_type": "mdlm",
+            "softmax_temp": 0.5,
+            "randomness": 0.5,
+            "min_add_len": 40,
+            "num_steps": None,
+            "inference_eps": None,
+            "exclude_special_tokens": None,
+            "prior_variant": None,
+            "prior_metadata_sha256": None,
+        }
+        if (
+            expected_seed not in (0, 1, 2)
+            or expected_sample_count != 1_000
+            or checkpoint_sha256 != HISTORICAL_MDLM_CHECKPOINT_SHA256
+            or checkpoint_size != HISTORICAL_MDLM_CHECKPOINT_SIZE_BYTES
+            or checkpoint_step != HISTORICAL_MDLM_GLOBAL_STEP
+            or dict(sampling) != expected_sampling
+            or diffusion_type != "mdlm"
+            or len(command) != 20
+        ):
+            raise RescoreValidationError(
+                "schema-7 input is not the exact pinned historical MDLM baseline"
+            )
+    elif len(command) != 24:
+        raise RescoreValidationError(
+            "schema-8 benchmark run.command must contain exactly 24 elements"
+        )
 
     git = _mapping(summary.get("git"), "benchmark git provenance")
     _exact_keys(git, GIT_FIELDS, "benchmark git provenance")
@@ -502,7 +1159,12 @@ def _validate_summary_identity(
     implementation_inputs = _mapping(
         summary.get("implementation_inputs"), "implementation_inputs"
     )
-    if set(implementation_inputs) != IMPLEMENTATION_INPUT_NAMES:
+    expected_implementation_names = (
+        HISTORICAL_MDLM_IMPLEMENTATION_INPUT_NAMES
+        if historical_mdlm
+        else IMPLEMENTATION_INPUT_NAMES
+    )
+    if set(implementation_inputs) != expected_implementation_names:
         raise RescoreValidationError("implementation input map is incomplete")
     source_hashes: dict[str, str] = {}
     for name, raw_item in implementation_inputs.items():
@@ -545,10 +1207,28 @@ def _validate_summary_identity(
         "metric_inputs canonical SHA-256",
     )
 
+    runtime = _mapping(summary.get("runtime_seconds"), "runtime_seconds")
+    _exact_keys(
+        runtime,
+        HISTORICAL_MDLM_RUNTIME_FIELDS if historical_mdlm else RUNTIME_FIELDS,
+        "runtime_seconds",
+    )
+    for name, value in runtime.items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise RescoreValidationError(f"runtime_seconds.{name} must be finite")
+        if not math.isfinite(float(value)) or float(value) < 0:
+            raise RescoreValidationError(
+                f"runtime_seconds.{name} must be finite and nonnegative"
+            )
+
     artifacts = _mapping(summary.get("artifacts"), "benchmark artifacts")
     _exact_keys(
         artifacts,
-        frozenset({"raw_samples_csv", "summary_json"}),
+        (
+            frozenset({"raw_samples_csv", "summary_json"})
+            if historical_mdlm
+            else frozenset({"raw_samples_csv", "summary_json", "bundle"})
+        ),
         "benchmark artifacts",
     )
     raw_artifact = _mapping(
@@ -572,6 +1252,25 @@ def _validate_summary_identity(
         or not summary_artifact["path"]
     ):
         raise RescoreValidationError("artifacts.summary_json.path must be recorded")
+    execution_authority = None
+    if not historical_mdlm:
+        bundle = _mapping(artifacts.get("bundle"), "artifacts.bundle")
+        if dict(bundle) != ARTIFACT_BUNDLE:
+            raise RescoreValidationError("artifacts.bundle differs")
+        environment = _mapping(summary.get("environment"), "environment")
+        execution_authority = _validate_execution_authority(
+            run.get("execution_authority"),
+            run_command=command,
+            checkpoint_path=checkpoint_path,
+            checkpoint_sha256=checkpoint_sha256,
+            source_revision=source_revision,
+            config_path=config_path,
+            config_sha256=config_sha256,
+            expected_sample_count=expected_sample_count,
+            expected_seed=expected_seed,
+            environment=environment,
+            implementation_inputs=implementation_inputs,
+        )
 
     return {
         "seed": expected_seed,
@@ -596,6 +1295,7 @@ def _validate_summary_identity(
             "nfe": nfe,
             "metric_branches": ["released_comparable", "strict"],
             "inference_weights": inference_weights,
+            "raw_loo_top_p": protocol.get("raw_loo_top_p"),
         },
         "source": {
             "revision": source_revision,
@@ -609,6 +1309,9 @@ def _validate_summary_identity(
             "summary_json": {"recorded_path": summary_artifact["path"]},
             "raw_samples_csv": {"recorded_path": raw_artifact["path"]},
         },
+        "summary_schema_version": schema_version,
+        "historical_mdlm_compatibility": historical_mdlm,
+        "execution_authority": execution_authority,
     }
 
 
@@ -625,6 +1328,7 @@ def rescore_denovo_run(
     oracle_qed: Callable[[Sequence[str]], Any],
     oracle_sa: Callable[[Sequence[str]], Any],
     diversity_evaluator: Callable[[Sequence[str]], Any],
+    tokenizer_batch_decode: Callable[..., Sequence[str]] | None = None,
     expected_checkpoint_sha256: str | None = None,
     expected_config_sha256: str | None = None,
     expected_source_revision: str | None = None,
@@ -634,7 +1338,7 @@ def rescore_denovo_run(
     expected_implementation_inputs_sha256: str | None = None,
     expected_metric_inputs_sha256: str | None = None,
 ) -> dict[str, Any]:
-    """Purely validate and independently re-score retained schema-7 bytes."""
+    """Purely validate and independently re-score retained benchmark bytes."""
 
     _integer(expected_seed, "expected_seed", minimum=0)
     _integer(expected_sample_count, "expected_sample_count", minimum=1)
@@ -644,6 +1348,8 @@ def rescore_denovo_run(
     expected_raw_samples_sha256 = _sha256(
         expected_raw_samples_sha256, "expected raw CSV SHA-256"
     )
+    if len(summary_payload) > MAXIMUM_SUMMARY_SIZE_BYTES:
+        raise RescoreValidationError("benchmark summary exceeds the 2 MiB limit")
     summary_sha256 = hashlib.sha256(summary_payload).hexdigest()
     raw_sha256 = hashlib.sha256(raw_samples_payload).hexdigest()
     if summary_sha256 != expected_summary_sha256:
@@ -680,6 +1386,24 @@ def rescore_denovo_run(
         expected_implementation_inputs_sha256=expected_implementation_inputs_sha256,
         expected_metric_inputs_sha256=expected_metric_inputs_sha256,
     )
+    if identity["summary_schema_version"] == SUMMARY_SCHEMA_VERSION:
+        if tokenizer_batch_decode is None:
+            raise RescoreValidationError(
+                "schema-8 validation requires the exact tokenizer batch_decode"
+            )
+        sampling = identity["config"]["sampling"]
+        exclude_special_tokens = sampling.get("exclude_special_tokens")
+        if type(exclude_special_tokens) is not bool:
+            raise RescoreValidationError(
+                "schema-8 candidate exclude_special_tokens must be boolean"
+            )
+        identity["sampled_token_control_audit"] = validate_sampled_token_control_audit(
+            summary.get("sampled_token_control_audit"),
+            expected_rows=expected_sample_count,
+            exclude_special_tokens=exclude_special_tokens,
+            raw_model_texts=[row["raw_model_text"] for row in rows],
+            tokenizer_batch_decode=tokenizer_batch_decode,
+        )
 
     decoded = decode_function(
         [row["raw_model_text"] for row in rows],
@@ -753,6 +1477,27 @@ def rescore_denovo_run(
             "numeric_absolute_tolerance": NUMERIC_ABSOLUTE_TOLERANCE,
         },
     }
+
+
+def _load_pinned_tokenizer_batch_decode() -> Callable[..., Sequence[str]]:
+    """Load the already-cached, checksum-pinned SAFE tokenizer without downloads."""
+
+    from huggingface_hub import try_to_load_from_cache
+    from safe.tokenizer import SAFETokenizer
+
+    tokenizer_path = try_to_load_from_cache(
+        benchmark.TOKENIZER_REQUESTED_IDENTIFIER,
+        "tokenizer.json",
+        revision=benchmark.SAFE_GPT_TOKENIZER_REVISION,
+    )
+    if not isinstance(tokenizer_path, str):
+        raise RescoreValidationError("pinned SAFE tokenizer is absent from local cache")
+    payload = Path(tokenizer_path).read_bytes()
+    if hashlib.sha256(payload).hexdigest() != benchmark.SAFE_GPT_TOKENIZER_SHA256:
+        raise RescoreValidationError("cached SAFE tokenizer checksum differs")
+    tokenizer = SAFETokenizer.from_pretrained(tokenizer_path).get_pretrained()
+    tokenizer.add_tokens(["<", ">"])
+    return tokenizer.batch_decode
 
 
 def read_run_artifacts(
@@ -883,6 +1628,7 @@ def rescore_denovo_run_files(
             "caller metric-input digest differs from the pinned runtime inputs"
         )
     benchmark.assert_local_genmol_import()
+    tokenizer_batch_decode = _load_pinned_tokenizer_batch_decode()
     with baseline_rescore.network_disabled():
         from tdc import Evaluator, Oracle
 
@@ -899,6 +1645,7 @@ def rescore_denovo_run_files(
                 oracle_qed=Oracle("qed"),
                 oracle_sa=sa_oracle,
                 diversity_evaluator=Evaluator("diversity"),
+                tokenizer_batch_decode=tokenizer_batch_decode,
                 expected_metric_inputs_sha256=runtime_metric_inputs_sha256,
                 **expected_identity,
             )

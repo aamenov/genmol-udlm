@@ -21,7 +21,9 @@ _REAL_SCALE_UP_LAUNCH_REVISION_VALIDATOR = gate._validate_scale_up_launch_revisi
 def _synthetic_scale_up_registry_validator(monkeypatch):
     """Keep broad gate fixtures small while exercising gate-local byte binding."""
 
-    def validate(payload, *, relative_path, expected_raw_sha256, expected_canonical_sha256):
+    def validate(
+        payload, *, relative_path, expected_raw_sha256, expected_canonical_sha256
+    ):
         parsed = json.loads(payload)
         return SimpleNamespace(
             data=parsed,
@@ -219,8 +221,26 @@ def _python_environment(repository_root: Path, *, seed: int = 7) -> dict:
 def _candidate_lock(
     *, startup_mode: str = "warm_start", conditioning_variant: str = "additive"
 ) -> dict:
-    sampling = {"diffusion_type": "udlm", "num_steps": gate.EXPECTED_NFE}
-    implementation_inputs = {"sampler_source": {"sha256": "d" * 64}}
+    sampling = {
+        "diffusion_type": "udlm",
+        "softmax_temp": 1.0,
+        "randomness": 0.5,
+        "min_add_len": 40,
+        "num_steps": gate.EXPECTED_NFE,
+        "inference_eps": 1e-5,
+        "exclude_special_tokens": True,
+        "prior_variant": "release_uniform",
+        "prior_metadata_sha256": None,
+        "raw_loo_top_p": 1.0,
+    }
+    implementation_inputs = {
+        "sampler_source": {"sha256": "d" * 64},
+        "artifact_io_source": {
+            "path": gate.ARTIFACT_IO_RELATIVE_PATH.as_posix(),
+            "sha256": "f" * 64,
+            "size_bytes": 1234,
+        },
+    }
     metric_inputs = {"schema_version": 1}
     initialization = (
         gate.EXPECTED_BASELINE_CHECKPOINT_SHA256
@@ -246,7 +266,7 @@ def _candidate_lock(
         },
         "selection": {
             "candidate_ledger": {
-                "relative_path": "experiments/udlm/candidates/ledger.json",
+                "relative_path": gate.CANDIDATE_LEDGER_RELATIVE_PATH.as_posix(),
                 "sha256": "1" * 64,
                 "schema_version": gate.CANDIDATE_LEDGER_SCHEMA_VERSION,
             },
@@ -446,9 +466,7 @@ def _write_synthetic_scale_up_registry(
                 "prior_variant": (
                     "release_uniform"
                     if position == 0
-                    else "schedule_uniform"
-                    if position == 1
-                    else "empirical_frequency"
+                    else "schedule_uniform" if position == 1 else "empirical_frequency"
                 ),
                 "comparison_role": "synthetic",
                 "run_name": ("r-predecessor", "synthetic-candidate", "e-terminal")[
@@ -1990,7 +2008,18 @@ def _completed_pilot_attempt(
                 "raw_samples_csv": raw_ref,
             },
         }
-        sampling = {"diffusion_type": "udlm", "num_steps": nfe}
+        sampling = {
+            "diffusion_type": "udlm",
+            "softmax_temp": 1.0,
+            "randomness": 0.5,
+            "min_add_len": 40,
+            "num_steps": nfe,
+            "inference_eps": 1e-5,
+            "exclude_special_tokens": True,
+            "prior_variant": "release_uniform",
+            "prior_metadata_sha256": None,
+            "raw_loo_top_p": 1.0,
+        }
         _PILOT_RUN_RESULTS[(attempt_id, seed)] = {
             "attempt_id": attempt_id,
             "candidate_id": candidate_id,
@@ -2017,7 +2046,14 @@ def _completed_pilot_attempt(
             "runner_sha256": "e" * 64,
             "sampler_source_sha256": "d" * 64,
             "implementation_inputs_sha256": gate.canonical_json_sha256(
-                {"sampler_source": {"sha256": "d" * 64}}
+                {
+                    "sampler_source": {"sha256": "d" * 64},
+                    "artifact_io_source": {
+                        "path": gate.ARTIFACT_IO_RELATIVE_PATH.as_posix(),
+                        "sha256": "f" * 64,
+                        "size_bytes": 1234,
+                    },
+                }
             ),
             "metric_inputs_sha256": gate.canonical_json_sha256({"schema_version": 1}),
             "benchmark_revision": "b" * 40,
@@ -2119,6 +2155,7 @@ def _failed_pilot_attempt(
         b"exclude_special_tokens: true\n"
         b"prior_variant: release_uniform\n"
         b"prior_metadata_sha256: null\n"
+        b"raw_loo_top_p: 1.0\n"
     )
     log_payload = b'{"event":"launch"}\nsynthetic failure\n'
     sampling = {
@@ -2131,6 +2168,7 @@ def _failed_pilot_attempt(
         "exclude_special_tokens": True,
         "prior_variant": "release_uniform",
         "prior_metadata_sha256": None,
+        "raw_loo_top_p": 1.0,
     }
     checkpoint_path = root / checkpoint_relative_path
     config_path = root / config_relative_path
@@ -2182,6 +2220,10 @@ def _failed_pilot_attempt(
             "cuda:0",
             "--output-dir",
             str(run_dir),
+            "--expected-output-directory-device",
+            "17",
+            "--expected-output-directory-inode",
+            "23",
         ],
         "source_revision": {
             "head": source_revision,
@@ -2384,7 +2426,14 @@ def _candidate_report(
         },
         "inference_weights": _inference_weights(),
         "runner_sha256": "e" * 64,
-        "implementation_inputs": {"sampler_source": {"sha256": "d" * 64}},
+        "implementation_inputs": {
+            "sampler_source": {"sha256": "d" * 64},
+            "artifact_io_source": {
+                "path": gate.ARTIFACT_IO_RELATIVE_PATH.as_posix(),
+                "sha256": "f" * 64,
+                "size_bytes": 1234,
+            },
+        },
         "metric_inputs": {"schema_version": 1},
         "seed_runs": seed_runs,
         "aggregate_metrics": {
@@ -2486,9 +2535,8 @@ def test_pinned_protocol_and_baseline_hashes_and_semantics(
         hashlib.sha256(baseline_rescore_bytes).hexdigest()
         == gate.BASELINE_RESCORE_SHA256
     )
-    assert (
-        hashlib.sha256(floor_audit_bytes).hexdigest()
-        == (gate.PILOT_EMPIRICAL_UNIFORM_MIX_AUDIT["sha256"])
+    assert hashlib.sha256(floor_audit_bytes).hexdigest() == (
+        gate.PILOT_EMPIRICAL_UNIFORM_MIX_AUDIT["sha256"]
     )
     assert gate.canonical_json_sha256(floor_audit) == (
         gate.PILOT_EMPIRICAL_UNIFORM_MIX_AUDIT_CANONICAL_SHA256
@@ -2593,6 +2641,72 @@ def test_protocol_semantically_pins_registered_pilot_operating_point(
     )
 
     with pytest.raises(gate.GateValidationError, match="eligible pilot NFE"):
+        gate.validate_protocol(protocol)
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "error_match"),
+    [
+        (
+            (
+                "generation_resource_policy",
+                "maximum_gpus_without_additional_user_permission",
+            ),
+            4,
+            "GPU count policy",
+        ),
+        (
+            (
+                "generation_resource_policy",
+                "idle_definition",
+                "exactly_10_percent_is_idle",
+            ),
+            True,
+            "idle definition",
+        ),
+        (
+            ("raw_loo_top_p_semantics", "training_or_loss_changes"),
+            True,
+            "top-p contract",
+        ),
+        (
+            ("schema8_evidence_contract", "control_token_count_exact_keys"),
+            ["bos", "eos", "pad", "mask"],
+            "audit exact fields",
+        ),
+        (
+            ("registered_generation_campaign", "stages", 4, "seeds"),
+            [1000],
+            "eligible accounting",
+        ),
+        (
+            (
+                "registered_generation_campaign",
+                "adaptive_stage_chronology",
+                "every_non_d_child_start_strictly_after_predecessor_stage_decision_completion",
+            ),
+            False,
+            "adaptive-stage chronology",
+        ),
+        (
+            ("publication_firewall", "ordered_phases", 2, "phase"),
+            "registered_prefinal_gpu_campaign",
+            "publication phase order",
+        ),
+    ],
+)
+def test_v4_protocol_semantics_fail_closed_after_hash_rebinding(
+    protocol, monkeypatch, path, value, error_match
+):
+    cursor = protocol
+    for component in path[:-1]:
+        cursor = cursor[component]
+    cursor[path[-1]] = value
+    monkeypatch.setattr(
+        gate, "PROTOCOL_CANONICAL_SHA256", gate.canonical_json_sha256(protocol)
+    )
+
+    with pytest.raises(gate.GateValidationError, match=error_match):
         gate.validate_protocol(protocol)
 
 
@@ -3054,9 +3168,9 @@ def test_lock_rejects_final_seed_leak_and_non_ema_weights(protocol):
         gate.validate_candidate_lock(candidate_lock, protocol)
 
     candidate_lock = _candidate_lock()
-    candidate_lock["training"]["launch_manifest"]["relative_path"] = (
-        "output/udlm/synthetic-candidate/not_the_launch.json"
-    )
+    candidate_lock["training"]["launch_manifest"][
+        "relative_path"
+    ] = "output/udlm/synthetic-candidate/not_the_launch.json"
     with pytest.raises(gate.GateValidationError, match="launch_manifest.json"):
         gate.validate_candidate_lock(candidate_lock, protocol)
 
@@ -4048,9 +4162,8 @@ def test_training_summary_and_exit_receipt_are_joined_to_lock(
         "-u",
         str(tmp_path / "scripts/train.py"),
     ]
-    assert (
-        gate.canonical_json_sha256(manifest_argv[2:])
-        == (candidate_lock["training"]["training_argv_sha256"])
+    assert gate.canonical_json_sha256(manifest_argv[2:]) == (
+        candidate_lock["training"]["training_argv_sha256"]
     )
     assert documents["runtime"]["training_argv"] == manifest_argv[2:]
     assert evidence["ema_finite_and_checkpoint_bound"] is True
@@ -4203,9 +4316,7 @@ def test_gate_rejects_changed_live_scale_registry_bytes(
         gate.validate_training_evidence(normalized)
 
 
-def test_gate_revalidates_scale_output_node_identity(
-    tmp_path, monkeypatch, protocol
-):
+def test_gate_revalidates_scale_output_node_identity(tmp_path, monkeypatch, protocol):
     monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
     candidate_lock = _candidate_lock()
     _write_valid_training_evidence(
@@ -4262,35 +4373,59 @@ def test_gate_delegates_registry_semantics_to_independent_scale_verifier(
     sentinel = object()
     observed = {}
 
+    def git_blob(revision, path):
+        observed["git_load"] = (revision, path)
+        return b"historical repository bytes"
+
+    def local_blob(root, path):
+        observed.setdefault("local_loads", []).append((root, path))
+        return b"live project bytes"
+
     def validate(payload, **kwargs):
         observed["payload"] = payload
         observed.update(kwargs)
+        observed["historical_repository"] = kwargs["loader"](
+            "repository", Path("scripts/source.py")
+        )
+        observed["live_project"] = kwargs["loader"](
+            "project", Path("outputs/checkpoint.ckpt")
+        )
+        observed["live_ignored_output"] = kwargs["loader"](
+            "repository", Path("output/udlm/receipt.json")
+        )
         return sentinel
 
-    monkeypatch.setattr(
-        gate.scale_up_registry, "load_validated_registry", validate
-    )
+    monkeypatch.setattr(gate.scale_up_registry, "load_validated_registry", validate)
+    monkeypatch.setattr(gate.scale_up_registry.screen, "git_blob_loader", git_blob)
+    monkeypatch.setattr(gate.scale_up_registry.screen, "local_blob_loader", local_blob)
+
+    registry_payload = _json_bytes({"source": {"revision": "5" * 40}})
 
     result = _REAL_DEEP_SCALE_UP_VALIDATOR(
-        b"registry",
+        registry_payload,
         relative_path=(
-            "experiments/udlm/protocols/"
-            "selection_bound_scale_up_registry_gpu1.json"
+            "experiments/udlm/protocols/" "selection_bound_scale_up_registry_gpu1.json"
         ),
         expected_raw_sha256="a" * 64,
         expected_canonical_sha256="b" * 64,
     )
 
     assert result is sentinel
-    assert observed == {
-        "payload": b"registry",
-        "relative_path": (
-            "experiments/udlm/protocols/"
-            "selection_bound_scale_up_registry_gpu1.json"
-        ),
-        "expected_raw_sha256": "a" * 64,
-        "expected_canonical_sha256": "b" * 64,
-    }
+    assert observed["payload"] == registry_payload
+    assert observed["relative_path"] == (
+        "experiments/udlm/protocols/selection_bound_scale_up_registry_gpu1.json"
+    )
+    assert observed["expected_raw_sha256"] == "a" * 64
+    assert observed["expected_canonical_sha256"] == "b" * 64
+    assert callable(observed["loader"])
+    assert observed["git_load"] == ("5" * 40, Path("scripts/source.py"))
+    assert observed["local_loads"] == [
+        ("project", Path("outputs/checkpoint.ckpt")),
+        ("repository", Path("output/udlm/receipt.json")),
+    ]
+    assert observed["historical_repository"] == b"historical repository bytes"
+    assert observed["live_project"] == b"live project bytes"
+    assert observed["live_ignored_output"] == b"live project bytes"
 
 
 def test_gate_validates_exact_r5_to_r6_registry_publication(monkeypatch):
@@ -4321,9 +4456,7 @@ def test_gate_validates_exact_r5_to_r6_registry_publication(monkeypatch):
         lambda revision, path: payload,
     )
 
-    _REAL_SCALE_UP_LAUNCH_REVISION_VALIDATOR(
-        registry, launch_source_revision="6" * 40
-    )
+    _REAL_SCALE_UP_LAUNCH_REVISION_VALIDATOR(registry, launch_source_revision="6" * 40)
 
     assert observed["edge"]["parent"] == "5" * 40
     assert observed["edge"]["child"] == "6" * 40
@@ -5255,6 +5388,7 @@ def test_git_firewall_requires_preexisting_exact_lock_ledger_and_config(
     rescore_path = tmp_path / gate.DENOVO_RESCORE_RELATIVE_PATH
     rescore_dependency_path = tmp_path / gate.DENOVO_RESCORE_DEPENDENCY_RELATIVE_PATH
     pilot_writer_path = tmp_path / gate.PILOT_EVIDENCE_WRITER_RELATIVE_PATH
+    artifact_io_path = tmp_path / gate.ARTIFACT_IO_RELATIVE_PATH
     config_path = tmp_path / "scripts/exps/denovo/hparams_udlm_schedule_uniform.yaml"
     sampler_path.parent.mkdir(parents=True)
     config_path.parent.mkdir(parents=True)
@@ -5274,6 +5408,8 @@ def test_git_firewall_requires_preexisting_exact_lock_ledger_and_config(
     rescore_bytes = b"# synthetic independent rescore\n"
     rescore_dependency_bytes = b"# synthetic rescore dependency\n"
     pilot_writer_bytes = b"# synthetic pilot evidence writer\n"
+    artifact_io_bytes = b"# synthetic artifact publication implementation\n"
+    artifact_io_sha256 = hashlib.sha256(artifact_io_bytes).hexdigest()
     config_bytes = (
         b"diffusion_type: udlm\n"
         b"softmax_temp: 1.0\n"
@@ -5284,6 +5420,7 @@ def test_git_firewall_requires_preexisting_exact_lock_ledger_and_config(
         b"exclude_special_tokens: true\n"
         b"prior_variant: release_uniform\n"
         b"prior_metadata_sha256: null\n"
+        b"raw_loo_top_p: 1.0\n"
     )
     sampler_path.write_bytes(sampler_bytes)
     runner_path.write_bytes(runner_bytes)
@@ -5294,6 +5431,7 @@ def test_git_firewall_requires_preexisting_exact_lock_ledger_and_config(
     rescore_path.write_bytes(rescore_bytes)
     rescore_dependency_path.write_bytes(rescore_dependency_bytes)
     pilot_writer_path.write_bytes(pilot_writer_bytes)
+    artifact_io_path.write_bytes(artifact_io_bytes)
     config_path.write_bytes(config_bytes)
     subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
     subprocess.run(
@@ -5328,7 +5466,7 @@ def test_git_firewall_requires_preexisting_exact_lock_ledger_and_config(
         attempts=[failed_attempt, pilot_attempt], selected_attempt_id="a1"
     )
     ledger_bytes = _json_bytes(ledger)
-    ledger_path = tmp_path / "experiments/udlm/candidates/ledger.json"
+    ledger_path = tmp_path / gate.CANDIDATE_LEDGER_RELATIVE_PATH
     ledger_path.parent.mkdir(parents=True)
     ledger_path.write_bytes(ledger_bytes)
     candidate_lock = _candidate_lock()
@@ -5381,7 +5519,7 @@ def test_git_firewall_requires_preexisting_exact_lock_ledger_and_config(
         pilot_result["sampler_source_sha256"] = candidate_lock["inference"][
             "sampler_source_sha256"
         ]
-    lock_path = tmp_path / "experiments/udlm/candidates/lock.json"
+    lock_path = tmp_path / gate.CANDIDATE_LOCK_RELATIVE_PATH
     lock_bytes = (json.dumps(candidate_lock, sort_keys=True) + "\n").encode()
     lock_path.write_bytes(lock_bytes)
     subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
@@ -5426,12 +5564,21 @@ def test_git_firewall_requires_preexisting_exact_lock_ledger_and_config(
         return original_subprocess_run(args, *run_args, **run_kwargs)
 
     monkeypatch.setattr(gate.subprocess, "run", run_with_external_rescore_ancestry)
+    monkeypatch.setattr(
+        gate,
+        "validate_registered_campaign_firewall",
+        lambda **_kwargs: {
+            "synthetic_legacy_fixture": True,
+            "eligible_stage_completed_at_utc": "2026-06-29T23:59:00+00:00",
+        },
+    )
 
     evidence = gate.validate_git_lock_firewall(
         benchmark_revision=benchmark_revision,
-        candidate_lock_path=Path("experiments/udlm/candidates/lock.json"),
+        candidate_lock_path=gate.CANDIDATE_LOCK_RELATIVE_PATH,
         candidate_lock_bytes=lock_bytes,
         lock=normalized,
+        expected_artifact_io_source_sha256=artifact_io_sha256,
         pilot_run_validator=_pilot_run_validator,
     )
 
@@ -5459,6 +5606,34 @@ def test_git_firewall_requires_preexisting_exact_lock_ledger_and_config(
     assert evidence["selected_checkpoint_sha256"] == "4" * 64
     assert evidence["selection_recomputed_from_committed_pilot_evidence"] is True
 
+    monkeypatch.setattr(
+        gate,
+        "validate_registered_campaign_firewall",
+        lambda **_kwargs: {
+            "eligible_stage_completed_at_utc": normalized["locked_at"].isoformat()
+        },
+    )
+    with pytest.raises(
+        gate.GateValidationError,
+        match="eligible-stage decision must strictly predate",
+    ):
+        gate.validate_git_lock_firewall(
+            benchmark_revision=benchmark_revision,
+            candidate_lock_path=gate.CANDIDATE_LOCK_RELATIVE_PATH,
+            candidate_lock_bytes=lock_bytes,
+            lock=normalized,
+            expected_artifact_io_source_sha256=artifact_io_sha256,
+            pilot_run_validator=_pilot_run_validator,
+        )
+    monkeypatch.setattr(
+        gate,
+        "validate_registered_campaign_firewall",
+        lambda **_kwargs: {
+            "synthetic_legacy_fixture": True,
+            "eligible_stage_completed_at_utc": "2026-06-29T23:59:00+00:00",
+        },
+    )
+
     wrong_checkpoint_lock = dict(normalized)
     wrong_checkpoint_lock["checkpoint"] = {
         **normalized["checkpoint"],
@@ -5470,9 +5645,10 @@ def test_git_firewall_requires_preexisting_exact_lock_ledger_and_config(
     ):
         gate.validate_git_lock_firewall(
             benchmark_revision=benchmark_revision,
-            candidate_lock_path=Path("experiments/udlm/candidates/lock.json"),
+            candidate_lock_path=gate.CANDIDATE_LOCK_RELATIVE_PATH,
             candidate_lock_bytes=lock_bytes,
             lock=wrong_checkpoint_lock,
+            expected_artifact_io_source_sha256=artifact_io_sha256,
             pilot_run_validator=_pilot_run_validator,
         )
 
@@ -5496,17 +5672,19 @@ def test_git_firewall_requires_preexisting_exact_lock_ledger_and_config(
     ):
         gate.validate_git_lock_firewall(
             benchmark_revision=tampered_revision,
-            candidate_lock_path=Path("experiments/udlm/candidates/lock.json"),
+            candidate_lock_path=gate.CANDIDATE_LOCK_RELATIVE_PATH,
             candidate_lock_bytes=lock_bytes,
             lock=normalized,
+            expected_artifact_io_source_sha256=artifact_io_sha256,
         )
 
     with pytest.raises(gate.GateValidationError, match="candidate-lock blob differs"):
         gate.validate_git_lock_firewall(
             benchmark_revision=benchmark_revision,
-            candidate_lock_path=Path("experiments/udlm/candidates/lock.json"),
+            candidate_lock_path=gate.CANDIDATE_LOCK_RELATIVE_PATH,
             candidate_lock_bytes=lock_bytes + b" ",
             lock=normalized,
+            expected_artifact_io_source_sha256=artifact_io_sha256,
         )
     wrong_runner_lock = dict(normalized)
     wrong_runner_lock["benchmark_runner_sha256"] = "0" * 64
@@ -5516,10 +5694,932 @@ def test_git_firewall_requires_preexisting_exact_lock_ledger_and_config(
     ):
         gate.validate_git_lock_firewall(
             benchmark_revision=benchmark_revision,
-            candidate_lock_path=Path("experiments/udlm/candidates/lock.json"),
+            candidate_lock_path=gate.CANDIDATE_LOCK_RELATIVE_PATH,
             candidate_lock_bytes=lock_bytes,
             lock=wrong_runner_lock,
+            expected_artifact_io_source_sha256=artifact_io_sha256,
             pilot_run_validator=_pilot_run_validator,
+        )
+
+
+def _registered_campaign_decision_fixture():
+    def config_id(arm, temperature, top_p):
+        temperature_code = {0.5: "050", 0.7: "070", 0.85: "085", 1.0: "100"}[
+            temperature
+        ]
+        top_p_code = {1.0: "100", 0.98: "098", 0.95: "095"}[top_p]
+        return f"{arm.lower()}_t{temperature_code}_p{top_p_code}"
+
+    registry = {
+        "registry_id": gate.candidate_config_registry.REGISTRY_ID,
+        "configs": [
+            {
+                "config_id": config_id(arm, temperature, top_p),
+                "arm_id": arm,
+                "softmax_temp": temperature,
+                "raw_loo_top_p": top_p,
+            }
+            for arm in ("R", "S", "E")
+            for temperature in (0.5, 0.7, 0.85, 1.0)
+            for top_p in (1.0, 0.98, 0.95)
+        ],
+    }
+    registry_bytes = b"synthetic frozen registry bytes\n"
+    registry_revision = "6" * 40
+    source_registry_ref = {
+        "relative_path": gate.CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH.as_posix(),
+        "sha256": hashlib.sha256(registry_bytes).hexdigest(),
+        "canonical_sha256": gate.canonical_json_sha256(registry),
+        "size_bytes": len(registry_bytes),
+        "schema_version": 1,
+    }
+    configs = {row["config_id"]: row for row in registry["configs"]}
+    prior_promotions = {}
+    prior_source = None
+    stages = []
+    outcomes = []
+    completed_outcomes = []
+    source_blobs = {}
+    for stage_number, stage_id in enumerate(gate.CAMPAIGN_STAGE_IDS):
+        contract = gate.CAMPAIGN_STAGE_CONTRACT[stage_id]
+        ids = gate._campaign_expected_config_ids(
+            stage_id, configs=configs, prior_promotions=prior_promotions
+        )
+        entries = []
+        source_entries = []
+        for entry_index, candidate_config_id in enumerate(ids):
+            config = configs[candidate_config_id]
+            attempt_id = f"stage-{stage_id.lower()}-{candidate_config_id}"
+            candidate_id = gate.CAMPAIGN_CANDIDATE_IDS[config["arm_id"]]
+            quality = 0.95 - entry_index / 10_000
+            diversity = 0.80 - entry_index / 20_000
+            tracked_children = []
+            source_children = []
+            outcome_children = []
+            for seed in contract["seeds"]:
+                digest = hashlib.sha256(f"{attempt_id}:{seed}".encode()).hexdigest()
+                common = {
+                    "artifact_kind": "pilot_evaluation",
+                    "pilot_seed": seed,
+                    "sha256": digest,
+                    "schema_version": 2,
+                }
+                tracked_children.append(
+                    {
+                        **common,
+                        "relative_path": (
+                            f"experiments/udlm/pilots/{attempt_id}/seed_{seed}.json"
+                        ),
+                    }
+                )
+                source_children.append(
+                    {
+                        **common,
+                        "relative_path": (
+                            "output/udlm/de_novo_candidate_campaign_v1/evidence/"
+                            f"{attempt_id}/seed_{seed}.json"
+                        ),
+                    }
+                )
+                outcome_children.append(
+                    {
+                        "artifact_kind": "pilot_evaluation",
+                        "requested_samples": contract["samples"],
+                        "nfe": 128,
+                        "metric_branch": "released_comparable",
+                        "quality": quality,
+                        "diversity": diversity,
+                    }
+                )
+                if stage_number == 0:
+                    started_at = "2026-09-06T23:58:00+00:00"
+                    completed_at = "2026-09-06T23:59:00+00:00"
+                else:
+                    started_at = f"2026-09-07T00:0{stage_number - 1}:10+00:00"
+                    completed_at = f"2026-09-07T00:0{stage_number - 1}:50+00:00"
+                completed_outcomes.append(
+                    {
+                        "attempt_id": attempt_id,
+                        "pilot_seed": seed,
+                        "benchmark_revision": registry_revision,
+                        "started_at_utc": started_at,
+                        "completed_at_utc": completed_at,
+                    }
+                )
+            score = (
+                None
+                if stage_id == "D"
+                else {
+                    "released_quality": quality,
+                    "released_diversity": diversity,
+                }
+            )
+            entry = {
+                "config_id": candidate_config_id,
+                "attempt_id": attempt_id,
+                "candidate_id": candidate_id,
+                "arm_id": config["arm_id"],
+                "softmax_temp": config["softmax_temp"],
+                "raw_loo_top_p": config["raw_loo_top_p"],
+                "status": "completed",
+                "rankable": stage_id != "D",
+                "selection_score": score,
+                "child_outcomes": tracked_children,
+            }
+            entries.append(entry)
+            source_entries.append(
+                {
+                    "attempt_id": attempt_id,
+                    "candidate_id": candidate_id,
+                    "config_id": candidate_config_id,
+                    "arm_id": config["arm_id"],
+                    "seeds": list(contract["seeds"]),
+                    "requested_samples_per_seed": contract["samples"],
+                    "status": "completed",
+                    "rankable": stage_id != "D",
+                    "released_quality": None if score is None else quality,
+                    "released_diversity": None if score is None else diversity,
+                    "diagnostic_structural_passed": (True if stage_id == "D" else None),
+                    "child_outcomes": source_children,
+                }
+            )
+            outcomes.append(
+                {
+                    "attempt_id": attempt_id,
+                    "candidate_id": candidate_id,
+                    "pilot_seeds": list(contract["seeds"]),
+                    "status": "completed",
+                    "released_quality": quality,
+                    "released_diversity": diversity,
+                    "children": outcome_children,
+                }
+            )
+        promoted, winner = gate._campaign_promotions(stage_id, entries)
+        accounting = {
+            "scheduled_entry_count": contract["entries"],
+            "terminal_entry_count": contract["entries"],
+            "scheduled_child_count": contract["children"],
+            "terminal_child_count": contract["children"],
+            "requested_molecule_count": contract["children"] * contract["samples"],
+        }
+        source_advancement = {
+            "predecessor_stage_decision": prior_source,
+            "ranking_order": (
+                [] if stage_id == "D" else list(gate.CAMPAIGN_RANKING_ORDER)
+            ),
+            "promoted_config_ids": promoted,
+            "global_winner_config_id": winner,
+            "required_promotions_per_arm": gate.CAMPAIGN_PROMOTION_QUOTA[stage_id],
+            "no_retry_or_substitution": True,
+            "on_failed_or_undefined_child": "retain_unrankable",
+            "on_insufficient_rankable_quota": "campaign_incomplete_without_promotion",
+            "accounting": accounting,
+        }
+        source_path = Path(
+            "output/udlm/de_novo_candidate_campaign_v1/stages/"
+            f"{stage_id.lower()}/stage_decision.json"
+        )
+        source_document = {
+            "schema_version": 1,
+            "stage_id": stage_id,
+            "status": "completed",
+            "registry": source_registry_ref,
+            "entries": source_entries,
+            "advancement": source_advancement,
+            "completed_at_utc": f"2026-09-07T00:0{stage_number}:00+00:00",
+        }
+        source_bytes = _json_bytes(source_document)
+        source_blobs[source_path] = source_bytes
+        source_ref = {
+            "relative_path": source_path.as_posix(),
+            "sha256": hashlib.sha256(source_bytes).hexdigest(),
+            "schema_version": 1,
+        }
+        stages.append(
+            {
+                "stage_id": stage_id,
+                "role": gate.CAMPAIGN_STAGE_ROLES[stage_id],
+                "seed_values": list(contract["seeds"]),
+                "requested_samples_per_child": contract["samples"],
+                "scheduled_entry_count": contract["entries"],
+                "scheduled_child_count": contract["children"],
+                "entries": entries,
+                "advancement": {
+                    **source_advancement,
+                    "source_stage_decision": source_ref,
+                },
+            }
+        )
+        prior_promotions[stage_id] = promoted
+        prior_source = source_ref
+    winner_config_id = prior_promotions["eligible"][0]
+    winner_entry = next(
+        row for row in stages[-1]["entries"] if row["config_id"] == winner_config_id
+    )
+    decision = {
+        "schema_version": 1,
+        "protocol_id": gate.EXPECTED_PROTOCOL_ID,
+        "status": "closed_before_candidate_ledger",
+        "final_seed_results_included": False,
+        "registry": {
+            "relative_path": gate.CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH.as_posix(),
+            "sha256": hashlib.sha256(registry_bytes).hexdigest(),
+            "schema_version": 1,
+            "registry_id": gate.candidate_config_registry.REGISTRY_ID,
+            "registry_revision": registry_revision,
+        },
+        "campaign": {
+            "grid_universe_entry_count": 36,
+            "executed_entry_count": 40,
+            "child_outcome_count": 43,
+            "requested_molecule_count": 3680,
+            "nfe": 128,
+            "no_cross_stage_pooling": True,
+            "no_retries_or_substitutions": True,
+            "failed_or_undefined_children_retained_unrankable": True,
+            "quota_failure_policy": "campaign_incomplete_and_candidate_lock_forbidden",
+            "shared_seed_inference": (
+                "blocking_or_common_random_number_control_only_not_paired_inference"
+            ),
+            "ranking": list(gate.CAMPAIGN_RANKING_ORDER),
+        },
+        "stages": stages,
+        "selection": {
+            "candidate_id": winner_entry["candidate_id"],
+            "selected_attempt_id": winner_entry["attempt_id"],
+            "selected_config_id": winner_config_id,
+            "rule": gate.CANDIDATE_SELECTION_RULE,
+            "checkpoint_selection_rule": gate.CHECKPOINT_SELECTION_RULE,
+            "selected_without_final_seed_results": True,
+        },
+    }
+    return (
+        decision,
+        registry,
+        registry_bytes,
+        registry_revision,
+        outcomes,
+        completed_outcomes,
+        source_blobs,
+    )
+
+
+def _campaign_evidence_manifest_fixture(*, registry_revision, canonical_envelopes=True):
+    (
+        decision,
+        registry,
+        registry_bytes,
+        _fixture_registry_revision,
+        outcomes,
+        completed_outcomes,
+        source_blobs,
+    ) = _registered_campaign_decision_fixture()
+    decision["registry"]["registry_revision"] = registry_revision
+    blobs = {}
+    expected_children = []
+    required_paths = set()
+    prior_source = None
+    for stage in decision["stages"]:
+        stage_id = stage["stage_id"]
+        source_path = Path(
+            "output/udlm/de_novo_candidate_campaign_v1/stages/"
+            f"{stage_id.lower()}/stage_decision.json"
+        )
+        source = json.loads(source_blobs[source_path])
+        source["advancement"]["predecessor_stage_decision"] = prior_source
+        stage["advancement"]["predecessor_stage_decision"] = prior_source
+        for entry, source_entry in zip(
+            stage["entries"], source["entries"], strict=True
+        ):
+            attempt_id = entry["attempt_id"]
+            for child, source_child in zip(
+                entry["child_outcomes"], source_entry["child_outcomes"], strict=True
+            ):
+                seed = child["pilot_seed"]
+                run_root = (
+                    Path("output/udlm/de_novo_candidate_campaign_v1/runs")
+                    / attempt_id
+                    / f"seed_{seed}"
+                )
+                receipt_path = run_root / "training_exit_receipt.json"
+                summary_path = run_root / "summary.json"
+                raw_path = run_root / "raw_samples.csv"
+                receipt_bytes = f"receipt:{attempt_id}:{seed}\n".encode()
+                summary_bytes = f"summary:{attempt_id}:{seed}\n".encode()
+                raw_bytes = f"raw:{attempt_id}:{seed}\n".encode()
+                for path, payload in (
+                    (receipt_path, receipt_bytes),
+                    (summary_path, summary_bytes),
+                    (raw_path, raw_bytes),
+                ):
+                    blobs[path] = payload
+                    required_paths.add(path.as_posix())
+                envelope = {
+                    "schema_version": 2,
+                    "artifact_kind": "pilot_evaluation",
+                    "status": "completed",
+                    "attempt_id": attempt_id,
+                    "candidate_id": entry["candidate_id"],
+                    "pilot_seed": seed,
+                    "final_seed_results_included": False,
+                    "training_exit_receipt": {
+                        "relative_path": receipt_path.as_posix(),
+                        "sha256": hashlib.sha256(receipt_bytes).hexdigest(),
+                        "schema_version": 5,
+                    },
+                    "benchmark_artifacts": {
+                        "summary_json": {
+                            "relative_path": summary_path.as_posix(),
+                            "sha256": hashlib.sha256(summary_bytes).hexdigest(),
+                            "schema_version": 8,
+                        },
+                        "raw_samples_csv": {
+                            "relative_path": raw_path.as_posix(),
+                            "sha256": hashlib.sha256(raw_bytes).hexdigest(),
+                        },
+                    },
+                }
+                envelope_bytes = (
+                    gate._pretty_json_bytes(envelope)
+                    if canonical_envelopes
+                    else (json.dumps(envelope, sort_keys=True) + "\n").encode()
+                )
+                envelope_sha256 = hashlib.sha256(envelope_bytes).hexdigest()
+                tracked_path = Path(child["relative_path"])
+                blobs[tracked_path] = envelope_bytes
+                required_paths.add(tracked_path.as_posix())
+                child["sha256"] = envelope_sha256
+                source_child["sha256"] = envelope_sha256
+                expected_children.append(
+                    {
+                        "stage_id": stage_id,
+                        "config_id": entry["config_id"],
+                        "attempt_id": attempt_id,
+                        "candidate_id": entry["candidate_id"],
+                        "pilot_seed": seed,
+                        "artifact_kind": "pilot_evaluation",
+                        "live_envelope": {
+                            "relative_path": source_child["relative_path"],
+                            "sha256": envelope_sha256,
+                            "size_bytes": len(envelope_bytes),
+                            "schema_version": 2,
+                        },
+                        "tracked_envelope": {
+                            "relative_path": tracked_path.as_posix(),
+                            "sha256": envelope_sha256,
+                            "size_bytes": len(envelope_bytes),
+                            "schema_version": 2,
+                        },
+                        "supporting_artifacts": [
+                            {
+                                "artifact_role": "benchmark_raw_samples_csv",
+                                "relative_path": raw_path.as_posix(),
+                                "sha256": hashlib.sha256(raw_bytes).hexdigest(),
+                                "size_bytes": len(raw_bytes),
+                                "schema_version": None,
+                            },
+                            {
+                                "artifact_role": "benchmark_summary_json",
+                                "relative_path": summary_path.as_posix(),
+                                "sha256": hashlib.sha256(summary_bytes).hexdigest(),
+                                "size_bytes": len(summary_bytes),
+                                "schema_version": 8,
+                            },
+                            {
+                                "artifact_role": "training_exit_receipt",
+                                "relative_path": receipt_path.as_posix(),
+                                "sha256": hashlib.sha256(receipt_bytes).hexdigest(),
+                                "size_bytes": len(receipt_bytes),
+                                "schema_version": 5,
+                            },
+                        ],
+                    }
+                )
+        source_bytes = _json_bytes(source)
+        source_ref = {
+            "relative_path": source_path.as_posix(),
+            "sha256": hashlib.sha256(source_bytes).hexdigest(),
+            "schema_version": 1,
+        }
+        source_blobs[source_path] = source_bytes
+        blobs[source_path] = source_bytes
+        required_paths.add(source_path.as_posix())
+        stage["advancement"]["source_stage_decision"] = source_ref
+        prior_source = source_ref
+
+    stage_refs = [
+        {
+            "stage_id": stage["stage_id"],
+            **stage["advancement"]["source_stage_decision"],
+        }
+        for stage in decision["stages"]
+    ]
+    required_paths = sorted(required_paths, key=lambda value: value.encode("ascii"))
+    manifest = {
+        "schema_version": 1,
+        "protocol_id": gate.EXPECTED_PROTOCOL_ID,
+        "status": "complete_before_candidate_decision",
+        "registry": {
+            "relative_path": gate.CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH.as_posix(),
+            "sha256": hashlib.sha256(registry_bytes).hexdigest(),
+            "canonical_sha256": gate.canonical_json_sha256(registry),
+            "size_bytes": len(registry_bytes),
+            "schema_version": 1,
+        },
+        "source_revision": {
+            "head": registry_revision,
+            "upstream": registry_revision,
+        },
+        "counts": {
+            "executed_entry_count": 40,
+            "child_outcome_count": 43,
+            "requested_molecule_count": 3680,
+            "stage_decision_count": 5,
+            "tracked_envelope_count": 43,
+            "required_git_path_count": len(required_paths),
+        },
+        "stage_decisions": stage_refs,
+        "children": expected_children,
+        "required_git_paths": required_paths,
+    }
+    return (
+        decision,
+        registry,
+        registry_bytes,
+        outcomes,
+        completed_outcomes,
+        manifest,
+        blobs,
+    )
+
+
+def test_candidate_decision_recomputes_all_stages_and_projects_exact_ledger():
+    (
+        decision,
+        registry,
+        registry_bytes,
+        registry_revision,
+        outcomes,
+        completed_outcomes,
+        source_blobs,
+    ) = _registered_campaign_decision_fixture()
+    result = gate.validate_candidate_decision(
+        decision,
+        registry=registry,
+        registry_bytes=registry_bytes,
+        registry_revision=registry_revision,
+        ledger_evidence={
+            "attempt_outcomes": outcomes,
+            "completed_outcomes": completed_outcomes,
+            "failed_outcomes": [],
+        },
+        artifact_loader=lambda path: source_blobs[path],
+    )
+    projected = gate.project_candidate_ledger(decision)
+
+    assert result["attempt_count"] == 40
+    assert result["child_outcome_count"] == 43
+    assert result["advancement_recomputed_from_raw_model_text"] is True
+    assert result["adaptive_stage_chronology_verified"] is True
+    assert result["eligible_stage_completed_at_utc"] == ("2026-09-07T00:04:00+00:00")
+    assert len(projected["attempts"]) == 40
+    assert sum(len(row["artifact_refs"]) for row in projected["attempts"]) == 43
+    assert (
+        projected["selection"]["selected_attempt_id"] == result["selected_attempt_id"]
+    )
+
+
+@pytest.mark.parametrize("tamper", ("before_predecessor", "after_own_decision"))
+def test_candidate_decision_rejects_adaptive_stage_lookahead(tamper):
+    (
+        decision,
+        registry,
+        registry_bytes,
+        registry_revision,
+        outcomes,
+        completed_outcomes,
+        source_blobs,
+    ) = _registered_campaign_decision_fixture()
+    if tamper == "before_predecessor":
+        row = next(
+            item
+            for item in completed_outcomes
+            if item["attempt_id"].startswith("stage-a-")
+        )
+        row["started_at_utc"] = "2026-09-07T00:00:00+00:00"
+    else:
+        row = next(
+            item
+            for item in completed_outcomes
+            if item["attempt_id"].startswith("stage-d-")
+        )
+        row["completed_at_utc"] = "2026-09-07T00:00:00+00:00"
+
+    with pytest.raises(gate.GateValidationError, match="candidate stage"):
+        gate.validate_candidate_decision(
+            decision,
+            registry=registry,
+            registry_bytes=registry_bytes,
+            registry_revision=registry_revision,
+            ledger_evidence={
+                "attempt_outcomes": outcomes,
+                "completed_outcomes": completed_outcomes,
+                "failed_outcomes": [],
+            },
+            artifact_loader=lambda path: source_blobs[path],
+        )
+
+
+def test_campaign_child_chronology_includes_failed_receipts():
+    intervals = gate._campaign_child_intervals(
+        {
+            "completed_outcomes": [],
+            "failed_outcomes": [
+                {
+                    "attempt_id": "stage-a-r_t100_p100",
+                    "pilot_seed": 1101,
+                    "started_at": "2026-09-07T00:00:10+00:00",
+                    "failed_at": "2026-09-07T00:00:20+00:00",
+                }
+            ],
+        }
+    )
+
+    assert intervals[("stage-a-r_t100_p100", 1101)][0] == "pilot_failure"
+
+
+def test_campaign_evidence_manifest_proves_exact_git_closure(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.email", "test@example.invalid"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.name", "Gate Test"],
+        check=True,
+    )
+    _, _, registry_bytes, _, _, _, _ = _registered_campaign_decision_fixture()
+    registry_path = tmp_path / gate.CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH
+    registry_path.parent.mkdir(parents=True)
+    registry_path.write_bytes(registry_bytes)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(tmp_path),
+            "add",
+            gate.CANDIDATE_CONFIG_REGISTRY_RELATIVE_PATH.as_posix(),
+        ],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-qm", "registry G"], check=True
+    )
+    registry_revision = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    (
+        decision,
+        registry,
+        registry_bytes,
+        outcomes,
+        completed_outcomes,
+        manifest,
+        blobs,
+    ) = _campaign_evidence_manifest_fixture(registry_revision=registry_revision)
+    gate.validate_candidate_decision(
+        decision,
+        registry=registry,
+        registry_bytes=registry_bytes,
+        registry_revision=registry_revision,
+        ledger_evidence={
+            "attempt_outcomes": outcomes,
+            "completed_outcomes": completed_outcomes,
+            "failed_outcomes": [],
+        },
+        artifact_loader=lambda path: blobs[path],
+    )
+    manifest_bytes = gate._pretty_json_bytes(manifest)
+    blobs[gate.CAMPAIGN_EVIDENCE_MANIFEST_RELATIVE_PATH] = manifest_bytes
+    for relative_path, payload in blobs.items():
+        destination = tmp_path / relative_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(payload)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "add", "--all"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-qm", "evidence only"],
+        check=True,
+    )
+    evidence_revision = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
+    result = gate.validate_campaign_evidence_manifest(
+        manifest,
+        manifest_bytes=manifest_bytes,
+        registry=registry,
+        registry_bytes=registry_bytes,
+        registry_revision=registry_revision,
+        evidence_revision=evidence_revision,
+        decision=decision,
+        ledger_evidence={
+            "completed_outcomes": completed_outcomes,
+            "failed_outcomes": [],
+        },
+        artifact_loader=lambda path: gate._git_blob(evidence_revision, path),
+    )
+
+    assert result["exact_git_closure_verified"] is True
+    assert result["stage_live_hashes_bridge_to_tracked_git_blobs"] is True
+    assert result["tracked_envelope_count"] == 43
+    assert result["required_git_path_count"] == len(manifest["required_git_paths"])
+
+    first_stage_path = Path(manifest["stage_decisions"][0]["relative_path"])
+    with pytest.raises(
+        gate.GateValidationError, match="campaign evidence stage D Git blob differs"
+    ):
+        gate.validate_campaign_evidence_manifest(
+            manifest,
+            manifest_bytes=manifest_bytes,
+            registry=registry,
+            registry_bytes=registry_bytes,
+            registry_revision=registry_revision,
+            evidence_revision=evidence_revision,
+            decision=decision,
+            ledger_evidence={
+                "completed_outcomes": completed_outcomes,
+                "failed_outcomes": [],
+            },
+            artifact_loader=lambda path: (
+                b"tampered"
+                if path == first_stage_path
+                else gate._git_blob(evidence_revision, path)
+            ),
+        )
+
+    tampered = copy.deepcopy(manifest)
+    tampered["children"][0]["supporting_artifacts"][0]["sha256"] = "0" * 64
+    with pytest.raises(
+        gate.GateValidationError, match="campaign evidence child manifest differs"
+    ):
+        gate.validate_campaign_evidence_manifest(
+            tampered,
+            manifest_bytes=gate._pretty_json_bytes(tampered),
+            registry=registry,
+            registry_bytes=registry_bytes,
+            registry_revision=registry_revision,
+            evidence_revision=evidence_revision,
+            decision=decision,
+            ledger_evidence={
+                "completed_outcomes": completed_outcomes,
+                "failed_outcomes": [],
+            },
+            artifact_loader=lambda path: gate._git_blob(evidence_revision, path),
+        )
+
+
+def test_campaign_evidence_manifest_rejects_consistently_rehashed_minified_envelope(
+    monkeypatch,
+):
+    registry_revision = "6" * 40
+    (
+        decision,
+        registry,
+        registry_bytes,
+        _outcomes,
+        completed_outcomes,
+        manifest,
+        blobs,
+    ) = _campaign_evidence_manifest_fixture(
+        registry_revision=registry_revision,
+        canonical_envelopes=False,
+    )
+    evidence_revision = "7" * 40
+    expected_additions = tuple(
+        ("A", path)
+        for path in sorted(
+            [
+                *manifest["required_git_paths"],
+                gate.CAMPAIGN_EVIDENCE_MANIFEST_RELATIVE_PATH.as_posix(),
+            ]
+        )
+    )
+    monkeypatch.setattr(
+        gate,
+        "_git_single_parent",
+        lambda _revision, *, label: registry_revision,
+    )
+    monkeypatch.setattr(
+        gate,
+        "_git_changed_entries",
+        lambda _parent, _child: expected_additions,
+    )
+    monkeypatch.setattr(gate, "_git_blob_is_absent", lambda *_args: True)
+    monkeypatch.setattr(
+        gate, "_require_regular_git_blob", lambda *_args, **_kwargs: None
+    )
+
+    with pytest.raises(
+        gate.GateValidationError, match="tracked envelope encoding is not canonical"
+    ):
+        gate.validate_campaign_evidence_manifest(
+            manifest,
+            manifest_bytes=gate._pretty_json_bytes(manifest),
+            registry=registry,
+            registry_bytes=registry_bytes,
+            registry_revision=registry_revision,
+            evidence_revision=evidence_revision,
+            decision=decision,
+            ledger_evidence={
+                "completed_outcomes": completed_outcomes,
+                "failed_outcomes": [],
+            },
+            artifact_loader=lambda path: blobs[path],
+        )
+
+
+@pytest.mark.parametrize("tamper", ("score", "promotion", "live_hash"))
+def test_candidate_decision_rejects_forged_scores_advancement_and_live_refs(tamper):
+    (
+        decision,
+        registry,
+        registry_bytes,
+        registry_revision,
+        outcomes,
+        completed_outcomes,
+        source_blobs,
+    ) = _registered_campaign_decision_fixture()
+    if tamper == "score":
+        decision["stages"][1]["entries"][0]["selection_score"][
+            "released_quality"
+        ] -= 0.1
+    elif tamper == "promotion":
+        decision["stages"][1]["advancement"]["promoted_config_ids"].reverse()
+    else:
+        decision["stages"][2]["entries"][0]["child_outcomes"][0]["sha256"] = "0" * 64
+    with pytest.raises(gate.GateValidationError):
+        gate.validate_candidate_decision(
+            decision,
+            registry=registry,
+            registry_bytes=registry_bytes,
+            registry_revision=registry_revision,
+            ledger_evidence={
+                "attempt_outcomes": outcomes,
+                "completed_outcomes": completed_outcomes,
+                "failed_outcomes": [],
+            },
+            artifact_loader=lambda path: source_blobs[path],
+        )
+
+
+def test_exact_authority_addition_commit_rejects_extra_paths(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.email", "test@example.invalid"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.name", "Gate Test"],
+        check=True,
+    )
+    (tmp_path / "base.txt").write_text("base\n")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "base.txt"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-qm", "base"], check=True)
+    parent = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout.strip()
+    authority_path = gate.CANDIDATE_DECISION_RELATIVE_PATH
+    payload = b"decision\n"
+    destination = tmp_path / authority_path
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(payload)
+    subprocess.run(["git", "-C", str(tmp_path), "add", authority_path], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-qm", "decision only"], check=True
+    )
+    revision = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout.strip()
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
+    assert (
+        gate._require_exact_addition_commit(
+            revision, authority_path, payload, label="candidate decision"
+        )
+        == parent
+    )
+
+    (tmp_path / "extra.txt").write_text("extra\n")
+    second_path = gate.CANDIDATE_LEDGER_RELATIVE_PATH
+    second_destination = tmp_path / second_path
+    second_destination.write_bytes(b"ledger\n")
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "add", "extra.txt", second_path], check=True
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-qm", "not isolated"], check=True
+    )
+    bad_revision = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout.strip()
+    with pytest.raises(gate.GateValidationError, match="must add only"):
+        gate._require_exact_addition_commit(
+            bad_revision, second_path, b"ledger\n", label="candidate ledger"
+        )
+
+
+def test_exact_authority_addition_commit_rejects_symlink_mode(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.email", "test@example.invalid"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.name", "Gate Test"],
+        check=True,
+    )
+    (tmp_path / "base.txt").write_text("base\n")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "base.txt"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-qm", "base"], check=True)
+    path = gate.CANDIDATE_DECISION_RELATIVE_PATH
+    destination = tmp_path / path
+    destination.parent.mkdir(parents=True)
+    destination.symlink_to("payload")
+    subprocess.run(["git", "-C", str(tmp_path), "add", path.as_posix()], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-qm", "symlink authority"],
+        check=True,
+    )
+    revision = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout.strip()
+    monkeypatch.setattr(gate, "REPOSITORY_ROOT", tmp_path)
+
+    with pytest.raises(gate.GateValidationError, match="regular non-executable"):
+        gate._require_exact_addition_commit(
+            revision, path, b"payload", label="candidate decision"
+        )
+
+
+def test_registered_campaign_firewall_requires_regular_decision_blob(monkeypatch):
+    revisions = iter(("b" * 40, "c" * 40))
+    monkeypatch.setattr(
+        gate,
+        "_require_exact_addition_commit",
+        lambda *_args, **_kwargs: next(revisions),
+    )
+    monkeypatch.setattr(
+        gate,
+        "_git_single_parent",
+        lambda *_args, **_kwargs: "d" * 40,
+    )
+    monkeypatch.setattr(
+        gate,
+        "_git_changed_entries",
+        lambda *_args: (("A", gate.CANDIDATE_DECISION_RELATIVE_PATH.as_posix()),),
+    )
+    monkeypatch.setattr(gate, "_git_blob_is_absent", lambda *_args: True)
+    monkeypatch.setattr(
+        gate,
+        "_require_regular_git_blob",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            gate.GateValidationError("decision is not a regular non-executable blob")
+        ),
+    )
+    monkeypatch.setattr(
+        gate,
+        "_git_blob",
+        lambda *_args: (_ for _ in ()).throw(
+            AssertionError("decision bytes must not be read before mode validation")
+        ),
+    )
+    with pytest.raises(gate.GateValidationError, match="regular non-executable"):
+        gate.validate_registered_campaign_firewall(
+            benchmark_revision="a" * 40,
+            candidate_lock_path=gate.CANDIDATE_LOCK_RELATIVE_PATH,
+            candidate_lock_bytes=b"lock",
+            ledger_blob=b"ledger",
+            ledger_evidence={},
         )
 
 

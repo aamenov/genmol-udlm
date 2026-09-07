@@ -19,7 +19,6 @@ import os
 import re
 import stat
 import sys
-import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -32,8 +31,11 @@ REPOSITORY_SRC = REPOSITORY_ROOT / "src"
 for _import_root in (REPOSITORY_SRC, REPOSITORY_ROOT):
     if str(_import_root) not in sys.path:
         sys.path.insert(0, str(_import_root))
+from scripts import artifact_io  # noqa: E402
+
+
 PILOT_EVIDENCE_SCHEMA_VERSION = 2
-BENCHMARK_SCHEMA_VERSION = 7
+BENCHMARK_SCHEMA_VERSION = 8
 EXIT_RECEIPT_SCHEMA_VERSION = 5
 TRAINING_SUMMARY_SCHEMA_VERSION = 5
 PILOT_FAILURE_RECEIPT_SCHEMA_VERSION = 1
@@ -292,7 +294,9 @@ def _open_direct_scoped_parent(
 
     normalized = Path(os.path.abspath(os.fspath(path)))
     normalized_scope = Path(os.path.abspath(os.fspath(scope_root)))
-    if normalized == normalized_scope or not normalized.is_relative_to(normalized_scope):
+    if normalized == normalized_scope or not normalized.is_relative_to(
+        normalized_scope
+    ):
         raise PilotEvidenceError(f"{label} must remain inside its reviewed scope")
     flags = (
         os.O_RDONLY
@@ -526,11 +530,14 @@ def _validate_pipeline(value: object) -> None:
         {"training", "tee", "pipefail_shell_exit_status"},
         "training receipt pipeline",
     )
-    if _integer(
-        pipeline["pipefail_shell_exit_status"],
-        "training receipt pipeline pipefail status",
-        minimum=0,
-    ) != 0:
+    if (
+        _integer(
+            pipeline["pipefail_shell_exit_status"],
+            "training receipt pipeline pipefail status",
+            minimum=0,
+        )
+        != 0
+    ):
         raise PilotEvidenceError("training receipt pipeline is not successful")
     expected = {
         "shell_exit_status": 0,
@@ -566,9 +573,7 @@ def _require_live_snapshot(
     value: object, artifact: StableArtifact, *, label: str
 ) -> Mapping[str, Any]:
     claim = _validate_snapshot(value, label=label)
-    if canonical_json_sha256(dict(claim)) != canonical_json_sha256(
-        artifact.snapshot()
-    ):
+    if canonical_json_sha256(dict(claim)) != canonical_json_sha256(artifact.snapshot()):
         raise PilotEvidenceError(f"{label} differs from the live stable file")
     return claim
 
@@ -698,11 +703,14 @@ def validate_successful_training_receipt(
 
     expected = _mapping(receipt.get("expected_contract"), "receipt expected contract")
     _exact_keys(expected, _EXPECTED_CONTRACT_FIELDS, "receipt expected contract")
-    if _integer(
-        expected.get("training_summary_schema_version"),
-        "receipt training-summary schema",
-        minimum=1,
-    ) != TRAINING_SUMMARY_SCHEMA_VERSION:
+    if (
+        _integer(
+            expected.get("training_summary_schema_version"),
+            "receipt training-summary schema",
+            minimum=1,
+        )
+        != TRAINING_SUMMARY_SCHEMA_VERSION
+    ):
         raise PilotEvidenceError(
             "receipt expects an unsupported training-summary schema"
         )
@@ -1229,37 +1237,23 @@ def _create_output_parent(path: Path) -> None:
 
 
 def atomic_write_json_exclusive(path: Path, value: Mapping[str, Any]) -> None:
-    """Publish fsynced JSON atomically without replacing any directory entry."""
+    """Publish durable JSON without following or replacing directory entries."""
 
     _create_output_parent(path)
-    if os.path.lexists(path):
-        raise FileExistsError(f"refusing to replace pilot evidence: {path}")
     encoded = (
         json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n"
     ).encode("utf-8")
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
-    )
-    temporary = Path(temporary_name)
     try:
-        with os.fdopen(descriptor, "wb") as handle:
-            os.fchmod(handle.fileno(), 0o644)
-            handle.write(encoded)
-            handle.flush()
-            os.fsync(handle.fileno())
-        try:
-            os.link(temporary, path, follow_symlinks=False)
-        except FileExistsError as error:
-            raise FileExistsError(
-                f"refusing to replace concurrently created pilot evidence: {path}"
-            ) from error
-        directory_descriptor = os.open(path.parent, os.O_RDONLY)
-        try:
-            os.fsync(directory_descriptor)
-        finally:
-            os.close(directory_descriptor)
-    finally:
-        temporary.unlink(missing_ok=True)
+        relative_path = path.relative_to(REPOSITORY_ROOT.resolve(strict=True))
+    except ValueError as error:  # pragma: no cover - guarded by output validation
+        raise PilotEvidenceError(
+            "pilot evidence output escaped the repository"
+        ) from error
+    artifact_io.publish_bytes_exclusive(
+        REPOSITORY_ROOT,
+        relative_path,
+        encoded,
+    )
 
 
 def revalidate_inputs(inputs: Sequence[StableArtifact]) -> None:
@@ -1279,7 +1273,7 @@ def revalidate_inputs(inputs: Sequence[StableArtifact]) -> None:
             )
 
 
-def collect_completed_pilot_evidence(
+def build_completed_pilot_evidence_payload(
     *,
     attempt_id: str,
     candidate_id: str,
@@ -1291,7 +1285,7 @@ def collect_completed_pilot_evidence(
     rescore_worker: RescoreWorker | None = None,
     training_artifact_validator: TrainingArtifactValidator | None = None,
 ) -> dict[str, Any]:
-    """Validate one completed pilot and exclusively publish its reference envelope."""
+    """Validate one completed pilot and build its reference envelope in memory."""
 
     attempt_id = _validate_attempt_id(attempt_id)
     candidate_id = _validate_candidate_id(candidate_id)
@@ -1304,7 +1298,7 @@ def collect_completed_pilot_evidence(
     summary_path = run_dir / "summary.json"
     raw_samples_path = run_dir / "raw_samples.csv"
     summary_artifact = read_stable_regular_file(
-        summary_path, label="schema-7 pilot summary"
+        summary_path, label="schema-8 pilot summary"
     )
     raw_artifact = read_stable_regular_file(
         raw_samples_path, label="schema-7 pilot raw samples"
@@ -1318,11 +1312,11 @@ def collect_completed_pilot_evidence(
             "pilot JSON payload capture failed"
         )  # pragma: no cover
     summary_document = _mapping(
-        strict_json_loads(summary_artifact.payload, label="schema-7 pilot summary"),
-        "schema-7 pilot summary",
+        strict_json_loads(summary_artifact.payload, label="schema-8 pilot summary"),
+        "schema-8 pilot summary",
     )
     if summary_document.get("schema_version") != BENCHMARK_SCHEMA_VERSION:
-        raise PilotEvidenceError("pilot summary is not schema 7")
+        raise PilotEvidenceError("pilot summary is not schema 8")
     requested_samples = _integer(
         summary_document.get("num_samples"), "pilot requested samples", minimum=1
     )
@@ -1345,7 +1339,7 @@ def collect_completed_pilot_evidence(
         )
     except (OSError, ValueError) as error:
         raise PilotEvidenceError(
-            f"schema-7 pilot validation failed: {error}"
+            f"schema-8 pilot validation failed: {error}"
         ) from error
     structural = _validate_structural_result(
         raw_structural,
@@ -1464,7 +1458,38 @@ def collect_completed_pilot_evidence(
     revalidate_inputs(
         (receipt_artifact, summary_artifact, raw_artifact, *training_inputs)
     )
-    atomic_write_json_exclusive(output, envelope)
+    return envelope
+
+
+def collect_completed_pilot_evidence(
+    *,
+    attempt_id: str,
+    candidate_id: str,
+    pilot_seed: int,
+    run_dir: Path,
+    training_exit_receipt: Path,
+    output: Path,
+    report_validator: ReportValidator | None = None,
+    rescore_worker: RescoreWorker | None = None,
+    training_artifact_validator: TrainingArtifactValidator | None = None,
+) -> dict[str, Any]:
+    """Validate one completed pilot and exclusively publish its envelope."""
+
+    validated_output = _validate_output_path(
+        output, attempt_id=attempt_id, pilot_seed=pilot_seed
+    )
+    envelope = build_completed_pilot_evidence_payload(
+        attempt_id=attempt_id,
+        candidate_id=candidate_id,
+        pilot_seed=pilot_seed,
+        run_dir=run_dir,
+        training_exit_receipt=training_exit_receipt,
+        output=validated_output,
+        report_validator=report_validator,
+        rescore_worker=rescore_worker,
+        training_artifact_validator=training_artifact_validator,
+    )
+    atomic_write_json_exclusive(validated_output, envelope)
     return envelope
 
 
@@ -1612,7 +1637,7 @@ def _validate_failed_pilot_config(
     return config_path, config_artifact
 
 
-def collect_failed_pilot_evidence(
+def build_failed_pilot_evidence_payload(
     *,
     attempt_id: str,
     candidate_id: str,
@@ -1620,7 +1645,7 @@ def collect_failed_pilot_evidence(
     failure_receipt: Path,
     output: Path,
 ) -> dict[str, Any]:
-    """Validate one failed launcher run and publish its reference-only envelope."""
+    """Validate one failed launcher run and build its envelope in memory."""
 
     attempt_id = _validate_attempt_id(attempt_id)
     candidate_id = _validate_candidate_id(candidate_id)
@@ -1751,11 +1776,21 @@ def collect_failed_pilot_evidence(
     command = receipt.get("command")
     if (
         not isinstance(command, list)
-        or len(command) != 20
+        or len(command) != 24
         or any(not isinstance(item, str) or not item for item in command)
     ):
         raise PilotEvidenceError(
-            "pilot failure command must contain exactly ten argument pairs"
+            "pilot failure command must contain exactly 24 elements"
+        )
+    try:
+        output_state = os.stat(receipt_path.parent, follow_symlinks=False)
+    except OSError as error:  # pragma: no cover - retained receipt proves the parent
+        raise PilotEvidenceError(
+            "pilot failure output directory is unavailable"
+        ) from error
+    if not stat.S_ISDIR(output_state.st_mode) or stat.S_ISLNK(output_state.st_mode):
+        raise PilotEvidenceError(
+            "pilot failure output directory must retain its direct identity"
         )
     expected_command = [
         str(_project_root() / ".venv/bin/python"),
@@ -1778,6 +1813,10 @@ def collect_failed_pilot_evidence(
         "cuda:0",
         "--output-dir",
         str(receipt_path.parent),
+        "--expected-output-directory-device",
+        str(output_state.st_dev),
+        "--expected-output-directory-inode",
+        str(output_state.st_ino),
     ]
     if command != expected_command:
         raise PilotEvidenceError(
@@ -1850,7 +1889,30 @@ def collect_failed_pilot_evidence(
         },
     }
     revalidate_inputs(tuple(support_artifacts))
-    atomic_write_json_exclusive(output, envelope)
+    return envelope
+
+
+def collect_failed_pilot_evidence(
+    *,
+    attempt_id: str,
+    candidate_id: str,
+    pilot_seed: int,
+    failure_receipt: Path,
+    output: Path,
+) -> dict[str, Any]:
+    """Validate one failed launcher run and exclusively publish its envelope."""
+
+    validated_output = _validate_output_path(
+        output, attempt_id=attempt_id, pilot_seed=pilot_seed
+    )
+    envelope = build_failed_pilot_evidence_payload(
+        attempt_id=attempt_id,
+        candidate_id=candidate_id,
+        pilot_seed=pilot_seed,
+        failure_receipt=failure_receipt,
+        output=validated_output,
+    )
+    atomic_write_json_exclusive(validated_output, envelope)
     return envelope
 
 

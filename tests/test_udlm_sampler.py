@@ -49,9 +49,17 @@ class _UDLMProcess:
         *,
         mutable_mask,
         temperature,
+        raw_loo_top_p,
     ):
         self.steps.append(
-            (x.clone(), t.clone(), s.clone(), mutable_mask.clone(), temperature)
+            (
+                x.clone(),
+                t.clone(),
+                s.clone(),
+                mutable_mask.clone(),
+                temperature,
+                raw_loo_top_p,
+            )
         )
         return torch.where(mutable_mask, torch.full_like(x, 7), x)
 
@@ -103,7 +111,9 @@ def test_udlm_sampling_uses_fixed_time_grid_and_clamps_context():
     sampler = _sampler(model, process, "udlm")
     x = torch.tensor([[1, 4, 4, 2, 3]])
 
-    samples = sampler.generate(x, softmax_temp=0.7, num_steps=3)
+    samples = sampler.generate(
+        x, softmax_temp=0.7, raw_loo_top_p=0.95, num_steps=3
+    )
 
     assert samples == ["decoded"]
     assert len(model.calls) == 3
@@ -116,9 +126,10 @@ def test_udlm_sampling_uses_fixed_time_grid_and_clamps_context():
         assert torch.equal(
             attention_mask, torch.tensor([[True, True, True, True, False]])
         )
-    for _, _, _, editable, temperature in process.steps:
+    for _, _, _, editable, temperature, raw_loo_top_p in process.steps:
         assert torch.equal(editable, expected_editable)
         assert temperature == pytest.approx(0.7)
+        assert raw_loo_top_p == pytest.approx(0.95)
     assert process.steps[0][1].item() == 1.0
     assert process.steps[-1][2].item() == pytest.approx(1e-5)
 
@@ -158,6 +169,32 @@ def test_udlm_missing_sampling_step_config_uses_official_128_step_control():
     sampler.generate(torch.tensor([[1, 4, 2]]))
 
     assert len(process.steps) == 128
+
+
+@pytest.mark.parametrize(
+    ("keyword", "value"),
+    [
+        ("softmax_temp", True),
+        ("softmax_temp", "1.0"),
+        ("softmax_temp", 0.0),
+        ("softmax_temp", float("nan")),
+        ("raw_loo_top_p", True),
+        ("raw_loo_top_p", "1.0"),
+        ("raw_loo_top_p", 0.0),
+        ("raw_loo_top_p", 1.01),
+        ("raw_loo_top_p", float("inf")),
+    ],
+)
+def test_udlm_sampling_scalars_are_validated_before_prior_sampling(keyword, value):
+    model = _UDLMModel()
+    process = _UDLMProcess()
+    sampler = _sampler(model, process, "udlm")
+
+    with pytest.raises(ValueError, match=keyword):
+        sampler.generate(torch.tensor([[1, 4, 2]]), **{keyword: value})
+
+    assert process.steps == []
+    assert model.calls == []
 
 
 def test_mdlm_confidence_loop_contract_is_preserved():
