@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_design_worktree/scripts/udlm/export_v15_transfers.py", line 210, in <module>
+    main()
+  File "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_design_worktree/scripts/udlm/export_v15_transfers.py", line 164, in main
+    raise RuntimeError(f"export child failed: {entry['entry_id']}")
+RuntimeError: export child failed: r099

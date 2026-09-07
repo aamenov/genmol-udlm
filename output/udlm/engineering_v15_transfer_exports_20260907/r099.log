@@ -1,0 +1,65 @@
+🚨 `inputs` is part of SAFEDoubleHeadsModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/safe/trainer/model.py.
+Traceback (most recent call last):
+  File "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_worktree/scripts/udlm/export_zero_update_transfer.py", line 557, in <module>
+    main()
+  File "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_worktree/scripts/udlm/export_zero_update_transfer.py", line 546, in main
+    result = export_checkpoint(
+  File "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_worktree/scripts/udlm/export_zero_update_transfer.py", line 454, in export_checkpoint
+    reference = inspect_source(source_checkpoint, expected_source_sha256)
+  File "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_zero_update_export_worktree/scripts/udlm/export_zero_update_transfer.py", line 228, in inspect_source
+    config = OmegaConf.to_container(
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/omegaconf.py", line 573, in to_container
+    return BaseContainer._to_content(
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/basecontainer.py", line 292, in _to_content
+    value = get_node_value(key)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/basecontainer.py", line 247, in get_node_value
+    value = BaseContainer._to_content(
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/basecontainer.py", line 292, in _to_content
+    value = get_node_value(key)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/basecontainer.py", line 244, in get_node_value
+    conf._format_and_raise(key=key, value=None, cause=e)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/base.py", line 231, in _format_and_raise
+    format_and_raise(
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/_utils.py", line 899, in format_and_raise
+    _raise(ex, cause)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/_utils.py", line 797, in _raise
+    raise ex.with_traceback(sys.exc_info()[2])  # set env var OC_CAUSE=1 for full trace
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/basecontainer.py", line 242, in get_node_value
+    node = node._dereference_node()
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/base.py", line 246, in _dereference_node
+    node = self._dereference_node_impl(throw_on_resolution_failure=True)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/base.py", line 277, in _dereference_node_impl
+    return parent._resolve_interpolation_from_parse_tree(
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/base.py", line 584, in _resolve_interpolation_from_parse_tree
+    resolved = self.resolve_parse_tree(
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/base.py", line 764, in resolve_parse_tree
+    return visitor.visit(parse_tree)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/antlr4/tree/Tree.py", line 34, in visit
+    return tree.accept(self)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/grammar/gen/OmegaConfGrammarParser.py", line 206, in accept
+    return visitor.visitConfigValue(self)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/grammar_visitor.py", line 101, in visitConfigValue
+    return self.visit(ctx.getChild(0))
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/antlr4/tree/Tree.py", line 34, in visit
+    return tree.accept(self)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/grammar/gen/OmegaConfGrammarParser.py", line 342, in accept
+    return visitor.visitText(self)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/grammar_visitor.py", line 301, in visitText
+    return self._unescape(list(ctx.getChildren()))
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/grammar_visitor.py", line 389, in _unescape
+    text = str(self.visitInterpolation(node))
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/grammar_visitor.py", line 125, in visitInterpolation
+    return self.visit(ctx.getChild(0))
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/antlr4/tree/Tree.py", line 34, in visit
+    return tree.accept(self)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/grammar/gen/OmegaConfGrammarParser.py", line 1041, in accept
+    return visitor.visitInterpolationResolver(self)
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/grammar_visitor.py", line 179, in visitInterpolationResolver
+    return self.resolver_interpolation_callback(
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/base.py", line 750, in resolver_interpolation_callback
+    return self._evaluate_custom_resolver(
+  File "/home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/omegaconf/base.py", line 702, in _evaluate_custom_resolver
+    raise UnsupportedInterpolationType(
+omegaconf.errors.UnsupportedInterpolationType: Unsupported interpolation type cwd
+    full_key: callback.dirpath
+    object_type=dict

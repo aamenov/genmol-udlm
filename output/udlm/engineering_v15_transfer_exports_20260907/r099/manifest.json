@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "Unsupported interpolation type cwd\n    full_key: callback.dirpath\n    object_type=dict",
+    "type": "UnsupportedInterpolationType"
+  },
+  "request_sha256": "5fc12e0c24dec33c0ab3b6f9b1328ea787c6276057b0884b002212a24e02ed0d",
+  "runtime_seconds": 9.036530427983962,
+  "schema_version": 1,
+  "status": "failed"
+}

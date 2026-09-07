@@ -1,0 +1,30 @@
+{
+  "cpu_environment": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "HF_HUB_OFFLINE": "1",
+    "MKL_NUM_THREADS": "4",
+    "OMP_NUM_THREADS": "4",
+    "OPENBLAS_NUM_THREADS": "4",
+    "PYTHONHASHSEED": "0",
+    "TOKENIZERS_PARALLELISM": "false",
+    "TRANSFORMERS_OFFLINE": "1"
+  },
+  "gpu_jobs": 0,
+  "model_forwards": 0,
+  "molecular_oracle_calls": 0,
+  "operation": "fixed_v15_cpu_transfer_exports",
+  "optimizer_updates": 0,
+  "plan": {
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_design_worktree/experiments/udlm/protocols/engineering_v15_transfer_exports/panel.json",
+    "sha256": "5635177b8568485ca301dddffdca7ea6a69fb3d5d10ba6484d7018760aa6a1cb",
+    "size_bytes": 6565
+  },
+  "schema_version": 1,
+  "source_revision": "1b9e2b6b44eba706883f5c276422cff9da3c119a",
+  "started_at": "2026-09-07T14:47:15.737496+00:00",
+  "wrapper": {
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_v15_design_worktree/scripts/udlm/export_v15_transfers.py",
+    "sha256": "a830fee8eff3a0775f0657241c588479511c4e5132ba26d435cd75c16e7f9aa9",
+    "size_bytes": 9594
+  }
+}
