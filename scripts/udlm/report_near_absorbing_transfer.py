@@ -10,7 +10,7 @@ from pathlib import Path
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
 def sha(data):
@@ -92,6 +92,7 @@ def build(data, terminal):
          f"from {first['changed_nonmask']['tokens']} to {last['changed_nonmask']['tokens']}. The corruption task changes, "
          'and empty/small groups cannot establish reliable conditional performance. '
          'All48 group records, CE sums and unreduced logit-gradient norms remain in groups.csv and the raw JSON.')
+    story.append(PageBreak())
     para('Analytic comparison and interpretation','Heading2')
     para('Let pi_E be the smoothed empirical prior, m the MASK ID, lambda its mixture weight, '
          'and delta_j the point mass at clean token j. pi_lambda=lambda*delta_m+(1-lambda)*pi_E; '
