@@ -1,0 +1,65 @@
+{
+  "artifacts": {
+    "output/udlm/engineering_v5/v5-r-t085-p100/seed_1200/raw_samples.csv": "81d10fb2e12e415f8c54fb1471ddbd2a22242a90a9b18c2b8e672a0edc05ce72",
+    "output/udlm/engineering_v5/v5-r-t085-p100/seed_1200/summary.json": "7c6a16a76c152b9095fe6d1fd842ed320ea9f206e740db5c7f71c5f51dc268cb",
+    "output/udlm/engineering_v5/v5-r-t085-p100/seed_1201/raw_samples.csv": "76cb87c29b6008868ad7a92ee99bc1d266030d4290f0b344185c8f99aa5f89b0",
+    "output/udlm/engineering_v5/v5-r-t085-p100/seed_1201/summary.json": "c9dc8d87a53a0ba6a8b9675fa03ce858b2e5609ee457f530d305ccd4d5a849a2"
+  },
+  "command": [
+    "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/denovo/launch_benchmark.py",
+    "--checkpoint",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/scaleup-w1-r-dcb271453411/checkpoints/1000.ckpt",
+    "--config",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t085_p100.yaml",
+    "--pilot",
+    "--attempt-id",
+    "v5-r-t085-p100",
+    "--candidate-id",
+    "r-w1-1000u-dcb271453411",
+    "--num-samples",
+    "64",
+    "--seeds",
+    "1200",
+    "1201",
+    "--gpu-count",
+    "2",
+    "--max-utilization-percent",
+    "10",
+    "--min-free-memory-mib",
+    "30000",
+    "--poll-seconds",
+    "10",
+    "--output-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v5",
+    "--log-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/logs/engineering_v5"
+  ],
+  "completed_at_utc": "2026-09-07T09:43:19.435342+00:00",
+  "identity": {
+    "entry": {
+      "arm_id": "R",
+      "attempt_id": "v5-r-t085-p100",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "checkpoint": "output/udlm/scaleup-w1-r-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c",
+      "config": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t085_p100.yaml",
+      "config_id": "r_t085_p100",
+      "config_sha256": "d5e522480a0e21048fd836e2d2cabaf3be2d2b3943ad64203bd142a00340b7c3"
+    },
+    "num_samples": 64,
+    "protocol_sha256": "ecd4722c23deebe193aeb50c034122ca20e501cf7c379e4beb6514b4d496d1a7",
+    "seeds": [
+      1200,
+      1201
+    ],
+    "source": {
+      "head": "12e13ddf9b1323bbfb60fe289b5dd363ca0c3c05",
+      "upstream": "12e13ddf9b1323bbfb60fe289b5dd363ca0c3c05"
+    }
+  },
+  "process_return_code": 0,
+  "return_code": 0,
+  "started_at_utc": "2026-09-07T09:41:49.809470+00:00",
+  "validation_error": null
+}

@@ -1,6 +1,13 @@
 # GenMol-UDLM project context
 
-## Active continuation: engineering temperature screen, 2026-09-07
+## Active continuation: completed temperature screen, 2026-09-07
+
+V5 finished all 24 runs and independent rescoring accepted all 1,536 raw rows.
+The selected pilot quality leader is S at temperature 0.85: 50.78125% quality,
+far below the local MDLM mean 85.8%. See `experiments/udlm/results/engineering_v5.md`
+and the full PDF at `output/udlm/engineering_v5_reports/complete/report.pdf`.
+The V5 tmux session ended cleanly. The prospective fixed-NFE Gibbs V6 study is
+prepared on `codex/udlm-gibbs-corrector`; verify live state before launching it.
 
 This section supersedes the stale launch status and three-GPU authorization
 below. The user currently authorizes **at most two GPUs**, selected dynamically

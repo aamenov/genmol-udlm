@@ -1,0 +1,65 @@
+{
+  "artifacts": {
+    "output/udlm/engineering_v5/v5-s-t100-p100/seed_1200/raw_samples.csv": "6356b28ba7eeea9c2128ac0add101b0705c8f408b2309963798fa71fb282be8e",
+    "output/udlm/engineering_v5/v5-s-t100-p100/seed_1200/summary.json": "ff2178202d068ba53950a3adb1fb4c7443f5fe0bc481d136a480e438e4de1084",
+    "output/udlm/engineering_v5/v5-s-t100-p100/seed_1201/raw_samples.csv": "f56974a534d8a39435858a77c3c341c459780fb6f4dda83798bd4ab55430ae34",
+    "output/udlm/engineering_v5/v5-s-t100-p100/seed_1201/summary.json": "a48af92c612d2388d0c96377c55a23d22d02a294ab8d0b2df9e264f09ca5b9f3"
+  },
+  "command": [
+    "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/denovo/launch_benchmark.py",
+    "--checkpoint",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/scaleup-w1-s-dcb271453411/checkpoints/1000.ckpt",
+    "--config",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/denovo/hparams_udlm_schedule_uniform.yaml",
+    "--pilot",
+    "--attempt-id",
+    "v5-s-t100-p100",
+    "--candidate-id",
+    "s-w1-1000u-dcb271453411",
+    "--num-samples",
+    "64",
+    "--seeds",
+    "1200",
+    "1201",
+    "--gpu-count",
+    "2",
+    "--max-utilization-percent",
+    "10",
+    "--min-free-memory-mib",
+    "30000",
+    "--poll-seconds",
+    "10",
+    "--output-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v5",
+    "--log-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/logs/engineering_v5"
+  ],
+  "completed_at_utc": "2026-09-07T09:38:12.439437+00:00",
+  "identity": {
+    "entry": {
+      "arm_id": "S",
+      "attempt_id": "v5-s-t100-p100",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "checkpoint": "output/udlm/scaleup-w1-s-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72",
+      "config": "scripts/exps/denovo/hparams_udlm_schedule_uniform.yaml",
+      "config_id": "s_t100_p100",
+      "config_sha256": "8f07751d3504eabc938dbccf91b90217df809945cb06b2fc8f96671cde59f739"
+    },
+    "num_samples": 64,
+    "protocol_sha256": "ecd4722c23deebe193aeb50c034122ca20e501cf7c379e4beb6514b4d496d1a7",
+    "seeds": [
+      1200,
+      1201
+    ],
+    "source": {
+      "head": "12e13ddf9b1323bbfb60fe289b5dd363ca0c3c05",
+      "upstream": "12e13ddf9b1323bbfb60fe289b5dd363ca0c3c05"
+    }
+  },
+  "process_return_code": 0,
+  "return_code": 0,
+  "started_at_utc": "2026-09-07T09:36:53.570879+00:00",
+  "validation_error": null
+}

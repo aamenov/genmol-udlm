@@ -1,0 +1,37 @@
+{
+  "entries": [
+    {
+      "arm_id": "E",
+      "attempt_id": "stage-d-e_t100_p100",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "child_outcomes": [
+        {
+          "artifact_kind": "pilot_failure",
+          "pilot_seed": 1100,
+          "relative_path": "output/udlm/de_novo_candidate_campaign_v1/evidence/stage-d-e_t100_p100/seed_1100.json",
+          "schema_version": 2,
+          "sha256": "2a3dd3a3bb98eed0da766f1f194154d75642967269ec3a1d8d7a182af229f997"
+        }
+      ],
+      "config_id": "e_t100_p100",
+      "diagnostic_structural_passed": false,
+      "rankable": false,
+      "released_diversity": null,
+      "released_quality": null,
+      "requested_samples_per_seed": 32,
+      "seeds": [
+        1100
+      ],
+      "status": "failed"
+    }
+  ],
+  "registry": {
+    "canonical_sha256": "4f3fbcd22aed7a3ab3c4cccbece776cc45a86db43a496cad4107035907e2f9ed",
+    "relative_path": "experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json",
+    "schema_version": 1,
+    "sha256": "d028230d635b6f1a9093ad489a61de789d3e888cc4464a31f0f7c53791e74e45",
+    "size_bytes": 27574
+  },
+  "schema_version": 1,
+  "stage_id": "D"
+}

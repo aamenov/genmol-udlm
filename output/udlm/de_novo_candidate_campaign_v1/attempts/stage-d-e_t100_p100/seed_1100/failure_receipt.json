@@ -1,0 +1,90 @@
+{
+  "artifact_kind": "pilot_failure",
+  "attempt_id": "stage-d-e_t100_p100",
+  "candidate_id": "e-w1-1000u-dcb271453411",
+  "checkpoint": {
+    "global_step": 1000,
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/scaleup-w1-e-dcb271453411/checkpoints/1000.ckpt",
+    "sha256": "dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005",
+    "size_bytes": 1636491592
+  },
+  "command": [
+    "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/denovo/benchmark.py",
+    "--checkpoint",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/scaleup-w1-e-dcb271453411/checkpoints/1000.ckpt",
+    "--expected-checkpoint-sha256",
+    "dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005",
+    "--expected-source-revision",
+    "34c990ebb3e5d51656e860c54ba306f5ede35d06",
+    "--config",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/denovo/hparams_udlm_categorical_floor0002.yaml",
+    "--expected-config-sha256",
+    "309bbed7b67ad2090def3ba5429f00f4e56b4fb7af2f6be245b9e79619aa3c06",
+    "--num-samples",
+    "32",
+    "--seed",
+    "1100",
+    "--device",
+    "cuda:0",
+    "--output-dir",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/de_novo_candidate_campaign_v1/attempts/stage-d-e_t100_p100/seed_1100",
+    "--expected-output-directory-device",
+    "48",
+    "--expected-output-directory-inode",
+    "2621512047"
+  ],
+  "config": {
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/denovo/hparams_udlm_categorical_floor0002.yaml",
+    "sampling": {
+      "diffusion_type": "udlm",
+      "exclude_special_tokens": false,
+      "inference_eps": 1e-05,
+      "min_add_len": 40,
+      "num_steps": 128,
+      "prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+      "prior_variant": "empirical_frequency",
+      "randomness": 0.0,
+      "raw_loo_top_p": 1.0,
+      "softmax_temp": 1.0
+    },
+    "sampling_sha256": "52aa1c36088b8351c971d83555d654c827cd529d3bebdcf7560bacea94fbbe24",
+    "sha256": "309bbed7b67ad2090def3ba5429f00f4e56b4fb7af2f6be245b9e79619aa3c06"
+  },
+  "failed_at_utc": "2026-09-07T08:18:27.492680+00:00",
+  "launcher_source": {
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/denovo/launch_benchmark.py",
+    "sha256": "060cef70d6a2945994e401976a3775fe05f4af6dae11fe03c61907a7547ec79b",
+    "size_bytes": 125383
+  },
+  "log": {
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/logs/de_novo_candidate_campaign_v1/stage-d-e_t100_p100/denovo_step1000_dce870e8d634_seed1100.log",
+    "sha256": "5fd60e40da8deae8f40310877c51443f557117e767b8f8ef0d0d98c557c4e87c",
+    "size_bytes": 7779
+  },
+  "partial_artifacts": {
+    "raw_samples_csv": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/de_novo_candidate_campaign_v1/attempts/stage-d-e_t100_p100/seed_1100/raw_samples.csv",
+      "sha256": "7315c8b0dfd896ffe9b7ec113e5f1d354a623038a81546d3ee243ade506d830a",
+      "size_bytes": 9332
+    },
+    "summary_json": {
+      "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/de_novo_candidate_campaign_v1/attempts/stage-d-e_t100_p100/seed_1100/summary.json",
+      "sha256": "0e4df461425b6513f8f3a7764207b6b5f9c9820ed7dc19b69dff876979bbb4f2",
+      "size_bytes": 48104
+    }
+  },
+  "pilot_mode": "engineering",
+  "pilot_seed": 1100,
+  "process_exit_status": null,
+  "reason": "completion validation failed: Seed 1100 has benchmark artifacts that do not match the requested run or fail integrity checks:\n  - config.effective={'device': 'cuda:0', 'diffusion_type': 'udlm', 'exclude_special_tokens': False, 'inference_eps': 1e-05, 'min_add_len': 40, 'model_path': '/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/scaleup-w1-e-dcb271453411/checkpoints/1000.ckpt', 'num_samples': 32, 'num_steps': 128, 'prior_metadata_sha256': 'f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612', 'prior_variant': 'empirical_frequency', 'randomness': 0.0, 'raw_loo_top_p': 1.0, 'softmax_temp': 1.0}; expected {'model_path': '/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/scaleup-w1-e-dcb271453411/checkpoints/1000.ckpt', 'num_samples': 32, 'diffusion_type': 'udlm', 'softmax_temp': 1.0, 'randomness': 0.0, 'min_add_len': 40, 'num_steps': 128, 'inference_eps': 1e-05, 'exclude_special_tokens': False, 'prior_variant': 'empirical_frequency', 'prior_metadata_sha256': 'f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612', 'device': 'cuda:0'}\n  - config.effective_sha256='278d4476e98bc0b5905e16c2158dd75a3a5a85250e4a48726640afc0e5529608'; expected '3ee30748fa7d7fcc675fde0fe1e8ff15f23fdc3374ba76eed03466ba306ec02f'\nRefusing to skip or relaunch into the existing directory. Inspect the artifacts or choose a fresh output root.",
+  "requested_samples": 32,
+  "schema_version": 1,
+  "source_revision": {
+    "head": "34c990ebb3e5d51656e860c54ba306f5ede35d06",
+    "upstream": "34c990ebb3e5d51656e860c54ba306f5ede35d06"
+  },
+  "stage": "completion_validation",
+  "started_at_utc": "2026-09-07T08:17:42.437977+00:00",
+  "status": "failed"
+}

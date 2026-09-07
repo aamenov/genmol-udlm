@@ -1,0 +1,14 @@
+{
+  "artifact_kind": "pilot_failure",
+  "attempt_id": "stage-d-e_t100_p100",
+  "candidate_id": "e-w1-1000u-dcb271453411",
+  "failure_receipt": {
+    "relative_path": "output/udlm/de_novo_candidate_campaign_v1/attempts/stage-d-e_t100_p100/seed_1100/failure_receipt.json",
+    "schema_version": 1,
+    "sha256": "ed3dc97657f5e7b404689fcac1d8b47a760375664af141db195dfe1eb82dc9a5"
+  },
+  "final_seed_results_included": false,
+  "pilot_seed": 1100,
+  "schema_version": 2,
+  "status": "failed"
+}
