@@ -62,7 +62,9 @@ class NotReady(ValueError):
     """A required future artifact or terminal controller is unavailable."""
 
 
-def load_preserved_bundle(inputs, directory, expected_manifest, pdf_name, pages):
+def load_preserved_bundle(
+    inputs, directory, expected_manifest, pdf_name, pages, *, path_aliases=None
+):
     manifest = inputs.read_json(
         directory / "input_hash_manifest.json",
         "Preserved bundle manifest",
@@ -76,7 +78,10 @@ def load_preserved_bundle(inputs, directory, expected_manifest, pdf_name, pages)
         require(len(payload) == claim["size_bytes"], "Preserved output size differs")
     for claim in manifest["inputs"]:
         payload = inputs.read(
-            inputs.workspace / claim["workspace_relative_path"],
+            inputs.workspace
+            / (path_aliases or {}).get(
+                claim["workspace_relative_path"], claim["workspace_relative_path"]
+            ),
             "Preserved upstream evidence",
             claim["sha256"],
         )
@@ -216,6 +221,23 @@ def token_counts(summary, rescore_identity):
 
 
 def load_v12(inputs, root, directory, expected_report_sha):
+    """Preserve the original V12 entry point and fixed panel identity."""
+    return load_terminal_panel(inputs, root, directory, expected_report_sha)
+
+
+def load_terminal_panel(
+    inputs,
+    root,
+    directory,
+    expected_report_sha,
+    *,
+    study="V12",
+    study_id="engineering-v12-ce-mask-prior",
+    seeds=(2000, 2001),
+    config_ids=("e_ce_t100", "e_ce_t050", "mask_ce_t100", "mask_ce_t050"),
+    direction="MASK_minus_empirical",
+):
+    """Shared saved-evidence checks; callers still pin their concrete protocol."""
     if not (directory / "report.json").is_file():
         raise NotReady("V12 independent report is not available")
     report = inputs.read_json(
@@ -237,16 +259,15 @@ def load_v12(inputs, root, directory, expected_report_sha):
     )
     require(
         protocol == reference["configuration"]
-        and protocol["study_id"] == "engineering-v12-ce-mask-prior"
-        and protocol["seeds"] == [2000, 2001]
+        and protocol["study_id"] == study_id
+        and protocol["seeds"] == list(seeds)
         and protocol["num_samples"] == 100
         and protocol["nfe"] == 128,
         "Unexpected V12 protocol",
     )
     entries = {entry["config_id"]: entry for entry in protocol["entries"]}
     require(
-        len(protocol["entries"]) == 4
-        and set(entries) == {"e_ce_t100", "e_ce_t050", "mask_ce_t100", "mask_ce_t050"},
+        len(protocol["entries"]) == 4 and set(entries) == set(config_ids),
         "V12 must retain all four settings",
     )
     for extension in ("csv", "pdf"):
@@ -459,11 +480,11 @@ def load_v12(inputs, root, directory, expected_report_sha):
     require(
         report["paired_contrasts"] == contrasts
         and {row["contrast_id"] for row in contrasts} == {"primary", "secondary"}
-        and all(row["direction"] == "MASK_minus_empirical" for row in contrasts),
+        and all(row["direction"] == direction for row in contrasts),
         "V12 signed contrasts differ",
     )
     decorated = dict(protocol, _sampling_configs=configs)
-    records = metric_records(report, decorated, "V12")
+    records = metric_records(report, decorated, study)
     return report, protocol, records, masks
 
 
@@ -600,9 +621,10 @@ def load_prior_training(inputs, root, protocol):
     }
 
 
-def accounting(records):
+def accounting(records, *, studies=("V5", "V6", "V9", "V10", "V12")):
+    study_ids = studies
     studies = []
-    for study in ("V5", "V6", "V9", "V10", "V12"):
+    for study in study_ids:
         rows = [record for record in records if record["study"] == study]
         statuses = Counter()
         for row in rows:
