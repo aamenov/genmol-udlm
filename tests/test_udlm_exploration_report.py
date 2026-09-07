@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import csv
+import copy
 import hashlib
+import io
 import json
 from pathlib import Path
 
@@ -260,3 +262,116 @@ def test_wrong_controller_protocol_digest_is_invalid(screen):
     _write(path, receipt)
     result = report.build_report(protocol, output, root=root, rescore=rescore)
     assert result["accounting"]["status_counts"] == {"invalid": 2}
+
+
+def _gibbs_export_fixture(screen):
+    root, protocol, output, complete, rescore, terminal = screen
+    complete(1200)
+    complete(1201)
+    terminal()
+    result = report.build_report(protocol, output, root=root, rescore=rescore)
+    specification = result["protocol"]["configuration"]
+    specification["design"] = {
+        "temperature": 0.5,
+        "predictor_control": {"predictor_transitions": 128, "corrector_updates": 0},
+        "gibbs_treatment": {"predictor_transitions": 64, "corrector_updates": 64},
+        "claim_boundary": "Learned own-token dependence removes exact stationarity.",
+    }
+    specification["limitations"] = [
+        "Temperature 0.5 conditionals are approximate; no molecular win is established."
+    ]
+    for run, corrected in zip(result["runs"], (False, True)):
+        run["config_id"] = "e_t050_gibbs" if corrected else "e_t050_predictor"
+        run["generation_protocol"] = {
+            "diffusion_type": "udlm",
+            "nfe": 128,
+            "num_steps": 128,
+            "nfe_definition": (
+                "one fresh backbone evaluation per predictor or corrector"
+                if corrected
+                else "one full backbone forward evaluation per reverse step"
+            ),
+        }
+        if corrected:
+            run["generation_protocol"].update(
+                gibbs_corrector=True,
+                predictor_transitions_per_molecule=64,
+                corrector_steps_per_molecule=64,
+            )
+            run["independent_rescore"]["identity"] = {
+                "source": {"corrector_source_sha256": "9" * 64}
+            }
+    return result
+
+
+def test_gibbs_csv_exports_certified_budget_provenance_and_design_caveats(screen):
+    result = _gibbs_export_fixture(screen)
+    rows = list(csv.DictReader(io.StringIO(report._csv_bytes(result).decode())))
+    control, corrected = rows
+    assert control["gibbs_corrector"] == "False"
+    assert corrected["gibbs_corrector"] == "True"
+    assert control["nfe"] == corrected["nfe"] == "128"
+    assert control["predictor_transitions_per_molecule"] == "128"
+    assert control["corrector_steps_per_molecule"] == "0"
+    assert corrected["predictor_transitions_per_molecule"] == "64"
+    assert corrected["corrector_steps_per_molecule"] == "64"
+    assert control["corrector_source_sha256"] == ""
+    assert corrected["corrector_source_sha256"] == "9" * 64
+    for row, run in zip(rows, result["runs"]):
+        assert json.loads(row["generation_protocol"]) == run["generation_protocol"]
+        specification = result["protocol"]["configuration"]
+        assert json.loads(row["protocol_design"]) == specification["design"]
+        assert json.loads(row["protocol_limitations"]) == specification["limitations"]
+
+
+def test_gibbs_pdf_discloses_allocation_approximation_and_source_hash(screen):
+    from pypdf import PdfReader
+
+    result = _gibbs_export_fixture(screen)
+    before = copy.deepcopy(result)
+    pdf = report._pdf_bytes(result)
+    text = " ".join(
+        " ".join(page.extract_text().split())
+        for page in PdfReader(io.BytesIO(pdf)).pages
+    )
+    assert "Prospective sampling design" in text
+    assert "Sampling evaluation budget" in text
+    assert "e_t050_predictor 1200 128 128 0" in text
+    assert "e_t050_gibbs 1201 128 64 64" in text
+    assert "Learned own-token dependence removes exact stationarity." in text
+    assert "Temperature 0.5 conditionals are approximate" in text
+    assert "generation_protocol" in text
+    assert "corrector_steps_per_molecule" in text
+    assert "corrector_source_sha256" in text
+    assert "9" * 64 in text.replace(" ", "")
+    assert result == before
+
+
+def test_gibbs_pending_rows_retain_design_without_inventing_observed_budget(screen):
+    result = _gibbs_export_fixture(screen)
+    for run in result["runs"]:
+        run["status"] = "pending"
+        del run["generation_protocol"]
+        del run["independent_rescore"]
+    rows = list(csv.DictReader(io.StringIO(report._csv_bytes(result).decode())))
+    for row in rows:
+        assert row["nfe"] == row["gibbs_corrector"] == ""
+        assert row["predictor_transitions_per_molecule"] == ""
+        assert row["corrector_steps_per_molecule"] == ""
+        assert row["corrector_source_sha256"] == ""
+        assert json.loads(row["generation_protocol"]) == {}
+        assert "gibbs_treatment" in json.loads(row["protocol_design"])
+
+
+def test_historical_temperature_csv_preserves_columns_without_gibbs_fields(screen):
+    root, protocol, output, complete, rescore, terminal = screen
+    complete(1200)
+    complete(1201)
+    terminal()
+    result = report.build_report(protocol, output, root=root, rescore=rescore)
+    rows = list(csv.DictReader(io.StringIO(report._csv_bytes(result).decode())))
+    assert "nfe" not in rows[0]
+    assert "gibbs_corrector" not in rows[0]
+    assert "generation_protocol" not in rows[0]
+    assert "protocol_design" not in rows[0]
+    assert report._has_gibbs_design(result) is False
