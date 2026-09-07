@@ -31,7 +31,7 @@ at `/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.
 Export exactly four inference-only checkpoints, crossing:
 
 - MASK prior mixture **0.99 / 0.999**, each with the existing empirical prior
-  and uniform floor **0.0002**, all1,880 corruption categories active;
+  and uniform floor **0.0002**, all 1,880 corruption categories active;
 - **raw_loo / x0_denoiser** parameterization, interpreted at inference only.
 
 Every export uses initialization seed **2509**, neutral A1 FiLM conditioning,
@@ -53,7 +53,7 @@ zero-update artifacts require their own explicit probe and verification path.
 
 ## Fixed molecular panel
 
-Seven configurations, each with **seeds2500/2501 and100 requested samples**:
+Seven configurations, each with **seeds 2500/2501 and 100 requested samples**:
 
 | Configuration | Mixture | Interpretation | Temperature space | Temperature |
 |---|---:|---|---|---:|
@@ -67,17 +67,17 @@ Seven configurations, each with **seeds2500/2501 and100 requested samples**:
 
 This is **14 runs / 1,400 requests**, retaining every requested slot, including
 invalid outputs. All use `min_add_len=40`, the same frozen length distribution
-and tokenizer, no molecular context guidance, and a single batch of100 requests.
-UDLM uses **128 predictor steps**, top-p1, no Gibbs corrector, inference
-epsilon1e-5, and ignored confidence randomness0. MDLM uses its original adaptive
-confidence decoder, temperature0.5 and randomness0.5. Common checkpoint noise
-epsilon is0.001. MDLM and UDLM have different laws/NFE; this tests configured
+and tokenizer, no molecular context guidance, and a single batch of 100 requests.
+UDLM uses **128 predictor steps**, top-p 1, no Gibbs corrector, inference
+epsilon 1e-5, and ignored confidence randomness 0. MDLM uses its original adaptive
+confidence decoder, temperature 0.5 and randomness 0.5. Common checkpoint noise
+epsilon is 0.001. MDLM and UDLM have different laws/NFE; this tests configured
 pipelines, without a matched-compute claim.
 
-Execute in the displayed configuration order for seed2500, then that same order
-for2501, in waves of at most two freshly qualifying GPUs. Inspect utilization,
+Execute in the displayed configuration order for seed 2500, then that same order
+for 2501, in waves of at most two freshly qualifying GPUs. Inspect utilization,
 free memory and active processes immediately before each launch; utilization
-must be strictly below10% and free memory at least30,000MiB. UUID-map logical
+must be strictly below 10% and free memory at least 30,000 MiB. UUID-map logical
 devices dynamically, never choose a fixed physical GPU. Only after V14 and its
 independent acceptance terminate may this study acquire the generation lease.
 Use a named tmux session, complete logs and a fresh exclusive namespace.
@@ -100,7 +100,7 @@ is distinct from V14's Fexofenadine optimization budget.
 
 Primary mechanistic contrast: **r0999 minus ce_raw0999**, by same seed, for
 released and strict quality. Secondary contrasts retain r099 minus ce_raw099,
-ce_clean minus ce_raw at each mixture, and0.999 minus0.99 within each of the
+ce_clean minus ce_raw at each mixture, and 0.999 minus 0.99 within each of the
 three interpretations. Also retain **all six candidate-minus-MDLM** contrasts
 for validity, uniqueness, quality and diversity in both metric branches, all
 per-seed values, mean signed differences and sample SDs. No cherry-picked
@@ -112,12 +112,12 @@ identity acceptance before any engineering comparison is qualified. A candidate
 is eligible only for a separately declared replication when both paired
 released-quality differences exceed zero, mean strict-quality difference is
 nonnegative, and mean released validity/uniqueness/diversity differences are
-each at least-0.01. Undefined metrics or incomplete runs withhold eligibility.
-All14 runs must complete and pass acceptance; retain every qualifying arm.
-The0.01 tolerance is an engineering screen, not statistical noninferiority.
+each at least -0.01. Undefined metrics or incomplete runs withhold eligibility.
+All 14 runs must complete and pass acceptance; retain every qualifying arm.
+The 0.01 tolerance is an engineering screen, not statistical noninferiority.
 
 Two seeds and adaptive choice support no significance or general superiority
-claim. Final de novo seeds0/1/2 remain reserved for a separate prospective study.
+claim. Final de novo seeds 0/1/2 remain reserved for a separate prospective study.
 The final PDF must retain all configurations, signed effects, failures,
 transfer/compute caveats, and earlier study appendices. The overarching goal
 remains to improve GenMol benchmarks; this probe is a bounded next experiment.
