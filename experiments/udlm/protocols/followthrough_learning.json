@@ -1,0 +1,31 @@
+{
+  "checkpoint": "outputs/paper_v1/checkpoints/50000.ckpt",
+  "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+  "deviations": [
+    "MDLM destination is newly permitted by the existing verified backbone-only EMA initialization helper.",
+    "All training RNGs are reseeded after model initialization in both arms; this is shared by the new learning curve and is different from V8.",
+    "Fail immediately on nonfinite loss for both arms.",
+    "Equal extra examples and updates are not equal FLOPs; UDLM has additional FiLM parameters.",
+    "No improvement or final benchmark claim follows from a completed training run."
+  ],
+  "evaluation_checkpoints": [
+    1000,
+    2000,
+    4000
+  ],
+  "example_exposures_per_arm": 512000,
+  "execution": "One UDLM objective selected after the completed resolution diagnostic, then one MDLM exposure control; fresh starts and independent optimizers.",
+  "global_batch_size": 128,
+  "gpu_policy": {
+    "active_compute_processes_allowed": true,
+    "max_gpus": 2,
+    "max_utilization_percent": 10,
+    "min_free_memory_mib": 30000
+  },
+  "memory_measurement": "Two-second nvidia-smi aggregate memory samples, including existing processes; not allocator peaks.",
+  "micro_batch_size": 16,
+  "optimizer_updates": 4000,
+  "schema_version": 1,
+  "seed": 17400,
+  "study_id": "followthrough-learning-4000-b128"
+}

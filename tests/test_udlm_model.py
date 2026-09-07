@@ -922,6 +922,33 @@ def test_udlm_warm_start_uses_mdlm_ema_and_resets_new_ema(tmp_path):
     assert torch.count_nonzero(target.backbone.time_conditioner.mlp[-1].weight) == 0
 
 
+def test_matched_mdlm_control_loads_ema_weights_with_fresh_training_state(tmp_path):
+    config = _config(diffusion="mdlm")
+    config.training.ema = 0.9
+    source = model_module.GenMol(config)
+    source.ema.num_updates = 50000
+    with torch.no_grad():
+        for index, shadow in enumerate(source.ema.shadow_params):
+            shadow.fill_(0.001 * (index + 1))
+    path = tmp_path / "mdlm_control_initialization.ckpt"
+    torch.save({"state_dict": source.state_dict(), "ema": source.ema.state_dict(),
+                "global_step": 50000, "optimizer_states": [{"old_state": True}]}, path)
+    target = model_module.GenMol(config)
+    report = target.initialize_from_mdlm_checkpoint(
+        path, expected_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+    assert report["weights"] == "ema"
+    assert target.diffusion_type == "mdlm"
+    assert target.ema.num_updates == 0
+    assert target.global_step == 0
+    for actual, shadow, fresh_shadow in zip(target.backbone.parameters(),
+                                           source.ema.shadow_params,
+                                           target.ema.shadow_params, strict=True):
+        assert torch.equal(actual, shadow)
+        assert torch.equal(fresh_shadow, shadow)
+    assert all(not is_conditioning_parameter_name(name)
+               for name, _ in target.backbone.named_parameters())
+
+
 def test_film_warm_start_preserves_exact_mdlm_logits_and_ema_order(tmp_path):
     torch.manual_seed(71)
     source_config = _config()

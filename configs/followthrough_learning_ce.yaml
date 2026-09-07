@@ -1,0 +1,7 @@
+defaults:
+  - followthrough_learning_ct
+  - _self_
+
+training:
+  udlm:
+    parameterization: x0_denoiser

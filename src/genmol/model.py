@@ -1289,7 +1289,7 @@ class GenMol(L.LightningModule):
         use_ema=True,
         expected_sha256=None,
     ):
-        """Warm-start UDLM's BERT only, resetting all training state.
+        """Warm-start a UDLM or matched MDLM BERT from MDLM weights.
 
         This is intentionally not a Lightning resume: the optimizer, learning
         rate schedule, global step, UDLM process, time conditioner, and EMA are
@@ -1297,8 +1297,8 @@ class GenMol(L.LightningModule):
         because they are the weights used by the released GenMol sampler.
         """
 
-        if self.diffusion_type != 'udlm':
-            raise ValueError('MDLM backbone initialization is only valid for UDLM')
+        if self.diffusion_type not in {'udlm', 'mdlm'}:
+            raise ValueError('MDLM backbone initialization requires MDLM or UDLM')
         with verified_checkpoint_file(
             checkpoint_path,
             expected_sha256=expected_sha256,
@@ -1325,7 +1325,7 @@ class GenMol(L.LightningModule):
         }
         if set(load_result.missing_keys) != expected_missing or load_result.unexpected_keys:
             raise ValueError(
-                'MDLM backbone is incompatible with this UDLM architecture: '
+                'MDLM backbone is incompatible with the target architecture: '
                 f'missing={load_result.missing_keys}, '
                 f'unexpected={load_result.unexpected_keys}'
             )

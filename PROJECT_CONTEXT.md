@@ -1,3 +1,37 @@
+# Follow-through learning curve — isolated checkout
+
+This checkout prepares only the 4,000-update adaptation curve and matched MDLM
+control authorized by the user on 2026-09-07. It does not own the resolution run.
+The resolution source is frozen in `../udlm_diagnostics_followthrough`; read
+its `output/logs/followthrough-resolution-r1-pipeline.log` and complete report.
+
+All new training starts from the same MDLM 50k EMA, resets optimizer/EMA state,
+uses seed 17400, global batch 128, microbatch 16, and a fresh 4k learning-rate horizon.
+RNGs are reseeded after initialization in both new arms, and nonfinite loss fails
+immediately. These shared changes distinguish the new curve from the V8 runs.
+The callback saves every 1k; evaluate only 1k, 2k, 4k. Source must stay fixed in flight.
+
+The model initialization helper now supports an MDLM destination so the control
+receives the same EMA weights with a fresh training state. Existing UDLM behavior
+is preserved. All 124 focused model/training/stream-partition tests passed.
+
+`experiments/udlm/protocols/followthrough_learning.json` records the design.
+After the complete resolution report is reviewed, select one UDLM objective
+and run it first, then MDLM. Do not launch both CT and CE automatically.
+Use `scripts/udlm/launch_followthrough_learning.py --arm <ct|ce|mdlm> --gpu-count 2`. `--dry-run` verifies inputs without
+GPU use. Live execution requires tmux and the audited complete resolution report.
+New training outputs are `output/udlm/followthrough_learning/`; logs are under
+`output/logs/followthrough_learning/`. No learning-curve job has started yet.
+
+GPU policy: at most two dynamically chosen UUIDs below 10% utilization and at least
+30,000 MiB free immediately before launch. Keep existing processes intact.
+The existing generation/training leases and finite-checkpoint audit are reused.
+
+Held-out confirmation depends on improvement in molecular metrics; it remains
+unlaunched. Preserve the final seeds. Historical text below is reference only.
+
+---
+
 # Isolated follow-through study — active local scope
 
 This checkout owns only the diagnostic sequence authorized in the side conversation

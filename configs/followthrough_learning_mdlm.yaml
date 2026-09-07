@@ -1,0 +1,8 @@
+defaults:
+  - followthrough_learning_ct
+  - _self_
+
+# Exposure-matched MDLM control: same MDLM EMA, fresh optimizer and EMA.
+# The UDLM config subtree is inactive for this model.
+training:
+  diffusion: mdlm
