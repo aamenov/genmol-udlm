@@ -1,0 +1,10 @@
+defaults:
+  - udlm_e_objective_ce_followup
+  - _self_
+
+# V11 starts fresh from the same MDLM50k EMA as completed V8b CE.
+# The fixed launcher changes only this prior and the output namespace.
+training:
+  udlm:
+    prior_variant: mask_rich_empirical
+    mask_mixture_weight: 0.9
