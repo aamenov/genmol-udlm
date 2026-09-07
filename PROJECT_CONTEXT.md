@@ -1,16 +1,47 @@
 # GenMol-UDLM project context
 
-## Active continuation: training resource pilot passed, 2026-09-07
+## Active continuation: matched CT/CE training, 2026-09-07
+
+V8 is integrated and ready for its first launch. Check live tmux, manifests,
+and logs before acting; this text is a prelaunch snapshot. The prospective
+protocol is `experiments/udlm/protocols/engineering_v8_objectives.json`, SHA-256
+`a27875752d25a4a7928401434f9bd90ee6e9d01539586bab70ce3ba75499026e`.
+It trains CT-E then CE-E sequentially, each starting fresh from the same
+verified MDLM50k EMA with seed1500, 1,000 updates, global batch128, microbatch16,
+two GPUs and accumulation4. Each arm sees 128,000 examples (eight times the
+historical R/S/E continuation exposure); both together see 256,000. Both use
+A1 conditioning, the same empirical prior, L1 schedule, active alphabet and
+all-special-token clean-target mask. They differ in CT/raw-LOO versus clean
+cross-entropy parameterization. Stage24 teaches this comparison in the notebook.
+
+Run from this clean, pushed artifact worktree using the project virtual environment:
+
+```bash
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python -u scripts/udlm/launch_objective_training.py --gpu-count 2
+```
+
+Use detached tmux `genmol-udlm-v8-objectives`, with controller output in
+`output/logs/engineering-v8-objectives-controller.log`. The immutable campaign
+and arm manifests will be under
+`output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/`; training logs are under
+`output/logs/engineering_v8/`. Keep tracked source and HEAD frozen while the
+campaign runs. It stops on any failed arm and never automatically retries,
+resumes, generates molecules, or promotes a candidate. CE molecular benchmark
+results are pending. This training comparison does not establish superiority
+or match the full MDLM pretraining budget.
+
+Each arm holds both generation and training leases and dynamically selects at
+most two GPU UUIDs, rechecked strictly below 10% utilization with at least
+30,000 MiB free immediately before launch. Existing processes are recorded and
+allowed under those checks. Checkpoint completion requires finite tensors,
+step1000, the resolved configuration, and correct CT/CE metadata/state semantics.
 
 V7 completed successfully at 10:16:18 UTC. Its one-GPU CT-E20 checkpoint has
 SHA-256 `07ad66498ccaf629fd61e8485c6ddb310c84c4a86770a0be5e3d4911fe341cc0`;
 2,560 exposures, subprocess146.333s including startup/save, observed aggregate
 GPU maximum9,637MiB. Both leases were released. See
 `experiments/udlm/results/engineering_v7_throughput.md`. Do not relaunch this
-immutable attempt. A prospective V8 CT/CE1000-update comparison is being
-prepared on `codex/udlm-ce-ct-training`; root chose two GPUs for both arms,
-subject to fresh utilization/memory probes. It must start each arm from the
-common MDLM EMA, not V7. Verify source/launch state before acting.
+immutable attempt or initialize V8 from it; each V8 arm starts from MDLM EMA.
 
 The complete 27-page V5/V6 plus MDLM study report is
 `output/udlm/study_overview_20260907/study_overview.pdf`, SHA-256
@@ -23,25 +54,7 @@ pilot quality is S+Gibbs at 57.03125%, below local MDLM 85.8%; Gibbs changed
 quality by +4.6875pp E, +2.34375pp S and −6.25pp R. See
 `experiments/udlm/results/engineering_v6.md` and
 `output/udlm/engineering_v6_reports/complete/report.pdf`. No superiority.
-
-The opt-in CE clean-denoiser implementation, conversion, checkpoint safeguards,
-benchmark provenance and notebook Stage 23 are merged. No CE model is trained.
-Historical checkpoints retain CT/raw-LOO semantics. The next frozen resource
-pilot is `experiments/udlm/protocols/engineering_v7_throughput.json`: CT-E,
-fresh MDLM EMA, seed1400, 20 updates, global128/micro16, one GPU/accumulation8.
-Use project `.venv` and `scripts/udlm/launch_engineering_training.py --gpu-count 1`
-in session `genmol-udlm-v7-throughput`, with controller output redirected to
-`output/logs/engineering-v7-throughput-controller.log`. Its immutable manifests
-will be under `output/udlm/engineering_v7/ct_e_throughput20_b128_w1/` and the
-training log under `output/logs/engineering_v7/`. Verify live status first.
-
-V7 holds both generation and training leases, dynamically rechecks UUIDs
-strictly below 10% utilization with at least 30,000 MiB free, and allows recorded
-external processes. Completed-exposure throughput is reported only after a
-successful finite step20 checkpoint is verified. No automatic longer training
-is configured. Future CT/CE comparison must match both active vocabulary and
-clean-target masks; CE masks all tokenizer controls, while historical CT masks
-BOS/EOS/PAD only. The throughput pilot itself retains historical CT masking.
+Historical checkpoints retain CT/raw-LOO semantics and their original masks.
 
 ## Completed V5/V6 workflow details (historical commands)
 

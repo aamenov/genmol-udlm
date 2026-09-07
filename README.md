@@ -21,9 +21,11 @@ UDLM authors.
 > [Gibbs results](experiments/udlm/results/engineering_v6.md). All R/S/E
 > checkpoints received 1,000 batch-16 updates from the common MDLM EMA.
 > An opt-in [CE clean-denoiser adaptation](docs/udlm_ce_implementation.md) is
-> implemented and CPU-tested but has not trained a molecular model. A fresh
-> [20-update batch-128 resource pilot](experiments/udlm/results/engineering_v7_throughput.md)
-> passed; a larger matched CT/CE training comparison is the next experiment.
+> implemented and CPU-tested; its molecular benchmark results are pending. The
+> [batch-128 resource pilot](experiments/udlm/results/engineering_v7_throughput.md)
+> passed. The prospective [matched CT/CE study](experiments/udlm/protocols/engineering_v8_objectives.json)
+> trains each arm for 1,000 batch-128 updates from the same MDLM EMA. Current
+> authorization is at most two dynamically selected GPUs below 10% utilization.
 
 The main educational implementation is
 [`genmol_from_scratch.ipynb`](genmol_from_scratch.ipynb); exact experiment
@@ -87,9 +89,10 @@ descriptor, and a repository-global generation lease.
 At every real launch, the full GPU inventory is inspected and selected UUIDs
 are immediately re-probed. A card is eligible only below 10% utilization
 (exactly 10% is not idle), with at least 30,000 MiB free and non-prohibited
-compute mode. Active processes are recorded and never interrupted. Up to three
-GPUs are authorized without another user request, physical GPU 0 is never
-assumed, and long jobs use named detached `tmux` sessions with logs under
+compute mode. Active processes are recorded and never interrupted. The archived
+plan previously allowed three GPUs; current authorization is at most two GPUs.
+Physical GPU 0 is never assumed, and long jobs use named detached `tmux` sessions
+with logs under
 `output/logs/`.
 
 The publication firewall is acyclic: F contains framework/tests/docs/notebook
@@ -122,7 +125,8 @@ REGISTRY_CANONICAL='REPLACE_WITH_REGISTRY_CANONICAL_SHA256'
 ```
 
 Authorize one bounded prefix at a time. D is internally fixed to concurrency
-one; later stages use at most three one-GPU children. Do not launch A until D's
+one; the archived plan allowed three children, but current authorization caps
+all work for this goal at two GPUs. Do not launch A until D's
 decision is terminal, B until A is terminal, C until B is terminal, or
 `eligible` until C is terminal.
 
