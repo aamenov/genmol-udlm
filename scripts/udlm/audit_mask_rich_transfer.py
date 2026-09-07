@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 import time
+from contextlib import redirect_stdout
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -24,9 +25,12 @@ ROOT = Path(__file__).resolve().parents[2]
 PROJECT = ROOT.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-import torch  # noqa: E402
-from genmol.diffusion import ContinuousCategoricalDiffusion  # noqa: E402
-from genmol.sampler import load_model_from_path  # noqa: E402
+# SAFE/Transformers may print signature notices while defining imported classes.
+# Keep stdout machine-readable and retain those diagnostics on stderr.
+with redirect_stdout(sys.stderr):
+    import torch
+    from genmol.diffusion import ContinuousCategoricalDiffusion
+    from genmol.sampler import load_model_from_path
 
 CHECKPOINT = PROJECT / "outputs/paper_v1/checkpoints/50000.ckpt"
 CHECKPOINT_SHA = "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6"
