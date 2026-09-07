@@ -489,6 +489,8 @@ def _paired_contrasts(protocol: dict[str, Any], runs: list[dict]) -> list[dict]:
         or isinstance(value, dict)
         and ("control_config" in value or "treatment_config" in value)
     ]
+    if prior and not declarations:
+        raise ValueError("prior_comparison must declare at least one paired contrast")
     results = []
     for name, declaration in declarations:
         if (

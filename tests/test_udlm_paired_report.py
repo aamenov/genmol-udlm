@@ -381,12 +381,18 @@ def test_prior_screen_pipeline_has_correct_signed_pairs_and_caveats(prior_paired
         "raw_loo",
         "observed_prior",
         "observed_hash",
+        "empty_prior",
+        "metadata_only_prior",
     ],
 )
 def test_prior_identity_and_comparison_mislabeling_rejected(prior_paired, case):
     changed = copy.deepcopy(prior_paired)
     protocol = changed["protocol"]["configuration"]
-    if case == "objective_also":
+    if case == "empty_prior":
+        protocol["design"]["prior_comparison"] = {}
+    elif case == "metadata_only_prior":
+        protocol["design"]["prior_comparison"] = {"note": "No declaration"}
+    elif case == "objective_also":
         protocol["design"]["objective_comparison"] = {}
     elif case == "wrong_prior":
         protocol["entries"][0]["prior_variant"] = "mask_rich_empirical"
