@@ -1,0 +1,793 @@
+{
+  "authority": {
+    "benchmark_schema_version": 8,
+    "inference_weights": "ema",
+    "metric_branch": "released_comparable",
+    "nfe": 128,
+    "scale_up_registry": {
+      "relative_path": "experiments/udlm/protocols/selection_bound_scale_up_registry_gpu1.json",
+      "schema_version": 1,
+      "sha256": "98e482107e450563947e1d8441900b6cf61115ba6910ca57508cd629ed0df209"
+    },
+    "superiority_protocol": {
+      "relative_path": "experiments/udlm/protocols/de_novo_superiority_v4.json",
+      "schema_version": 4,
+      "sha256": "9432360dad30a01de7ededf62db77470af9a0b8297fc78f06d330dbc73e826b7"
+    }
+  },
+  "claim_scope": "prospective_greedy_sampler_operating_point_selection",
+  "configs": [
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t050_p100.yaml",
+        "sha256": "1e1fe8b61b6a23174f23e814bbbccc1b3c81fd9d896ae9fc49834d7c2ec014b5",
+        "size_bytes": 632,
+        "storage": "generated"
+      },
+      "config_id": "r_t050_p100",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "7845192a5555a242d5317d3a380005b622edea925918d147195e502e8dbbbcc1",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 0.5
+    },
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t050_p098.yaml",
+        "sha256": "fff6c16093d0b3ed46d8756757dff3cf4b877edf6d7eff9aa69480a9e57bdb44",
+        "size_bytes": 633,
+        "storage": "generated"
+      },
+      "config_id": "r_t050_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "29e619148d989a80ec875ecd340e5e500fa662ad6ae1504f9da6e3decbe35b36",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 0.5
+    },
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t050_p095.yaml",
+        "sha256": "6de9e701efeb079a49704551f1fcfdb388a01de135f72195d02334394403a6be",
+        "size_bytes": 633,
+        "storage": "generated"
+      },
+      "config_id": "r_t050_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "cdf6251620bf1ae492c43b39c0c9570e82fe5a25c96bd19753c12f69ebdb8605",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 0.5
+    },
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t070_p100.yaml",
+        "sha256": "532fcd20914b08beea333147b726522ef6004a67d169b75e25b6b261df2d035a",
+        "size_bytes": 632,
+        "storage": "generated"
+      },
+      "config_id": "r_t070_p100",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "7a4ccc4e09c58a190dd9b008a607fc2b9e989940b08cd60d4a9a8a58648c7553",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 0.7
+    },
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t070_p098.yaml",
+        "sha256": "d0fbf2c8677d3ca6aef4197c32a7572e2d25dc8979305c54f0bcd00db94cbe61",
+        "size_bytes": 633,
+        "storage": "generated"
+      },
+      "config_id": "r_t070_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "a17ca62e7bfd8133356b881b4b4b986ff25dface99de7b4b90cba7c01861ccb4",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 0.7
+    },
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t070_p095.yaml",
+        "sha256": "37fbb8ee346c38a41e305aa4160debfa8382f7c226c6c6ce4710fbc53722c552",
+        "size_bytes": 633,
+        "storage": "generated"
+      },
+      "config_id": "r_t070_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "fd6f55836d84392e6dac84f8513a94cd59ab1cad6bb6bfad2674cfe774ed59f3",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 0.7
+    },
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t085_p100.yaml",
+        "sha256": "d5e522480a0e21048fd836e2d2cabaf3be2d2b3943ad64203bd142a00340b7c3",
+        "size_bytes": 633,
+        "storage": "generated"
+      },
+      "config_id": "r_t085_p100",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "cf993da71f976debae2ea0baab0121b753d0396891b91841338b48dca02736a6",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 0.85
+    },
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t085_p098.yaml",
+        "sha256": "a8a6522925d2adde7e574274a86c8f042073fb458474f66897c837c945991ccc",
+        "size_bytes": 634,
+        "storage": "generated"
+      },
+      "config_id": "r_t085_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "d3f04922a47a51a4388f84a85452f29ef018ad4c39466be86ffcffb1ba191747",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 0.85
+    },
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t085_p095.yaml",
+        "sha256": "5a51e23389c60f61d5f6e36693df0785b33220bcff5b3285ad5ff9b5db10361d",
+        "size_bytes": 634,
+        "storage": "generated"
+      },
+      "config_id": "r_t085_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "ce57d601dd36c94de755d8fc12c8dc4a3c61df7d43f8bce352aa5564547bd02e",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 0.85
+    },
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "scripts/exps/denovo/hparams_udlm.yaml",
+        "sha256": "bc28eb26297702624e009eed77d13b2a600aeba341b21fbc938d7d01d4c0d84d",
+        "size_bytes": 613,
+        "storage": "historical_identity_reuse"
+      },
+      "config_id": "r_t100_p100",
+      "is_reused_identity": true,
+      "normalized_sampling_sha256": "5584cda6801f430653ecd1723d564ec785a2e648e7a1add925f9b86b6d54ab50",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 1.0
+    },
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t100_p098.yaml",
+        "sha256": "fbcee42feca25df89fde55a8efa7f4686e3c74f92445b48395d1f2059d0f455b",
+        "size_bytes": 633,
+        "storage": "generated"
+      },
+      "config_id": "r_t100_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "7ada124d2dd7ea9ebf52633010ee76d8cf198dd17d1489a14020e89dfd68a535",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 1.0
+    },
+    {
+      "arm_id": "R",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t100_p095.yaml",
+        "sha256": "ab9e0788bd8ff8aee547c8a92d086efa654ff742680095c365e7121324638586",
+        "size_bytes": 633,
+        "storage": "generated"
+      },
+      "config_id": "r_t100_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "c3bad7ab5757ff7609db3a12e7376bd5ffb989efeeb36b74ecb1a6e47363c908",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "r",
+      "softmax_temp": 1.0
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t050_p100.yaml",
+        "sha256": "8f01a9c8dc6c53560554b6a7b081eb2061d35688ac732eee0bd3607dd0c612ff",
+        "size_bytes": 537,
+        "storage": "generated"
+      },
+      "config_id": "s_t050_p100",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "df143b5f9cb9d1f53026bb1f0101a71650aa7ccf4c0db26204aef22248394c12",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 0.5
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t050_p098.yaml",
+        "sha256": "19b71f7050c8094b58d57dc41203e9a4922e8fb7181a2487262de0624e4c5898",
+        "size_bytes": 538,
+        "storage": "generated"
+      },
+      "config_id": "s_t050_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "59434ce1a70a98a12dd7c18b162010251cfcae651fd28c964a2579afee1e1594",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 0.5
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t050_p095.yaml",
+        "sha256": "0bb8ac2e5f143008cfe4930c12368f2a5e0cb566bcfe5b0fa1a97f092edce861",
+        "size_bytes": 538,
+        "storage": "generated"
+      },
+      "config_id": "s_t050_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "e9e1cb240750c74fd501d7b874ebb68b1754c7c48291dbf22dd382dcb23c1d16",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 0.5
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t070_p100.yaml",
+        "sha256": "c1568f403bf4d340cd838eefa0bf517bd5189a4c3e93b7f1bd7f5d4316189733",
+        "size_bytes": 537,
+        "storage": "generated"
+      },
+      "config_id": "s_t070_p100",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "569fb0549b1fa394d30f2bc854f233bde2b30d697075b71c3386218b908b06c0",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 0.7
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t070_p098.yaml",
+        "sha256": "59917d80ab164114fde14cbf4b912c40d184241919b795cbcb8c4211728db7d2",
+        "size_bytes": 538,
+        "storage": "generated"
+      },
+      "config_id": "s_t070_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "188c4822fc312d5a1bf8640ef79eab0bafdbc6138b2348f6eeff7330dbe7ff46",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 0.7
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t070_p095.yaml",
+        "sha256": "3afb7147ccd5def0fef029a8755cd7e56cc108917e4f4050bebb4752eddd21cf",
+        "size_bytes": 538,
+        "storage": "generated"
+      },
+      "config_id": "s_t070_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "43e54cc9743aa1380e1377d745812180ee7e498b1dbbcce1b0dd17b5853eb720",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 0.7
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t085_p100.yaml",
+        "sha256": "1fa3c17f6ffcdead6df18a5ef537eaefcb4b402a6995ab59839c25b7c1a62753",
+        "size_bytes": 538,
+        "storage": "generated"
+      },
+      "config_id": "s_t085_p100",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "dca3ca6884966bfdb24d255b822a575942bd16ef57cbcd40fe8551f92c922ac6",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 0.85
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t085_p098.yaml",
+        "sha256": "2512e4beb13c543d1ffd5d13db44d78dc85b00c7da8be75dbeb9ea8219ce5941",
+        "size_bytes": 539,
+        "storage": "generated"
+      },
+      "config_id": "s_t085_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "98c0919cf2d07643c2f7651eb577b4e173f1f3baf1025b7d2f67a2d5267e3eb9",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 0.85
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t085_p095.yaml",
+        "sha256": "69d92bb25f1f734a5900b6f2d991a06009734a3496d364fdf87478c04080ff21",
+        "size_bytes": 539,
+        "storage": "generated"
+      },
+      "config_id": "s_t085_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "3f0efde028f531fdc3a9fd1ceb75f0f4c0d25c3be9bae66bbf86539f8e4b53ba",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 0.85
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "scripts/exps/denovo/hparams_udlm_schedule_uniform.yaml",
+        "sha256": "8f07751d3504eabc938dbccf91b90217df809945cb06b2fc8f96671cde59f739",
+        "size_bytes": 518,
+        "storage": "historical_identity_reuse"
+      },
+      "config_id": "s_t100_p100",
+      "is_reused_identity": true,
+      "normalized_sampling_sha256": "c205a974015760ea138625104482cac7ca1d98e7c3567d14deaf834fea3cba94",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 1.0
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t100_p098.yaml",
+        "sha256": "20e90e2a6f1d47330924b438ab058442db3b8f7ec04d0aa176d7f7dd8bb38a4b",
+        "size_bytes": 538,
+        "storage": "generated"
+      },
+      "config_id": "s_t100_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "8145a928bcbca77b9a4ccf4cb4c91699261eb8960ed9c5b33c0dd4a0e9083744",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 1.0
+    },
+    {
+      "arm_id": "S",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t100_p095.yaml",
+        "sha256": "f49ef1965c1d442ebd6f44b1454a8ba60abd07b2748682aecab249c4622a9b27",
+        "size_bytes": 538,
+        "storage": "generated"
+      },
+      "config_id": "s_t100_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "5c5a834dc5edb95b695693ec012fba332862684c1db8469dd950d6a733615c56",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "s",
+      "softmax_temp": 1.0
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t050_p100.yaml",
+        "sha256": "6ba6c860cd6db8064bbe42bdb81bbbeaba00438e56027a32aecc1ccb670d4f30",
+        "size_bytes": 621,
+        "storage": "generated"
+      },
+      "config_id": "e_t050_p100",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "bedf12ac20daeeb04db3b2b99a4a28e8fa6cb5ca6842b2cd0aa3753e81e069c8",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 0.5
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t050_p098.yaml",
+        "sha256": "c9c36332e2823064f5267a68a6fe8a60f654b829715709e79db14ff330899996",
+        "size_bytes": 622,
+        "storage": "generated"
+      },
+      "config_id": "e_t050_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "cdf955193d6935fc85ba7ad2318991ea610c046b57cac65f835fd1255590a5d0",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 0.5
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t050_p095.yaml",
+        "sha256": "7056fbc89b72e190e89450a2b8a5184684a5ef61f87f88b3002921be49da9869",
+        "size_bytes": 622,
+        "storage": "generated"
+      },
+      "config_id": "e_t050_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "ae74047f7b162d23528bd63f26ee663bce99f6ef9ce7b4c65d0feac3da626ff3",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 0.5
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t070_p100.yaml",
+        "sha256": "0a1afddbd71ef75acb2f007a7595f59817f51289123d386e489d47d4c3ed5c97",
+        "size_bytes": 621,
+        "storage": "generated"
+      },
+      "config_id": "e_t070_p100",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "b7823bdccd8ad00a593b78c8c86db689378848a0b2eeef470b472e896f3b89e4",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 0.7
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t070_p098.yaml",
+        "sha256": "ac4a003a528d98873dd18b926110496b1281b87a4871aa7167361087e5916f9b",
+        "size_bytes": 622,
+        "storage": "generated"
+      },
+      "config_id": "e_t070_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "ac92a3f9bf9be2dd1665dd788cbcb1fdaf6a94e13454d6b84f8eb782c5f86a36",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 0.7
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t070_p095.yaml",
+        "sha256": "13ed4be991087241fb69e54e9b72bc19e165e4dd4aaf7c22207882aa0871331b",
+        "size_bytes": 622,
+        "storage": "generated"
+      },
+      "config_id": "e_t070_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "79a8a565bccdcd7fecb7939bd6b1ea8f837c7084b725f2b5a8115bb794ad4952",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 0.7
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t085_p100.yaml",
+        "sha256": "3bdfe69f94a3d69d2bd02ccf63a900298e5a329cbcef7904c99950569252f381",
+        "size_bytes": 622,
+        "storage": "generated"
+      },
+      "config_id": "e_t085_p100",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "e4b22eab2cd5a05dd238e2cbf47fcd729870cdb0a9ab237ef0b0260174c15630",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 0.85
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t085_p098.yaml",
+        "sha256": "930e868b2049d3e9b66c82033b40de16aca25af684404b86d2271f5b45855177",
+        "size_bytes": 623,
+        "storage": "generated"
+      },
+      "config_id": "e_t085_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "180371fe6261dbebb0deccf219ad17708fcd9c61b02808029f6323e862b80a54",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 0.85
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t085_p095.yaml",
+        "sha256": "2622eab9861f8db67e2f6f614c43dddbf91ff3b61191842960caa0a4fc58f992",
+        "size_bytes": 623,
+        "storage": "generated"
+      },
+      "config_id": "e_t085_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "de6ff3c568f3cc7fd3ea19c210658d413a44ed694a5d734529d3dfb7c8acff60",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 0.85
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "scripts/exps/denovo/hparams_udlm_categorical_floor0002.yaml",
+        "sha256": "309bbed7b67ad2090def3ba5429f00f4e56b4fb7af2f6be245b9e79619aa3c06",
+        "size_bytes": 602,
+        "storage": "historical_identity_reuse"
+      },
+      "config_id": "e_t100_p100",
+      "is_reused_identity": true,
+      "normalized_sampling_sha256": "52aa1c36088b8351c971d83555d654c827cd529d3bebdcf7560bacea94fbbe24",
+      "raw_loo_top_p": 1.0,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 1.0
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t100_p098.yaml",
+        "sha256": "2ed9caf34c265ca3caeb6bbc50245b3b9fca0f4b030a33eba683a6de9adb0680",
+        "size_bytes": 622,
+        "storage": "generated"
+      },
+      "config_id": "e_t100_p098",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "5c09e5faff0a623ef8f45dea01089b5bcaf02752c4fbc17e7acd6aab60c8b852",
+      "raw_loo_top_p": 0.98,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 1.0
+    },
+    {
+      "arm_id": "E",
+      "config": {
+        "relative_path": "experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t100_p095.yaml",
+        "sha256": "5b9366368b0ede0315190163e52a85a6c7cb71c733822d82ea8abf007d93b638",
+        "size_bytes": 622,
+        "storage": "generated"
+      },
+      "config_id": "e_t100_p095",
+      "is_reused_identity": false,
+      "normalized_sampling_sha256": "51138254ccb667e588c2853d0127417dfd135068d033b3ae4948c4036df9db02",
+      "raw_loo_top_p": 0.95,
+      "scale_up_member_slug": "e",
+      "softmax_temp": 1.0
+    }
+  ],
+  "grid": {
+    "arm_ids": [
+      "R",
+      "S",
+      "E"
+    ],
+    "cartesian_count": 36,
+    "generated_config_count": 33,
+    "raw_loo_top_p_values": [
+      1.0,
+      0.98,
+      0.95
+    ],
+    "reused_identity_count": 3,
+    "softmax_temperatures": [
+      0.5,
+      0.7,
+      0.85,
+      1.0
+    ]
+  },
+  "publication": {
+    "config_directory": "experiments/udlm/protocols/de_novo_candidate_configs_v1",
+    "config_revision": "0fe7e5374c8e8c4af1e9fbd9fa4e18c4251c301e",
+    "framework_revision": "533d3683c565a9b9b81acef80fad841f676fb2fc",
+    "registry_relative_path": "experiments/udlm/protocols/de_novo_candidate_config_registry_v1.json",
+    "separate_config_and_registry_publications_required": true
+  },
+  "registry_id": "genmol_udlm_de_novo_candidate_config_v1",
+  "schema_version": 1,
+  "stages": [
+    {
+      "candidate_source": {
+        "config_ids": [
+          "e_t100_p100"
+        ],
+        "kind": "fixed_config_ids"
+      },
+      "expected_child_count": 1,
+      "expected_config_count": 1,
+      "next_stage_id": "A",
+      "nfe": 128,
+      "promotion": null,
+      "ranking": null,
+      "requested_samples_per_seed": 32,
+      "role": "nonranking_decode_diagnostic",
+      "seeds": [
+        1100
+      ],
+      "stage_id": "D"
+    },
+    {
+      "candidate_source": {
+        "config_ids": [
+          "r_t050_p100",
+          "r_t070_p100",
+          "r_t085_p100",
+          "r_t100_p100",
+          "s_t050_p100",
+          "s_t070_p100",
+          "s_t085_p100",
+          "s_t100_p100",
+          "e_t050_p100",
+          "e_t070_p100",
+          "e_t085_p100",
+          "e_t100_p100"
+        ],
+        "kind": "fixed_config_ids"
+      },
+      "expected_child_count": 12,
+      "expected_config_count": 12,
+      "next_stage_id": "B",
+      "nfe": 128,
+      "promotion": {
+        "count": 2,
+        "scope": "per_arm",
+        "selection_unit": "softmax_temp"
+      },
+      "ranking": {
+        "aggregation": "current_stage_only",
+        "all_scheduled_slots_must_be_terminal": true,
+        "metric_branch": "released_comparable",
+        "on_failed_or_undefined_child": "retain_unrankable",
+        "on_insufficient_rankable_quota": "campaign_incomplete_without_promotion",
+        "order": [
+          "released_quality_descending",
+          "released_diversity_descending",
+          "config_id_ascii_ascending",
+          "attempt_id_ascii_ascending"
+        ]
+      },
+      "requested_samples_per_seed": 32,
+      "role": "raw_loo_temperature_screen",
+      "seeds": [
+        1101
+      ],
+      "stage_id": "A"
+    },
+    {
+      "candidate_source": {
+        "expected_per_arm": 6,
+        "from_stage_id": "A",
+        "kind": "cross_product_of_promoted_temperatures",
+        "raw_loo_top_p_values": [
+          1.0,
+          0.98,
+          0.95
+        ]
+      },
+      "expected_child_count": 18,
+      "expected_config_count": 18,
+      "next_stage_id": "C",
+      "nfe": 128,
+      "promotion": {
+        "count": 2,
+        "scope": "per_arm",
+        "selection_unit": "config"
+      },
+      "ranking": {
+        "aggregation": "current_stage_only",
+        "all_scheduled_slots_must_be_terminal": true,
+        "metric_branch": "released_comparable",
+        "on_failed_or_undefined_child": "retain_unrankable",
+        "on_insufficient_rankable_quota": "campaign_incomplete_without_promotion",
+        "order": [
+          "released_quality_descending",
+          "released_diversity_descending",
+          "config_id_ascii_ascending",
+          "attempt_id_ascii_ascending"
+        ]
+      },
+      "requested_samples_per_seed": 64,
+      "role": "joint_temperature_nucleus_screen",
+      "seeds": [
+        1102
+      ],
+      "stage_id": "B"
+    },
+    {
+      "candidate_source": {
+        "expected_per_arm": 2,
+        "from_stage_id": "B",
+        "kind": "promoted_config_ids"
+      },
+      "expected_child_count": 6,
+      "expected_config_count": 6,
+      "next_stage_id": "eligible",
+      "nfe": 128,
+      "promotion": {
+        "count": 1,
+        "scope": "per_arm",
+        "selection_unit": "config"
+      },
+      "ranking": {
+        "aggregation": "current_stage_only",
+        "all_scheduled_slots_must_be_terminal": true,
+        "metric_branch": "released_comparable",
+        "on_failed_or_undefined_child": "retain_unrankable",
+        "on_insufficient_rankable_quota": "campaign_incomplete_without_promotion",
+        "order": [
+          "released_quality_descending",
+          "released_diversity_descending",
+          "config_id_ascii_ascending",
+          "attempt_id_ascii_ascending"
+        ]
+      },
+      "requested_samples_per_seed": 96,
+      "role": "held_out_operating_point_confirmation",
+      "seeds": [
+        1103
+      ],
+      "stage_id": "C"
+    },
+    {
+      "candidate_source": {
+        "expected_per_arm": 1,
+        "from_stage_id": "C",
+        "kind": "promoted_config_ids"
+      },
+      "expected_child_count": 6,
+      "expected_config_count": 3,
+      "next_stage_id": "final",
+      "nfe": 128,
+      "promotion": {
+        "count": 1,
+        "scope": "global",
+        "selection_unit": "config"
+      },
+      "ranking": {
+        "aggregation": "unweighted_mean_over_exact_seeds",
+        "all_scheduled_slots_must_be_terminal": true,
+        "metric_branch": "released_comparable",
+        "on_failed_or_undefined_child": "retain_unrankable",
+        "on_insufficient_rankable_quota": "campaign_incomplete_without_promotion",
+        "order": [
+          "released_quality_descending",
+          "released_diversity_descending",
+          "config_id_ascii_ascending",
+          "attempt_id_ascii_ascending"
+        ]
+      },
+      "requested_samples_per_seed": 256,
+      "role": "registered_candidate_selection",
+      "seeds": [
+        1000,
+        1001
+      ],
+      "stage_id": "eligible"
+    },
+    {
+      "candidate_source": {
+        "expected_global": 1,
+        "from_stage_id": "eligible",
+        "kind": "promoted_config_ids"
+      },
+      "expected_child_count": 3,
+      "expected_config_count": 1,
+      "next_stage_id": null,
+      "nfe": 128,
+      "promotion": null,
+      "ranking": null,
+      "requested_samples_per_seed": 1000,
+      "role": "locked_final_superiority_evaluation",
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "stage_id": "final"
+    }
+  ],
+  "status": "frozen_before_candidate_generation"
+}
