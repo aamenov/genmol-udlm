@@ -5171,6 +5171,138 @@ print("Planned runs:", stage25_runs, "planned requests:", 800)
     ]
 
 
+def _mask_rich_prior_cells():
+    """Teach the reversible mask-mixture hypothesis without starting an experiment."""
+    return [
+        _cell(
+            "markdown",
+            r"""
+# Stage 26 — A mask-rich stationary prior as a transfer hypothesis
+
+**Paper correspondence.** GenMol's MDLM forward process replaces tokens with
+an absorbing MASK. The released UDLM uses uniform categorical replacements.
+Our schedule-consistent categorical process can use a positive nonuniform
+stationary prior instead. Combining ordinary-token and MASK replacements is
+already part of the D3PM design space; the local hypothesis here is whether a
+mask-rich empirical prior improves transfer from GenMol's pretrained MDLM.
+It is a new prior treatment, not a reproduction of official uniform UDLM.
+See `docs/udlm_mask_rich_prior_hypothesis.md` for the derivation and primary
+paper reference. Neither this mathematical construction nor its implementation
+is evidence of improved molecular quality.
+
+**Intuition and motivation.** MDLM learned to fill visible MASK positions.
+Under our empirical prior, the MASK probability is only about $1.06\times10^{-7}$;
+almost all corruption replaces tokens with ordinary-looking tokens. A larger
+MASK probability makes more noisy inputs resemble the pretraining task while
+retaining positive probabilities for reversible ordinary-token substitutions.
+This may ease transfer, but can also limit correction or leave unresolved MASKs.
+V9 did not establish a CE quality improvement; V10 separately tests finer
+sampling steps. This stage does not select or launch another experiment.
+
+**Mathematics, with every symbol defined.** Let $A$ be the active vocabulary
+size, $k$ an active token ID, $f_k$ its normalized training frequency, and
+$w\in(0,1)$ the uniform floor weight. The positive empirical base is
+$b_k=(1-w)f_k+w/A$. Let $m$ identify MASK, $\delta_{km}$ be one for $k=m$
+and zero otherwise, and $\lambda\in[0,1)$ be the new MASK mixture weight.
+Define
+
+$$\pi_k^{(\lambda)}=\lambda\delta_{km}+(1-\lambda)b_k.$$
+
+The prior vector has shape $[A]$, sums to one and stays strictly positive.
+In particular, a non-MASK token has at least $(1-\lambda)w/A$ probability.
+For diffusion time $t\in(0,1]$ and residual-clean parameter $\epsilon\in(0,1)$,
+write $\alpha_t=1-(1-\epsilon)t$. For clean token $j$, noisy token $k$ has
+probability
+
+$$q_t(k\mid j)=\alpha_t\mathbf1[k=j]+(1-\alpha_t)\pi_k^{(\lambda)},$$
+
+where $\mathbf1$ is an indicator. The transition matrix has shape $[A,A]$.
+For clean non-MASK $j$, $q_t(m\mid j)=(1-\alpha_t)\pi_m^{(\lambda)}$.
+At $\lambda=0$ the numeric prior equals the empirical base. As $\lambda$
+approaches one, the forward kernel approaches absorbing masking, but exact
+$\lambda=1$ breaks the positive-prior bridge and CE-to-LOO inversion contracts.
+There is a second limit to track: at time one, $\alpha_1=\epsilon$, so the
+forward distribution still contains clean signal and is not exactly the prior.
+Making MASK mass approach one at fixed $\epsilon$ can worsen this terminal
+mismatch. An absorbing forward limit alone does not prove a valid sampler.
+
+**Small concrete example.** Use the synthetic alphabet `[MASK, A, B]` and
+base probabilities $(0.02,0.58,0.40)$. With $\lambda=0.9$, the new prior is
+$(0.902,0.058,0.040)$. At $t=0.5$ and $\epsilon=0.001$, a clean B becomes
+MASK with probability $0.4995\times0.902=0.450549$. All three outcomes remain
+possible. These deliberately visible toy probabilities are not the project's
+1,880-token empirical counts.
+
+**Code below, shapes, and invariants.** The standalone CPU cell uses exact
+fractions to build a length-three prior and a $3\times3$ forward matrix. It
+checks strict positivity, row normalization, the MASK probability and that
+propagating the stationary prior leaves it unchanged. No checkpoint, model,
+GPU or filesystem is needed. Production tensors remain integer `[B,L]` token
+IDs, Boolean `[B,L]` editable masks, float64 `[A]` stored priors and model
+logits `[B,L,K]`, where $B$ is batch size, $L$ sequence length and $K$ the full
+tokenizer vocabulary size. MASK is an active corruption value; clean special
+tokens remain fixed targets. Editable positions are captured before noising,
+so a sampled MASK at an editable position remains editable.
+
+**Differences from released implementations.** This is an opt-in local
+`prior_variant: mask_rich_empirical` with mandatory `mask_mixture_weight` and
+the existing `empirical_uniform_mix` base-floor setting. A checkpoint must
+record the mixture weight, MASK ID, base-prior hash and resulting-prior hash;
+its new state marker prevents relabeling an old E checkpoint, even at zero
+mixture weight where numeric priors coincide. A new trained prior starts from
+the common MDLM EMA under a new protocol. The prior cannot be changed as a
+sampling-only override. Existing R/S/E experiments retain their exact identity.
+
+**Comprehension checkpoint.** Why require $\lambda<1$? Expected reasoning:
+ordinary-token mass stays positive, keeping likelihood ratios and inverse
+conversion defined. Is $\pi_m=0.902$ the probability that a clean B is MASK at
+$t=0.5$? Expected reasoning: no; only the refreshed fraction uses the prior,
+giving 0.450549 in the toy. Why can MASK be sampled without becoming a fixed
+position? Expected reasoning: editability comes from the original template,
+not the current token value. Why does matching the forward absorbing limit
+not make the entire sampler MDLM? Expected reasoning: terminal initialization,
+learned conditionals and the sampling rule also matter. Does lower loss under
+more masking prove better molecules? Expected reasoning: corruption difficulty
+changed; independently generated molecular benchmarks are still necessary.
+""",
+            "stage-26-mask-rich-prior",
+        ),
+        _cell(
+            "code",
+            """
+from fractions import Fraction as Stage26Fraction
+
+def stage26_mix_prior(base, mixture_weight, mask_index):
+    if (not base or any(value <= 0 for value in base) or sum(base) != 1
+            or not 0 <= mixture_weight < 1):
+        raise ValueError("positive normalized base and mixture in [0,1) required")
+    if type(mask_index) is not int or not 0 <= mask_index < len(base):
+        raise ValueError("MASK must be an active token index")
+    return tuple((1 - mixture_weight) * value + mixture_weight * (k == mask_index)
+                 for k, value in enumerate(base))
+
+stage26_base = (Stage26Fraction(1, 50), Stage26Fraction(29, 50), Stage26Fraction(2, 5))
+stage26_prior = stage26_mix_prior(stage26_base, Stage26Fraction(9, 10), 0)
+assert stage26_prior == (Stage26Fraction(451, 500), Stage26Fraction(29, 500),
+                        Stage26Fraction(1, 25))
+assert sum(stage26_prior) == 1 and min(stage26_prior) > 0
+assert stage26_mix_prior(stage26_base, Stage26Fraction(0), 0) == stage26_base
+stage26_t, stage26_eps = Stage26Fraction(1, 2), Stage26Fraction(1, 1000)
+stage26_alpha = 1 - (1 - stage26_eps) * stage26_t
+stage26_forward = tuple(tuple(stage26_alpha * (j == k) + (1 - stage26_alpha) * p
+                             for k, p in enumerate(stage26_prior)) for j in range(3))
+assert all(sum(row) == 1 for row in stage26_forward)
+assert tuple(sum(stage26_prior[j] * stage26_forward[j][k] for j in range(3))
+             for k in range(3)) == stage26_prior
+assert stage26_forward[2][0] == Stage26Fraction(450549, 1000000)
+print("Synthetic prior:", tuple(map(float, stage26_prior)))
+print("Synthetic P(MASK at t=0.5 | clean B):", float(stage26_forward[2][0]))
+""",
+            "stage-26-mask-rich-prior-code",
+        ),
+    ]
+
+
 def _replace_required(text: str, old: str, new: str, *, label: str) -> str:
     """Apply one migration exactly once while remaining idempotent."""
     if new in text:
@@ -6375,6 +6507,7 @@ def update_notebook(source: Path, destination: Path):
         *_denoiser_ce_cells(),
         *_objective_comparison_cells(),
         *_objective_evaluation_cells(),
+        *_mask_rich_prior_cells(),
     ]
     engineering_ids = {cell["id"] for cell in engineering_cells}
     notebook["cells"] = [
