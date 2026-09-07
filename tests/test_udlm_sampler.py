@@ -3,6 +3,7 @@ import torch
 from omegaconf import OmegaConf
 
 import genmol.sampler as sampler_module
+from genmol.diffusion import ContinuousCategoricalDiffusion, ContinuousUniformDiffusion
 
 
 class _Tokenizer:
@@ -111,9 +112,7 @@ def test_udlm_sampling_uses_fixed_time_grid_and_clamps_context():
     sampler = _sampler(model, process, "udlm")
     x = torch.tensor([[1, 4, 4, 2, 3]])
 
-    samples = sampler.generate(
-        x, softmax_temp=0.7, raw_loo_top_p=0.95, num_steps=3
-    )
+    samples = sampler.generate(x, softmax_temp=0.7, raw_loo_top_p=0.95, num_steps=3)
 
     assert samples == ["decoded"]
     assert len(model.calls) == 3
@@ -236,3 +235,190 @@ def test_insert_mask_consumes_resident_length_distribution(monkeypatch):
     assert torch.all(output[:, 0] == sampler.model.bos_index)
     assert torch.all(output[:, -1] == sampler.model.eos_index)
     assert torch.all(output[:, 1:-1] == sampler.model.mask_index)
+
+
+@pytest.mark.parametrize("configured_budget", [False, True])
+def test_gibbs_corrector_spy_uses_fresh_predictor_state_and_time_at_fixed_nfe(
+    monkeypatch, configured_budget
+):
+    class CountingModel(_UDLMModel):
+        def __call__(self, x, attention_mask, t=None):
+            super().__call__(x, attention_mask, t)
+            return torch.full((*x.shape, 9), float(len(self.calls)))
+
+    model, process = CountingModel(), _UDLMProcess()
+    model.config.training.udlm.sampling_steps = 6
+    sampler = _sampler(model, process, "udlm")
+    inputs = torch.tensor([[1, 4, 4, 8, 2, 3], [1, 8, 8, 8, 2, 3]])
+    original = inputs.clone()
+    editable = inputs == 4
+    corrector_calls = []
+
+    def corrector_spy(
+        diffusion, logits, xt, s, *, mutable_mask, temperature, raw_loo_top_p
+    ):
+        assert diffusion is process
+        assert torch.all(logits == 2 * (len(corrector_calls) + 1))
+        assert torch.equal(mutable_mask, editable)
+        assert temperature == 0.7 and raw_loo_top_p == 0.95
+        assert torch.equal(xt, torch.where(editable, 7, original))
+        assert torch.equal(s, process.steps[-1][2])
+        result = xt.clone()
+        result[0, 1] = 8
+        corrector_calls.append((xt.clone(), s.clone(), result.clone()))
+        return result
+
+    monkeypatch.setattr(sampler_module, "random_scan_gibbs_step", corrector_spy)
+    budget_argument = {} if configured_budget else {"num_steps": 6}
+    result = sampler.generate(
+        inputs,
+        softmax_temp=0.7,
+        raw_loo_top_p=0.95,
+        gibbs_corrector=True,
+        return_token_ids=True,
+        **budget_argument,
+    )
+    assert len(model.calls) == 6
+    assert len(process.steps) == len(corrector_calls) == 3
+    grid = torch.linspace(1.0, 1e-5, 4)
+    for index, (_, time, corrected) in enumerate(corrector_calls):
+        predictor_call, corrector_call = model.calls[2 * index : 2 * index + 2]
+        assert torch.equal(predictor_call[2], grid[index].expand(2))
+        assert torch.equal(corrector_call[2], grid[index + 1].expand(2))
+        assert torch.equal(corrector_call[0], torch.where(editable, 7, original))
+        assert torch.equal(time, corrector_call[2])
+        assert torch.equal(predictor_call[1], inputs != 3)
+        assert torch.equal(corrector_call[1], inputs != 3)
+        if index < 2:
+            assert torch.equal(model.calls[2 * index + 2][0], corrected)
+    assert torch.equal(result[~editable], inputs[~editable])
+    assert torch.equal(inputs, original)
+
+
+class _ContextualToyModel(_UDLMModel):
+    def __call__(self, x, attention_mask, t=None):
+        super().__call__(x, attention_mask, t)
+        classes = torch.arange(9, dtype=torch.float32).view(1, 1, 9)
+        return -((classes - x.unsqueeze(-1)) ** 2) / 8 + classes * t[:, None, None]
+
+
+def _real_process(nonuniform):
+    return (
+        ContinuousCategoricalDiffusion(9, torch.arange(1, 10, dtype=torch.float64) / 45)
+        if nonuniform
+        else ContinuousUniformDiffusion(9)
+    )
+
+
+def _historical_predictor_only(model, process, inputs, budget, temperature, top_p):
+    """Literal pre-corrector transition sequence retained as an RNG regression oracle."""
+    attention = inputs != 3
+    editable = inputs == model.mask_index
+    x = torch.where(editable, process.sample_prior(inputs.shape), inputs)
+    times = torch.linspace(1.0, 1e-5, budget + 1, dtype=torch.float32)
+    for index in range(budget):
+        t, s = times[index].expand(len(x)), times[index + 1].expand(len(x))
+        logits = model(x, attention, t=t)
+        x = process.step(
+            logits,
+            x,
+            t,
+            s,
+            mutable_mask=editable,
+            temperature=temperature,
+            raw_loo_top_p=top_p,
+        )
+    return x
+
+
+@pytest.mark.parametrize("nonuniform", [False, True])
+@pytest.mark.parametrize("explicit_false", [False, True])
+def test_gibbs_default_matches_historical_sampled_ids_and_rng_state(
+    monkeypatch, nonuniform, explicit_false
+):
+    def forbidden_corrector(*args, **kwargs):
+        raise AssertionError("default path must not call the corrector")
+
+    monkeypatch.setattr(sampler_module, "random_scan_gibbs_step", forbidden_corrector)
+    process = _real_process(nonuniform)
+    inputs = torch.tensor([[1, 4, 4, 2, 3], [1, 4, 4, 4, 2]])
+    torch.manual_seed(991)
+    start = torch.random.get_rng_state().clone()
+    expected = _historical_predictor_only(
+        _ContextualToyModel(), process, inputs, 7, 0.7, 0.95
+    )
+    expected_rng = torch.random.get_rng_state().clone()
+    torch.random.set_rng_state(start)
+    sampler = _sampler(_ContextualToyModel(), process, "udlm")
+    extra = {"gibbs_corrector": False} if explicit_false else {}
+    actual = sampler.generate(
+        inputs,
+        num_steps=7,
+        softmax_temp=0.7,
+        raw_loo_top_p=0.95,
+        return_token_ids=True,
+        **extra,
+    )
+    assert torch.equal(actual, expected)
+    assert torch.equal(torch.random.get_rng_state(), expected_rng)
+    assert len(sampler.model.calls) == 7
+
+
+@pytest.mark.parametrize("nonuniform", [False, True])
+def test_real_gibbs_sampler_runs_at_fixed_nfe_and_preserves_original_framing(
+    nonuniform,
+):
+    inputs = torch.tensor([[1, 4, 4, 8, 2, 3], [1, 8, 8, 8, 2, 3]])
+    sampler = _sampler(_ContextualToyModel(), _real_process(nonuniform), "udlm")
+    torch.manual_seed(119)
+    first = sampler.generate(
+        inputs, num_steps=4, gibbs_corrector=True, return_token_ids=True
+    )
+    assert len(sampler.model.calls) == 4
+    assert torch.equal(first[inputs != 4], inputs[inputs != 4])
+    torch.manual_seed(119)
+    repeated = sampler.generate(
+        inputs, num_steps=4, gibbs_corrector=True, return_token_ids=True
+    )
+    assert torch.equal(first, repeated)
+
+
+@pytest.mark.parametrize("value", [None, 0, 1, "true", torch.tensor(True)])
+def test_corrector_requires_strict_boolean_before_sampling(value):
+    model, process = _UDLMModel(), _UDLMProcess()
+    sampler = _sampler(model, process, "udlm")
+    with pytest.raises(ValueError, match="gibbs_corrector must be a boolean"):
+        sampler.generate(torch.tensor([[1, 4, 2]]), gibbs_corrector=value)
+    assert model.calls == process.steps == []
+
+
+def test_corrector_rejects_mdlm_before_model_evaluation():
+    model, process = _MDLMModel(), _MDLMProcess()
+    with pytest.raises(ValueError, match="only for UDLM"):
+        _sampler(model, process, "mdlm").generate(
+            torch.tensor([[1, 4, 2]]), gibbs_corrector=True, num_steps=4
+        )
+    assert model.calls == process.steps == []
+
+
+@pytest.mark.parametrize("budget", [0, 1, 3, -2, 4.0, True, "4"])
+def test_corrector_rejects_invalid_total_nfe_before_prior_sampling(budget):
+    model, process = _UDLMModel(), _UDLMProcess()
+
+    def forbidden_prior(*args, **kwargs):
+        raise AssertionError("invalid budgets must fail before consuming RNG")
+
+    process.sample_prior = forbidden_prior
+    with pytest.raises(ValueError, match="even integer num_steps >= 2"):
+        _sampler(model, process, "udlm").generate(
+            torch.tensor([[1, 4, 2]]), gibbs_corrector=True, num_steps=budget
+        )
+    assert model.calls == process.steps == []
+
+
+def test_corrector_validates_odd_budget_from_config():
+    model, process = _UDLMModel(), _UDLMProcess()
+    with pytest.raises(ValueError, match="even integer num_steps >= 2"):
+        _sampler(model, process, "udlm").generate(
+            torch.tensor([[1, 4, 2]]), gibbs_corrector=True
+        )
