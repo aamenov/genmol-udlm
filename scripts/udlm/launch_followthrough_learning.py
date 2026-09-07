@@ -10,7 +10,6 @@ import json
 import os
 from pathlib import Path
 import sys
-import time
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -18,7 +17,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from scripts import artifact_io
 from scripts.udlm import launch_engineering_training as engine
 
-PROTOCOL = "experiments/udlm/protocols/followthrough_learning.json"
+PROTOCOL = "experiments/udlm/protocols/followthrough_learning_r1.json"
 
 
 def build_plan(arm, gpu_count, *, root=ROOT):
@@ -36,7 +35,7 @@ def build_plan(arm, gpu_count, *, root=ROOT):
     accumulation = engine.audited.exact_accumulation_steps(128, 16, gpu_count)
     name = f"followthrough_learning_{arm}"
     config_claim, _ = artifact_io.snapshot_file(root, f"configs/{name}.yaml")
-    output = f"output/udlm/followthrough_learning/{arm}_4000_b128_w{gpu_count}"
+    output = f"output/udlm/followthrough_learning_r1/{arm}_4000_b128_w{gpu_count}"
     checkpoint = engine.PROJECT_ROOT / protocol["checkpoint"]
     overrides = [f"trainer.devices={gpu_count}",
                  f"trainer.accumulate_grad_batches={accumulation}",
@@ -72,7 +71,7 @@ def build_plan(arm, gpu_count, *, root=ROOT):
             "config": config, "config_sha256": engine.canonical_digest(config),
             "training_argv": command, "argv_sha256": engine.canonical_digest(command),
             "gpu_count": gpu_count, "output_relative": output,
-            "log_relative": f"output/logs/followthrough_learning/{arm}_4000_b128_w{gpu_count}.training.log",
+            "log_relative": f"output/logs/followthrough_learning_r1/{arm}_4000_b128_w{gpu_count}.training.log",
             "checkpoint_path": str(checkpoint), "checkpoint_sha256": protocol["checkpoint_sha256"],
             "example_exposures": 512000}
 
@@ -99,20 +98,9 @@ def main():
             or report["accounting"]["independently_rescored_requests"] != 800
             or len(report.get("resolution_contrasts", [])) != 16):
         raise ValueError("The complete independently rescored resolution comparison is required")
-    while True:
-        if engine.benchmark._require_clean_pushed_source() != source:
-            raise RuntimeError("Training source changed while waiting for GPUs")
-        inventory = engine.audited.probe_all_gpus()
-        eligible = [gpu for gpu in inventory if not gpu.rejection_reasons(
-            max_utilization_percent=10, min_free_memory_mib=30000)]
-        if len(eligible) >= args.gpu_count:
-            engine.select_gpus(inventory, args.gpu_count)
-            break
-        print(json.dumps({"event": "waiting_for_training_gpus", "time": engine.stamp(),
-                          "eligible": len(eligible), "requested": args.gpu_count}), flush=True)
-        time.sleep(15)
     return engine.execute(plan, source,
-                          plan_builder=lambda count: build_plan(args.arm, count))
+                          plan_builder=lambda count: build_plan(args.arm, count),
+                          wait_for_gpus=True)
 
 
 if __name__ == "__main__":

@@ -276,6 +276,41 @@ def test_final_recheck_records_rejected_uuid_before_refusing_launch(monkeypatch)
     assert all(event["gpus"][0]["utilization_percent"] == 10 for event in events)
 
 
+def test_waiting_reselects_after_policy_change_without_starting_a_child(monkeypatch):
+    selected = (_gpu(index=2), _gpu(index=6))
+    plan, source = {"gpu_count": 2}, {"head": "fixed"}
+    monkeypatch.setattr(launcher, "verify_checkpoint_input", lambda _: {"sha256": "verified"})
+    monkeypatch.setattr(launcher.benchmark, "_require_clean_pushed_source", lambda: source)
+    monkeypatch.setattr(launcher.audited, "probe_all_gpus", lambda: list(selected))
+    round_number = 0
+
+    def probe(uuid):
+        nonlocal round_number
+        if uuid == selected[0].uuid:
+            round_number += 1
+        state = next(gpu for gpu in selected if gpu.uuid == uuid)
+        return replace(state, utilization_percent=11 if round_number == 1 else 9)
+
+    monkeypatch.setattr(launcher.audited, "probe_gpu_uuid", probe)
+    sleeps, events = [], []
+    monkeypatch.setattr(launcher.time, "sleep", sleeps.append)
+    result, claim = launcher.wait_for_launch_gpus(plan, source, lambda _: plan, events.append)
+    assert round_number == 2
+    assert sleeps == [15]
+    assert all(gpu.utilization_percent < 10 for gpu in result)
+    assert claim == {"sha256": "verified"}
+    assert sum(event["phase"] == "waiting_before_training_launch" for event in events) == 1
+
+
+def test_gpu_identity_failure_is_not_a_retryable_availability_change(monkeypatch):
+    selected = (_gpu(index=2),)
+    monkeypatch.setattr(launcher.audited, "probe_gpu_uuid",
+                        lambda _: replace(selected[0], uuid="GPU-wrong-identity"))
+    with pytest.raises(RuntimeError) as caught:
+        launcher.recheck_gpus(selected, lambda _: None)
+    assert not isinstance(caught.value, launcher.GPUAvailabilityChanged)
+
+
 @pytest.mark.parametrize(
     "outcome", ["valid", "missing_checkpoint", "nonzero", "nonfinite"]
 )

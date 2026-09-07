@@ -208,9 +208,13 @@ def select_gpus(states, gpu_count):
     )
 
 
+class GPUAvailabilityChanged(RuntimeError):
+    """Valid telemetry shows the selected device no longer meets launch policy."""
+
+
 def recheck_gpus(selected, emit):
     """Keep every final probe, including rejected or failed UUID queries."""
-    checked, rejected = [], {}
+    checked, rejected, fatal = [], {}, False
     for initial in selected:
         event = {
             "phase": "immediately_before_launch",
@@ -228,15 +232,18 @@ def recheck_gpus(selected, emit):
                 initial.physical_index,
             ):
                 reasons.append("selected GPU identity changed")
+                fatal = True
             if reasons:
                 rejected[initial.uuid] = reasons
             checked.append(current)
         except Exception as error:
+            fatal = True
             event["error"] = f"{type(error).__name__}: {error}"
             rejected[initial.uuid] = [event["error"]]
         emit(event)
     if rejected:
-        raise RuntimeError(f"final GPU probe rejected launch: {rejected}")
+        exception = RuntimeError if fatal else GPUAvailabilityChanged
+        raise exception(f"final GPU probe rejected launch: {rejected}")
     return tuple(checked)
 
 
@@ -429,7 +436,32 @@ def wait_for_process_group_exit(pid):
         time.sleep(min(PROCESS_GROUP_EXIT_POLL_SECONDS, deadline - now))
 
 
-def execute(plan, source, *, plan_builder=None):
+def wait_for_launch_gpus(plan, source, plan_builder, record_probe):
+    """Wait only before any child exists; identity and telemetry failures stop."""
+    input_claim = verify_checkpoint_input(plan)
+    while True:
+        if (benchmark._require_clean_pushed_source() != source
+                or plan_builder(plan["gpu_count"]) != plan):
+            raise RuntimeError("source or fixed configuration changed while waiting")
+        inventory = audited.probe_all_gpus()
+        record_probe({"phase": "selection", "at": stamp(),
+                      "gpus": [asdict(state) for state in inventory]})
+        eligible = [state for state in inventory if not state.rejection_reasons(
+            max_utilization_percent=10, min_free_memory_mib=30000)]
+        reason = "insufficient eligible GPUs"
+        if len(eligible) >= plan["gpu_count"]:
+            selected = select_gpus(inventory, plan["gpu_count"])
+            try:
+                return recheck_gpus(selected, record_probe), input_claim
+            except GPUAvailabilityChanged as error:
+                reason = str(error)
+        event = {"phase": "waiting_before_training_launch", "at": stamp(), "reason": reason}
+        record_probe(event)
+        print(json.dumps(event, sort_keys=True), flush=True)
+        time.sleep(15)
+
+
+def execute(plan, source, *, plan_builder=None, wait_for_gpus=False):
     """Run the sole child and retain failure evidence before releasing resources."""
     output = plan["output_relative"]
     plan_builder = build_plan if plan_builder is None else plan_builder
@@ -488,24 +520,21 @@ def execute(plan, source, *, plan_builder=None):
                 probes.append(event)
                 emit(event)
 
-            inventory = audited.probe_all_gpus()
-            record_probe(
-                {
-                    "phase": "selection",
-                    "at": stamp(),
-                    "gpus": [asdict(s) for s in inventory],
-                }
-            )
-            selected = select_gpus(inventory, plan["gpu_count"])
-            input_claim = verify_checkpoint_input(plan)
-            if (
-                benchmark._require_clean_pushed_source() != source
-                or plan_builder(plan["gpu_count"]) != plan
-            ):
-                raise RuntimeError(
-                    "source or fixed configuration changed before launch"
+            if wait_for_gpus:
+                selected, input_claim = wait_for_launch_gpus(
+                    plan, source, plan_builder, record_probe)
+            else:
+                inventory = audited.probe_all_gpus()
+                record_probe(
+                    {"phase": "selection", "at": stamp(),
+                     "gpus": [asdict(s) for s in inventory]}
                 )
-            selected = recheck_gpus(selected, record_probe)
+                selected = select_gpus(inventory, plan["gpu_count"])
+                input_claim = verify_checkpoint_input(plan)
+                if (benchmark._require_clean_pushed_source() != source
+                        or plan_builder(plan["gpu_count"]) != plan):
+                    raise RuntimeError("source or fixed configuration changed before launch")
+                selected = recheck_gpus(selected, record_probe)
             check_leases(ROOT, leases)
             uuids = [state.uuid for state in selected]
             env = child_environment(uuids)

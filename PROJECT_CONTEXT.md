@@ -1,3 +1,17 @@
+# Prelaunch availability amendment
+
+The initial4k CT request ended before creating any training process because
+a selected GPU rose from8% to11% at the final probe. Its failed receipt remains
+under `output/udlm/followthrough_learning/`; no training examples were processed.
+The active protocol is `followthrough_learning_r1.json`, with unchanged science
+and fresh `followthrough_learning_r1` output/log namespaces.
+
+The new launcher waits and reselects only when valid telemetry shows a GPU is
+no longer eligible BEFORE any child exists. GPU identity/probe errors and any
+started training failure remain fatal. Legacy training launchers retain their
+default immediate refusal; this behavior is opt-in for the new learning curve.
+The active tmux/session log has the `r1` suffix. CT is selected, then MDLM.
+
 # Follow-through learning curve — isolated checkout
 
 This checkout prepares only the 4,000-update adaptation curve and matched MDLM
