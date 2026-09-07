@@ -15,8 +15,8 @@ over the continuous-time (CT) objective under the matched V8 training setup?
 Both checkpoints must pass the complete V8 campaign at source
 `c8434dda105c5fb2a15bb784d24e0387062c733e`, with protocol SHA-256
 `a27875752d25a4a7928401434f9bd90ee6e9d01539586bab70ce3ba75499026e`.
-Each arm starts from MDLM50k EMA, receives 1,000 batch-128 updates, and uses
-seed1500, the empirical prior with uniform mixture0.0002, FiLM conditioning,
+Each arm starts from MDLM 50k EMA, receives 1,000 batch-128 updates, and uses
+seed 1500, the empirical prior with uniform mixture 0.0002, FiLM conditioning,
 the L1 optimizer schedule, the full active vocabulary, and the same
 all-special-token clean-target mask. The common resolved training configuration
 has SHA-256 `f373121441fca1aaa2f2657a76d7f7ce66be199cd35637597d0df240e257e89a`.
@@ -25,22 +25,22 @@ has SHA-256 `f373121441fca1aaa2f2657a76d7f7ce66be199cd35637597d0df240e257e89a`.
 
 | Setting | Value |
 | --- | --- |
-| Checkpoints | V8 CT and CE, each at optimizer step1000 |
+| Checkpoints | V8 CT and CE, each at optimizer step 1000 |
 | Inference weights | EMA |
-| Configurations | CT/CE crossed with temperatures1.0 and0.5 |
-| Primary comparison | Paired CE minus CT at temperature1.0 |
-| Secondary comparison | Paired CE minus CT at temperature0.5 |
+| Configurations | CT/CE crossed with temperatures 1.0 and 0.5 |
+| Primary comparison | Paired CE minus CT at temperature 1.0 |
+| Secondary comparison | Paired CE minus CT at temperature 0.5 |
 | Sampling budget | 128 predictor model evaluations per molecule |
 | Corrector | Disabled |
 | Nucleus threshold | 1.0, no truncation |
 | Inference endpoint | 1e-5 |
 | Prior and alphabet | Validated checkpoint empirical prior, full vocabulary |
-| Other sampler settings | randomness0, min_add_len40 |
-| Seeds | 1600 and1601 for every configuration |
-| Requests | 100 per seed: 8 runs and800 requests total |
+| Other sampler settings | randomness 0, min_add_len 40 |
+| Seeds | 1600 and 1601 for every configuration |
+| Requests | 100 per seed: 8 runs and 800 requests total |
 
-Temperature1.0 preserves the untempered CE-to-LOO conversion and is the
-primary objective comparison. Temperature0.5 is an engineering setting
+Temperature 1.0 preserves the untempered CE-to-LOO conversion and is the
+primary objective comparison. Temperature 0.5 is an engineering setting
 informed by the earlier syntax and Gibbs studies; it is not an independently
 selected confirmation setting. Temperature and top-p operate after CE-to-LOO
 conversion, so these values do not mean temperature scaling of the CE clean
@@ -57,8 +57,8 @@ retains the historical canonical omission of its default parameterization;
 CE inference explicitly sets `parameterization: x0_denoiser`.
 
 Run the existing exploration launcher in a named detached tmux session, with
-at most two dynamically selected GPUs, each strictly below10% utilization
-and with at least30,000MiB free immediately before launch. Preserve raw samples,
+at most two dynamically selected GPUs, each strictly below 10% utilization
+and with at least 30,000 MiB free immediately before launch. Preserve raw samples,
 token IDs, full configuration, seeds, device mapping, runtime and failure
 receipts. Do not automatically retry failed runs or substitute checkpoints.
 
@@ -66,14 +66,14 @@ Independently re-decode and rescore every successful raw sample on CPU.
 Report validity, uniqueness, quality and diversity for both strict decoding
 and the released repair/largest-component path, with per-seed values and
 equal-seed means/sample standard deviations. Quality is the number of unique
-valid molecules satisfying QED>=0.6 and SA<=4 divided by all requested samples.
+valid molecules satisfying QED >= 0.6 and SA <= 4 divided by all requested samples.
 Report the two per-seed CE-minus-CT differences at each temperature, even
 when negative. Report all four configurations and every failure; do not choose
 a checkpoint by comparing CT and CE training-loss magnitudes.
 
-The existing MDLM mean quality85.8% (three seeds of1,000) and paper GenMolV1
-quality84.6% are contextual comparators. Sample counts, full training budgets
+The existing MDLM mean quality 85.8% (three seeds of 1,000) and paper GenMol V1
+quality 84.6% are contextual comparators. Sample counts, full training budgets
 and study purposes differ. This small continuation study can diagnose an
 objective effect, but cannot establish superiority over either comparator.
-Final UDLM seeds0/1/2 remain reserved. No automatic candidate promotion or
+Final UDLM seeds 0/1/2 remain reserved. No automatic candidate promotion or
 further training follows from this design.
