@@ -37,6 +37,8 @@ POLICY = {
 }
 PROCESS_GROUP_EXIT_GRACE_SECONDS = 15.0
 PROCESS_GROUP_EXIT_POLL_SECONDS = 0.25
+GPU_AVAILABILITY_WAIT_SECONDS = 21600
+GPU_AVAILABILITY_POLL_SECONDS = 30
 for import_root in (ROOT, ROOT / "src"):
     sys.path.insert(0, str(import_root))
 
@@ -208,9 +210,13 @@ def select_gpus(states, gpu_count):
     )
 
 
-def recheck_gpus(selected, emit):
+class GPUCapacityUnavailable(RuntimeError):
+    """Verified GPU identities currently fail the unchanged resource thresholds."""
+
+
+def recheck_gpus(selected, emit, *, allow_capacity_wait=False):
     """Keep every final probe, including rejected or failed UUID queries."""
-    checked, rejected = [], {}
+    checked, rejected, invalid_probe = [], {}, False
     for initial in selected:
         event = {
             "phase": "immediately_before_launch",
@@ -228,16 +234,143 @@ def recheck_gpus(selected, emit):
                 initial.physical_index,
             ):
                 reasons.append("selected GPU identity changed")
+                invalid_probe = True
             if reasons:
                 rejected[initial.uuid] = reasons
             checked.append(current)
         except Exception as error:
+            invalid_probe = True
             event["error"] = f"{type(error).__name__}: {error}"
             rejected[initial.uuid] = [event["error"]]
         emit(event)
     if rejected:
+        if allow_capacity_wait and not invalid_probe:
+            raise GPUCapacityUnavailable(f"final GPU probe rejected launch: {rejected}")
         raise RuntimeError(f"final GPU probe rejected launch: {rejected}")
     return tuple(checked)
+
+
+def gpu_availability_wait_policy(plan):
+    """Only an explicit matching plan/protocol pair enables the bounded wait."""
+    fields = {
+        "gpu_availability_wait_seconds": GPU_AVAILABILITY_WAIT_SECONDS,
+        "gpu_availability_poll_seconds": GPU_AVAILABILITY_POLL_SECONDS,
+    }
+    if not any(key in plan or key in plan["protocol"] for key in fields):
+        return None
+    if any(
+        type(plan.get(key)) is not int
+        or plan.get(key) != value
+        or type(plan["protocol"].get(key)) is not int
+        or plan["protocol"].get(key) != value
+        for key, value in fields.items()
+    ):
+        raise ValueError(
+            "GPU capacity wait requires matching 21600-second/30-second plan and protocol"
+        )
+    return fields
+
+
+def wait_for_gpu_capacity(plan, source, leases, emit, record):
+    """Wait only before the first child; malformed probes/source/leases fail closed."""
+    policy = gpu_availability_wait_policy(plan)
+    if policy is None:
+        raise ValueError("GPU capacity waiting is not enabled by this plan")
+    started = time.monotonic()
+    deadline = started + policy["gpu_availability_wait_seconds"]
+    record.update(policy, started_at=stamp(), rounds=0, outcome="waiting")
+
+    def timeout():
+        record["outcome"] = "timed_out"
+        raise TimeoutError(
+            "GPU launch capacity did not remain eligible within 21600 seconds"
+        )
+
+    try:
+        while True:
+            if benchmark._require_clean_pushed_source() != source:
+                raise RuntimeError("source changed while waiting for GPU capacity")
+            check_leases(ROOT, leases)
+            if time.monotonic() >= deadline:
+                timeout()
+            record["rounds"] += 1
+            event = {
+                "phase": "selection",
+                "at": stamp(),
+                "availability_round": record["rounds"],
+            }
+            try:
+                inventory = audited.probe_all_gpus()
+                event["gpus"] = [asdict(state) for state in inventory]
+                event["rejection_reasons"] = [
+                    {
+                        "uuid": state.uuid,
+                        "reasons": state.rejection_reasons(
+                            max_utilization_percent=10, min_free_memory_mib=30000
+                        ),
+                    }
+                    for state in inventory
+                ]
+            except Exception as error:
+                event["error"] = f"{type(error).__name__}: {error}"
+                emit(event)
+                raise
+            emit(event)
+            # Invalid identities or policy implementations are defects, not
+            # insufficient capacity, and must not be hidden by waiting.
+            validate_count(plan["gpu_count"])
+            if len({state.uuid for state in inventory}) != len(inventory) or len(
+                {state.physical_index for state in inventory}
+            ) != len(inventory):
+                raise ValueError("GPU inventory contains duplicate identities")
+            if audited.ACTIVE_COMPUTE_PROCESSES_ALLOWED is not True:
+                raise RuntimeError(
+                    "audited GPU helper does not implement the authorized policy"
+                )
+            rejections = {
+                state.uuid: state.rejection_reasons(
+                    max_utilization_percent=10, min_free_memory_mib=30000
+                )
+                for state in inventory
+            }
+            eligible_count = sum(not reasons for reasons in rejections.values())
+            try:
+                if eligible_count < plan["gpu_count"]:
+                    raise GPUCapacityUnavailable(
+                        f"requested {plan['gpu_count']} GPUs; only {eligible_count} eligible: {rejections}"
+                    )
+                selected = select_gpus(inventory, plan["gpu_count"])
+                selected = recheck_gpus(selected, emit, allow_capacity_wait=True)
+            except GPUCapacityUnavailable as error:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    timeout()
+                sleep_seconds = min(policy["gpu_availability_poll_seconds"], remaining)
+                emit(
+                    {
+                        "phase": "availability_wait",
+                        "at": stamp(),
+                        "availability_round": record["rounds"],
+                        "error": str(error),
+                        "sleep_seconds": sleep_seconds,
+                    }
+                )
+                time.sleep(sleep_seconds)
+                continue
+            check_leases(ROOT, leases)
+            if time.monotonic() >= deadline:
+                timeout()
+            record["outcome"] = "ready"
+            record["selected_gpu_uuids"] = [state.uuid for state in selected]
+            return selected
+    except BaseException as error:
+        if record["outcome"] == "waiting":
+            record["outcome"] = "failed"
+        record["error"] = f"{type(error).__name__}: {error}"
+        raise
+    finally:
+        record["finished_at"] = stamp()
+        record["elapsed_seconds"] = time.monotonic() - started
 
 
 def acquire_leases(root, identity):
@@ -529,15 +662,21 @@ def execute(plan, source, *, plan_builder=None):
                 probes.append(event)
                 emit(event)
 
-            inventory = audited.probe_all_gpus()
-            record_probe(
-                {
-                    "phase": "selection",
-                    "at": stamp(),
-                    "gpus": [asdict(s) for s in inventory],
-                }
-            )
-            selected = select_gpus(inventory, plan["gpu_count"])
+            waiting = gpu_availability_wait_policy(plan)
+            if waiting is None:
+                # Preserve the historical immediate-launch sequence exactly.
+                inventory = audited.probe_all_gpus()
+                record_probe(
+                    {
+                        "phase": "selection",
+                        "at": stamp(),
+                        "gpus": [asdict(s) for s in inventory],
+                    }
+                )
+                selected = select_gpus(inventory, plan["gpu_count"])
+            # Expensive initialization hashing and Hydra/source validation run
+            # before the opt-in availability loop, never between its successful
+            # inventory and final UUID checks.
             input_claim = verify_checkpoint_input(plan)
             if (
                 benchmark._require_clean_pushed_source() != source
@@ -546,7 +685,17 @@ def execute(plan, source, *, plan_builder=None):
                 raise RuntimeError(
                     "source or fixed configuration changed before launch"
                 )
-            selected = recheck_gpus(selected, record_probe)
+            if waiting is None:
+                selected = recheck_gpus(selected, record_probe)
+            else:
+                terminal["gpu_availability_wait"] = {}
+                selected = wait_for_gpu_capacity(
+                    plan,
+                    source,
+                    leases,
+                    record_probe,
+                    terminal["gpu_availability_wait"],
+                )
             check_leases(ROOT, leases)
             uuids = [state.uuid for state in selected]
             env = child_environment(uuids)
@@ -570,6 +719,8 @@ def execute(plan, source, *, plan_builder=None):
                     )
                 },
             }
+            if waiting is not None:
+                launch["gpu_availability_wait"] = terminal["gpu_availability_wait"]
             launch_claim = publish("launch_manifest.json", launch)
             terminal["launch_sha256"] = launch_claim.sha256
             terminal["selected_gpu_uuids"] = uuids
