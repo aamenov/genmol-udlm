@@ -1,5 +1,5 @@
-# V12 prospective primary MASK-rich CE; requires successful V11 checkpoint validation.
-model_path: output/udlm/engineering_v11/mask_ce_1000_b128_w2/checkpoints/1000.ckpt
+# V12 prospective primary MASK-rich CE; requires successful V11b checkpoint validation.
+model_path: output/udlm/engineering_v11b/mask_ce_1000_b128_w2/checkpoints/1000.ckpt
 num_samples: 100
 diffusion_type: udlm
 parameterization: x0_denoiser
