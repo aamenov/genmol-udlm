@@ -300,7 +300,7 @@ def verify_checkpoint_input(plan):
     return asdict(claim)
 
 
-def validate_checkpoint_output(path, config):
+def validate_checkpoint_output(path, config, *, expected_steps=20):
     """Inspect local, trusted checkpoint on CPU; do not trust exit status alone."""
     import torch
     from omegaconf import OmegaConf
@@ -308,13 +308,47 @@ def validate_checkpoint_output(path, config):
     torch.set_num_threads(1)
     before, _ = artifact_io.snapshot_file(ROOT, path.relative_to(ROOT))
     checkpoint = torch.load(path, map_location="cpu", weights_only=False)
-    if checkpoint.get("global_step") != 20:
-        raise RuntimeError("final checkpoint is not at optimizer step 20")
+    if checkpoint.get("global_step") != expected_steps:
+        raise RuntimeError(
+            f"final checkpoint is not at optimizer step {expected_steps}"
+        )
     saved = checkpoint.get("hyper_parameters", {}).get("config")
     if OmegaConf.is_config(saved):
         saved = OmegaConf.to_container(saved, resolve=True)
     if saved != config:
         raise RuntimeError("final checkpoint configuration differs from launch")
+    from genmol.model import (
+        UDLM_DENOISER_CHECKPOINT_KEY,
+        UDLM_DENOISER_METADATA,
+        UDLM_DENOISER_STATE_KEY,
+        _exact_nested_data_equal,
+    )
+
+    parameterization = (
+        config.get("training", {}).get("udlm", {}).get("parameterization", "raw_loo")
+    )
+    state_dict = checkpoint.get("state_dict", {})
+    marker = state_dict.get(UDLM_DENOISER_STATE_KEY)
+    if parameterization == "x0_denoiser":
+        if not _exact_nested_data_equal(
+            checkpoint.get(UDLM_DENOISER_CHECKPOINT_KEY), UDLM_DENOISER_METADATA
+        ):
+            raise RuntimeError("final CE checkpoint lacks valid denoiser metadata")
+        if (
+            not isinstance(marker, torch.Tensor)
+            or marker.shape != torch.Size([])
+            or marker.dtype != torch.int64
+            or marker.item() != 1
+        ):
+            raise RuntimeError("final CE checkpoint lacks its denoiser state marker")
+    elif (
+        parameterization != "raw_loo"
+        or UDLM_DENOISER_CHECKPOINT_KEY in checkpoint
+        or UDLM_DENOISER_STATE_KEY in state_dict
+    ):
+        raise RuntimeError(
+            "final raw-LOO checkpoint contains incompatible denoiser identity"
+        )
     tensor_count = 0
 
     def check(value):
@@ -334,12 +368,18 @@ def validate_checkpoint_output(path, config):
         if not checkpoint.get(key):
             raise RuntimeError(f"final checkpoint lacks {key}")
         check(checkpoint[key])
-    if checkpoint["ema"].get("num_updates") != 20 or tensor_count == 0:
-        raise RuntimeError("final checkpoint lacks twenty EMA updates or model tensors")
+    if checkpoint["ema"].get("num_updates") != expected_steps or tensor_count == 0:
+        raise RuntimeError(
+            "final checkpoint EMA updates or model tensors are incomplete"
+        )
     after, _ = artifact_io.snapshot_file(ROOT, path.relative_to(ROOT))
     if before != after:
         raise RuntimeError("final checkpoint changed during CPU validation")
-    return {**asdict(after), "global_step": 20, "finite_tensor_count": tensor_count}
+    return {
+        **asdict(after),
+        "global_step": expected_steps,
+        "finite_tensor_count": tensor_count,
+    }
 
 
 def process_group_exists(pid):
@@ -352,9 +392,12 @@ def process_group_exists(pid):
     return True
 
 
-def execute(plan, source):
+def execute(plan, source, *, plan_builder=None):
     """Run the sole child and retain failure evidence before releasing resources."""
     output = plan["output_relative"]
+    plan_builder = build_plan if plan_builder is None else plan_builder
+    expected_steps = plan["protocol"]["optimizer_updates"]
+    exposures = plan["example_exposures"]
     ensure_directory(ROOT, str(Path(output).parent))
     ensure_directory(ROOT, str(Path(plan["log_relative"]).parent))
     artifact_io.create_directory_exclusive(ROOT, output)
@@ -419,7 +462,7 @@ def execute(plan, source):
             input_claim = verify_checkpoint_input(plan)
             if (
                 benchmark._require_clean_pushed_source() != source
-                or build_plan(plan["gpu_count"]) != plan
+                or plan_builder(plan["gpu_count"]) != plan
             ):
                 raise RuntimeError(
                     "source or fixed configuration changed before launch"
@@ -428,6 +471,7 @@ def execute(plan, source):
             check_leases(ROOT, leases)
             uuids = [state.uuid for state in selected]
             env = child_environment(uuids)
+            env["PYTHONHASHSEED"] = str(plan["config"].get("seed", 1400))
             launch = {
                 **request,
                 "input_checkpoint": input_claim,
@@ -502,15 +546,17 @@ def execute(plan, source):
                     f"training process exited with status {process.returncode}"
                 )
         terminal["checkpoint"] = validate_checkpoint_output(
-            ROOT / output / "checkpoints/20.ckpt", plan["config"]
+            ROOT / output / "checkpoints" / f"{expected_steps}.ckpt",
+            plan["config"],
+            expected_steps=expected_steps,
         )
         if benchmark._require_clean_pushed_source() != source:
             raise RuntimeError("source changed during training")
         check_leases(ROOT, leases)
         terminal["status"] = "completed"
-        terminal["completed_example_exposures"] = 2560
+        terminal["completed_example_exposures"] = exposures
         terminal["end_to_end_training_examples_per_second"] = (
-            2560 / terminal["training_subprocess_seconds"]
+            exposures / terminal["training_subprocess_seconds"]
         )
     except BaseException as error:
         terminal["error"] = f"{type(error).__name__}: {error}"

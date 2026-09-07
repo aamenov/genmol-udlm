@@ -1,0 +1,8 @@
+defaults:
+  - udlm_e_objective_ct
+  - _self_
+
+# Sole task-setting difference from the matched CT control.
+training:
+  udlm:
+    parameterization: x0_denoiser

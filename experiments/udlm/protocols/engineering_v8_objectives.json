@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "study_id": "engineering-v8-ct-ce-e-1000-b128",
+  "purpose": "Prospective matched CT-E versus CE-E objective training under a new common all-special-token target mask",
+  "claim": "matched_objective_engineering_no_superiority_claim",
+  "seed": 1500,
+  "optimizer_updates": 1000,
+  "global_batch_size": 128,
+  "micro_batch_size": 16,
+  "checkpoint": "outputs/paper_v1/checkpoints/50000.ckpt",
+  "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+  "gpu_policy": {
+    "max_gpus": 2,
+    "max_utilization_percent": 10,
+    "min_free_memory_mib": 30000,
+    "active_compute_processes_allowed": true
+  },
+  "arms": [
+    {
+      "arm_id": "ct",
+      "parameterization": "raw_loo",
+      "config": "configs/udlm_e_objective_ct.yaml",
+      "config_sha256": "3f4b5726754db71d734df789d67f956a27bb2afaefd4b344f8b116f2cab77b91"
+    },
+    {
+      "arm_id": "ce",
+      "parameterization": "x0_denoiser",
+      "config": "configs/udlm_e_objective_ce.yaml",
+      "config_sha256": "f482a774a2d337d1d76f43ca806a7e13176c0f3adc9c5eedbe4ba32360efabf3"
+    }
+  ],
+  "common_mask_policy": "all_tokenizer_special_ids_immutable; exclude_special_tokens=false in the corruption alphabet",
+  "initialization_policy": "fresh common MDLM50k EMA; fresh optimizer and EMA; identical model construction and seed; no V7 continuation",
+  "example_exposures_per_arm": 128000,
+  "historical_example_exposures_per_arm": 16000,
+  "exposure_ratio_to_historical_1000_update_batch16": 8,
+  "execution_policy": "CT then CE, same GPU count, stop after any failure, never automatically retry or resume",
+  "memory_measurement": "External NVIDIA snapshots every 2 seconds; observed aggregate GPU use includes other processes and is not allocator peak memory",
+  "follow_up": "Review all training outcomes; no automatic molecular evaluation or longer experiment",
+  "final_benchmark_seeds_reserved": [
+    0,
+    1,
+    2
+  ]
+}
