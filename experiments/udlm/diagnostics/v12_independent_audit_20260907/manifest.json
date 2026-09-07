@@ -1,0 +1,43 @@
+{
+  "artifact_byte_policy": "UTF-8 JSON with LF newlines. Recorded SHA-256 and size bind exact bytes.",
+  "audit": {
+    "relative_path": "experiments/udlm/diagnostics/v12_independent_audit_20260907/audit.json",
+    "sha256": "3d13c1fa252e31567a9c9c94ce53591fd3181bdd3223480c71ca9bd1882fc423",
+    "size_bytes": 63256
+  },
+  "audit_source": {
+    "relative_path": "scripts/udlm/audit_v12_results.py",
+    "sha256": "4c7f06b494ecf0a9b6822e8f9cea4be20434c7a6bc0e3cba7252da8115fb0634",
+    "size_bytes": 22494
+  },
+  "command_argv": [
+    "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "scripts/udlm/audit_v12_results.py",
+    "--root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree",
+    "--report-sha256",
+    "133311e81ca7154ab6d4569619ece75d36a8dc5a5ffe927d405d5fd69c3259b8",
+    "--generation-source",
+    "c61a1ef4b42fd2f8aba817e5e3e3554afc64eaa1"
+  ],
+  "environment_overrides": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "generation_source": "c61a1ef4b42fd2f8aba817e5e3e3554afc64eaa1",
+  "protocol_sha256": "f4ea756fabb9e5133c72f302e8398bcbb8d0eabaa81f183b017af8c19b02cadd",
+  "report_sha256": "133311e81ca7154ab6d4569619ece75d36a8dc5a5ffe927d405d5fd69c3259b8",
+  "schema_version": 1,
+  "scope": "Independent CPU evidence/arithmetic/token cross-check of completed V12; no sampling, model load or chemistry recomputation.",
+  "shared_evidence_helper_source": {
+    "relative_path": "scripts/udlm/generate_study_overview_v9.py",
+    "sha256": "0571850da6f0280460ff555790909ed1e28978bb1957a29e972647a5a51d7e90",
+    "size_bytes": 43698
+  },
+  "test_source": {
+    "relative_path": "tests/test_udlm_v12_result_audit.py",
+    "sha256": "d46d5c0ecd706749e90a587d9d3d42bb835714f729b405c36d61e7d55dca1e44",
+    "size_bytes": 10455
+  },
+  "validation": "16 focused CPU tests passed; complete actual audit executed twice with identical audit.json bytes; accepted all 8 seed records and all 16 signed branch/metric contrasts."
+}
