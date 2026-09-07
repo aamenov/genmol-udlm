@@ -12,15 +12,34 @@ report is `output/udlm/engineering_v9_reports/paired_complete/report.pdf`,
 SHA-256 `4419c7b1ed7466d47d0f118ae4738f615f774de292255fd2c28ef0eb295f1811`.
 Original `complete/` report and all raw evidence remain unchanged.
 
-The next bounded V10 design compares both frozen CT/CE checkpoints at
+The published V10 protocol
+`experiments/udlm/protocols/engineering_v10_resolution.json` (SHA-256
+`cc6e3ced657f6ec66f611398e65b8b0e79598b3e76acbef77c72cfc4a7d0c4fd`)
+compares both frozen CT/CE checkpoints at
 temperature 0.5 with 128 versus 512 predictor evaluations, fresh seeds
 1700/1701 and 100 requests per seed. Four settings give eight runs and 800
 requests. Temperature is informed by V5/V6/V9; 512 costs four times the calls.
 The existing sampler supports both counts without a model implementation
-change. Publish the independently reviewed V10 protocol/configs, dry-run,
+change. Independent review and CPU configuration checks passed. Dry-run,
 then recheck dynamic GPU state immediately before its first tmux launch.
 Use at most two GPUs below 10%, with actual free memory at least 30,000 MiB.
 V9 tmux ended; do not rerun its completed generation namespaces.
+
+V10 uses tmux `genmol-udlm-v10-resolution`, pipeline log
+`output/logs/engineering-v10-pipeline.log`, generation root
+`output/udlm/engineering_v10`, per-job logs `output/logs/engineering_v10`,
+and CPU report directory `output/udlm/engineering_v10_reports/complete`.
+Use the existing launch/report scripts with explicit V10 protocol and roots.
+Keep source/HEAD frozen during the full pipeline. After all runs are terminal,
+report both predeclared within-objective 512-minus-128 contrasts and syntax
+counts; the CE-minus-CT report helper must not be repurposed with false labels.
+
+The complete current study PDF is
+`output/udlm/study_overview_v9_20260907/study_overview.pdf`, 43 pages,
+SHA-256 `52f4ab0023351cb2c1b3fa2bba62b490a8024e06633eb7724b2912d98070141a`.
+It covers all 22 settings, 44 runs and 3,104 independently rescored requests,
+plus training/incident evidence and preserved historical appendices. Its 159
+input hashes and six output artifacts were independently checked and reproduced.
 
 The following V8/V8b/V9 setup records are historical, not launch instructions.
 

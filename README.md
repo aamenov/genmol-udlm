@@ -16,7 +16,7 @@ UDLM authors.
 > configuration used only two seeds of 64 or 100 requests; the baseline used
 > three seeds of 1,000. Final UDLM evaluation seeds remain reserved.
 >
-> See the [27-page study report](output/udlm/study_overview_20260907/study_overview.pdf),
+> See the [43-page study report](output/udlm/study_overview_v9_20260907/study_overview.pdf),
 > [temperature results](experiments/udlm/results/engineering_v5.md), and
 > [Gibbs results](experiments/udlm/results/engineering_v6.md). All R/S/E
 > checkpoints received 1,000 batch-16 updates from the common MDLM EMA.
@@ -34,8 +34,9 @@ UDLM authors.
 > evaluations per molecule. [V9 results](experiments/udlm/results/engineering_v9.md)
 > reached 54.5% best quality; CE changed quality by -5.5pp at T1 and -2.0pp at T0.5.
 > The [paired report](output/udlm/engineering_v9_reports/paired_complete/report.pdf)
-> includes both decoding rules and all signed contrasts. A fresh 128-versus-512
-> predictor comparison is being prepared. Current authorization is
+> includes both decoding rules and all signed contrasts. A fresh
+> [128-versus-512 predictor comparison](experiments/udlm/protocols/engineering_v10_resolution.json)
+> is ready to launch. Current authorization is
 > at most two dynamically selected GPUs below 10% utilization.
 
 The main educational implementation is
