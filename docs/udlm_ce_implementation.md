@@ -1,8 +1,9 @@
 # Optional CE denoiser implementation
 
 This implements a prospective clean-token cross-entropy (CE) adaptation. It has
-CPU algebra, integration and checkpoint tests, but no trained CE checkpoint or
-molecular benchmark evidence. Stage 23 in `genmol_from_scratch.ipynb` teaches
+CPU algebra, integration and checkpoint tests. CE molecular benchmark results
+are pending; the matched CT/CE experiment is specified in
+[the V8 protocol](../experiments/udlm/protocols/engineering_v8_objectives.json). Stage 23 in `genmol_from_scratch.ipynb` teaches
 the conversion with an exact two-token example. The full derivation, literature
 distinction, and proposed matched experiment are in
 [the CE hypothesis](udlm_denoiser_ce_hypothesis.md).
