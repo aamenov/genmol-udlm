@@ -20,22 +20,28 @@ prior and final prior in checkpoint metadata/state. Historical R/S/E identities
 remain unchanged. Read `docs/udlm_mask_rich_prior_implementation.md`,
 `docs/udlm_mask_rich_prior_hypothesis.md`, and notebook Stage 26.
 
-The next V11 preparation is a single new CE arm with mixture weight 0.9,
-fresh MDLM 50k EMA initialization, seed 1500, 1,000 updates, global batch 128,
-microbatch 16, two GPUs, accumulation 4, and the same A1/L1/base smoothing and
-clean-target mask as V8b CE. It does not resume or relabel an E checkpoint.
-The frozen-MDLM CPU transfer diagnostic completed and was independently
-reviewed: the same model gives lower clean-token CE with the MASK-rich
-corruption, which also changes the reconstruction difficulty. This is not a
-molecular result. The reviewed fixed launcher is
-`scripts/udlm/launch_mask_prior_training.py --gpu-count 2`, with prospective
-protocol `experiments/udlm/protocols/engineering_v11_mask_prior.json`. Its final
-checkpoint must pass independent prior reconstruction and the predeclared
-metadata fingerprint before completion. 101 focused CPU tests and the isolated
-real dry-run passed. The canonical dry-run and launch follow publication;
-verify live tmux `genmol-udlm-v11-mask-ce`,
-`output/logs/engineering-v11-mask-ce-controller.log` and
-`output/udlm/engineering_v11/mask_ce_1000_b128_w2/` before any action. All jobs still use at most two dynamically selected GPUs strictly below
+V11 failed before training at 11:59:29 UTC: the availability wrapper saw two
+qualifying GPUs, but the controller's independent fresh inventory found only
+one. There was no subprocess/PID, launch manifest, checkpoint or completed
+exposure; both leases were released. The original failed attempt is immutable.
+Read `experiments/udlm/results/engineering_v11_prelaunch_incident.md`; terminal
+SHA-256 `6a4aa47e1f7b76ad5efc3ce03cd3e4a55c0db4d95778b0cf60cc55cab7207408`.
+
+V11b is being prepared as a separate attempt with identical fresh MDLM 50k EMA,
+seed 1500, 1,000 updates, global batch 128, microbatch 16, two GPUs, accumulation
+4, A1/L1, base smoothing 0.0002, MASK weight 0.9 and all-special clean-target mask.
+Its opt-in bounded availability wait occurs before the first training subprocess.
+Do not reuse or relabel the failed V11 namespace. V12's already published design
+fixes the later molecular comparison at four configurations, 800 requests and
+fresh seeds 2000/2001, with explicit infrastructure-only path amendment pending.
+No MASK-trained molecular result exists and final seeds 0/1/2 remain reserved.
+
+The frozen-MDLM CPU diagnostic and source/provenance clarification are published:
+`experiments/udlm/results/frozen_mdlm_transfer_20260907.md`. The same model has
+lower clean-token CE under MASK-rich corruption, but that changes reconstruction
+difficulty and does not establish a molecular benefit. Its first stdout notice
+and corrected second execution are both preserved with identical numerical
+results. All jobs still use at most two dynamically selected GPUs strictly below
 10% utilization with enough free memory, and named tmux/log namespaces.
 
 The following V9/V10 plans are retained as historical provenance.

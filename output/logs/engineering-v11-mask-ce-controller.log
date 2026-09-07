@@ -1,0 +1,5 @@
+{"at": "2026-09-07T11:58:23.580424+00:00", "eligible_count": 1, "event": "capacity_probe"}
+{"at": "2026-09-07T11:58:53.952388+00:00", "eligible_count": 1, "event": "capacity_probe"}
+{"at": "2026-09-07T11:59:24.460351+00:00", "eligible_count": 2, "event": "capacity_probe"}
+{"status": "failed", "terminal_manifest": "output/udlm/engineering_v11/mask_ce_1000_b128_w2/terminal_manifest.json"}
+{"controller_invocations": 1, "controller_started_at_utc": "2026-09-07T11:59:24.508904+00:00", "expected_source": "46ec3b0bc0c54208fd546af4b71108a3f1e31015", "finished_at_utc": "2026-09-07T11:59:30.014494+00:00", "started_at_utc": "2026-09-07T11:58:23.240721+00:00", "status": "controller_failed", "training_returncode": 1, "wrapper_sha256": "b45ec4a97a6a0f4fba08951fbaebb79c67f538150455790c3c72e50c2df747ae"}
