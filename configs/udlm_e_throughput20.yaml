@@ -1,0 +1,36 @@
+defaults:
+  - udlm_categorical
+  - _self_
+
+# Prospective manual engineering throughput pilot only. Start fresh again for
+# any subsequent CT/CE comparison; these twenty updates are not a warm start.
+seed: 1400
+loader:
+  global_batch_size: 128
+  batch_size: 16
+  num_workers: 1
+trainer:
+  devices: 1
+  num_nodes: 1
+  accumulate_grad_batches: 8
+  max_steps: 20
+  detect_anomaly: false
+  log_every_n_steps: 1
+optim:
+  lr: 0.0003
+  scheduler:
+    name: half_cosine_with_linear_warmup_and_floor
+    warmup_updates: 50
+    horizon_updates: 1000
+    decay_floor_lr: 0.000003
+training:
+  init_from_mdlm_ema: true
+  reseed_after_model_initialization: false
+  pilot_fail_on_nonfinite_loss: false
+  udlm:
+    exclude_special_tokens: false
+    conditioning_variant: film_adaln
+    zero_init_conditioning: false
+    empirical_uniform_mix: 0.0002
+callback:
+  every_n_train_steps: 20
