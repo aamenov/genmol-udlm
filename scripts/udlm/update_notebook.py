@@ -1,4 +1,4 @@
-"""Idempotently align Stage 0, UDLM Stages 20--21, and final reporting."""
+"""Idempotently align Stage 0, UDLM Stages 20--22, and final reporting."""
 
 from __future__ import annotations
 
@@ -4518,6 +4518,258 @@ print(stage21_json.dumps({"toy": stage21_toy_result, "preview": stage21_preview}
     ]
 
 
+def _engineering_v6_cells() -> list[dict]:
+    """Teach fixed-NFE Gibbs correction with a CPU-only protocol preview."""
+    return [
+        _cell(
+            "markdown",
+            r"""
+# Stage 22 — A Gibbs correction experiment at the same 128-NFE budget
+
+**Paper correspondence.** The original [UDLM paper](https://arxiv.org/abs/2412.10193)
+provides the reverse bridge used by the R/S/E predictors. Appendix E of
+[Uniform Diffusion Models Revisited](https://arxiv.org/abs/2605.22765) derives a
+conditional update from a leave-one-out (LOO) predictor, allowing correction at
+fixed noise without a second trained model. The [authors' code](https://github.com/samsongourevitch/rev_udm)
+also explores confidence-based and parallel variants. Here the proposed kernel
+chooses one editable coordinate uniformly, which has the random-scan Gibbs
+interpretation when its conditional is exact.
+
+**Intuition and motivation.** The ancestral predictor advances to less noise;
+the corrector can revise one coordinate at the resulting noise level. The
+engineering question is whether spending model calls on revision helps SAFE
+structure more than spending all calls on finer predictor steps. V6 compares
+128 predictor calls against 64 predictor plus 64 fresh corrector calls, all
+using the same checkpoint and requested count within each R/S/E pair.
+
+Temperature 0.5 is an engineering choice informed by partial v5 observations
+of E and S through temperature 0.85. It was fixed across arms to favor syntax,
+not selected as a proven global quality winner. Thus this design is informed
+by earlier exploration; its new seeds 1300/1301 do not make the overall search
+confirmatory. The six settings request 64 molecules for each seed, or 768 total.
+Final seeds 0/1/2 remain reserved. No v6 result is asserted by this preview.
+
+**Mathematics, with every symbol defined.** Let $x_s=(x_s^1,\ldots,x_s^L)$ be a
+noisy sequence of length $L$ at time $s$, and $x_s^{-\ell}$ all positions except
+$\ell$. For clean token category $j$, define the exact LOO probability
+$r_\ell(j)=P(X_0^\ell=j\mid X_s^{-\ell}=x_s^{-\ell})$, where $X_0$ is the
+clean random sequence and $X_s$ the noisy random sequence. If $\pi_j$ is
+stationary noise probability and $\alpha_s$ is the clean-data fraction, the
+noisy one-coordinate conditional is
+
+$$c_\ell(j\mid x_s^{-\ell})=\alpha_s r_\ell(j)+(1-\alpha_s)\pi_j.$$
+
+Here $c_\ell$ sums to one over the active categories. Unlike the reverse bridge,
+this formula has no observed-token likelihood multiplier: the current token
+$x_s^\ell$ is being resampled given the other positions. Let $\mathcal M$ be a
+fixed nonempty set of editable positions. Choose coordinate $I$ with
+$P(I=\ell)=1/|\mathcal M|$ for $\ell\in\mathcal M$, where $|\mathcal M|$ is
+its size, then draw its new token from $c_I$. All other positions are copied.
+If $\mathcal M$ is empty, the row is unchanged. Exact compatible conditionals
+with this state-independent scan preserve the noisy target distribution
+conditional on the immutable context. One-coordinate resampling can retain the
+old token, so at most one coordinate changes.
+
+The network gives learned logits $z_{\ell j}$ rather than exact $r_\ell$.
+With temperature $\tau$, it supplies
+$\widehat r^{(\tau)}_{\ell j}=\exp(z_{\ell j}/\tau)/\sum_k\exp(z_{\ell k}/\tau)$,
+where $k$ indexes active categories. V6 sets $\tau=0.5$ and top-$p=1$ (no
+truncation). Prediction error, dependence on the coordinate's own noisy token,
+and tempering make these approximate conditionals. They need not preserve the
+original noisy target or correspond to a consistently tempered joint law.
+
+Let $N$ be total network-function evaluations (NFE), $M=N/2$ predictor
+transitions, $\delta$ the inference endpoint, and
+$t_i=1-(1-\delta)i/M$ for grid index $i=0,\ldots,M$. Each predictor moves from
+$t_i$ to $s=t_{i+1}$. Its output gets a **fresh** network evaluation at $s$ before
+the Gibbs draw; the next predictor sees that corrected state. Hence
+$N=M+M=64+64=128$. The last corrector is at
+$\delta=10^{-5}$, below the usual training lower time $10^{-3}$, a disclosed
+extrapolation. There is no additional terminal model call.
+
+**Small concrete example.** With $\alpha_s=0.75$,
+$r_\ell=(0.2,0.8)$ and $\pi=(0.7,0.3)$, the exact noisy conditional is
+$(0.75\cdot0.2+0.25\cdot0.7,\;0.75\cdot0.8+0.25\cdot0.3)
+=(0.325,0.675)$. These are already specified toy LOO probabilities; the example
+does not apply the study temperature to them again. For template
+`[BOS, 0, 1, EOS, PAD]` and editable mask `[False, True, True, False, False]`,
+the code chooses coordinate 1 or 2 uniformly, samples category 0 or 1 with that
+conditional, and checks every immutable position. A second all-immutable row
+demonstrates the identity case. The local random generator does not alter any
+training or sampling RNG state.
+
+**Code below, shapes, and invariants.** This self-contained cell uses Python
+lists and reads only the small v6 protocol and six pinned YAMLs. It verifies
+configuration hashes, each matched checkpoint pair, the common temperature and
+top-p, the 128-NFE allocations, and the total of 768 requests. It never imports
+PyTorch, probes a GPU, opens a checkpoint, launches a job, or writes an artifact.
+Real token IDs and Boolean masks have shape `[B,L]`, full model logits
+`[B,L,K]`, and compact corrector probabilities `[B,L,A]`; $B$ is batch size,
+$K$ full vocabulary size, and $A$ active vocabulary size. The mask comes from
+the original template and stays fixed even if an editable token becomes MASK.
+Probability rows are finite, nonnegative, and normalized; framing and supplied
+fragments are invariant. Actual future jobs remain capped at two GPUs, each
+strictly below 10% utilization immediately before dynamic UUID selection.
+
+**Released-code differences and claim boundary.** This is an opt-in inference
+experiment, with no retraining. The default sampler retains its ancestral RNG
+sequence and IDs; MDLM rejects Gibbs mode. The option uses even integer NFE
+budgets and changes the allocation of model calls, not their total. Production
+CPU tests enumerate a correlated four-state target to establish exact oracle
+stationarity and show that simultaneous updates from stale conditionals fail.
+Those tests do not establish learned-model stationarity or improved molecular
+quality. Fewer predictor transitions also increase their time intervals.
+
+**Comprehension checkpoint.** Why must correction use the fresh predictor
+sample at time $s$? Expected reasoning: both the context and noise level changed,
+so previous logits describe a different conditional. Why choose a coordinate
+uniformly from a fixed mask? Expected reasoning: the scan is independent of the
+current token state, preserving the standard Gibbs argument and immutable
+context. Does exactly one resampled coordinate mean one changed token? Expected
+reasoning: the sampled category may equal the old one. Does temperature 0.5
+preserve the original target? Expected reasoning: transformed approximate
+conditionals generally lose that guarantee. Why is this still engineering work?
+Expected reasoning: its temperature was informed by partial earlier outcomes,
+and a locked held-out benchmark is still required to support superiority.
+""",
+            "stage-22-engineering-v6-note",
+        ),
+        _cell(
+            "code",
+            r"""
+import hashlib as stage22_hashlib
+import json as stage22_json
+import math as stage22_math
+import random as stage22_random
+from pathlib import Path as Stage22Path
+
+import yaml as stage22_yaml
+
+
+stage22_relative_protocol = Stage22Path("experiments/udlm/protocols/engineering_v6.json")
+stage22_start = Stage22Path.cwd().resolve()
+stage22_candidates = [
+    stage22_start,
+    stage22_start / "run_sources/udlm_corrector_worktree",
+    *stage22_start.parents,
+]
+stage22_root = next(
+    root for root in stage22_candidates
+    if (root / stage22_relative_protocol).is_file()
+)
+stage22_protocol_bytes = (stage22_root / stage22_relative_protocol).read_bytes()
+stage22_protocol = stage22_json.loads(stage22_protocol_bytes)
+assert stage22_protocol["schema_version"] == 1
+assert stage22_protocol["claim"] == "engineering_screen_only_no_superiority_claim"
+assert stage22_protocol["gpu_policy"] == {
+    "max_gpus": 2, "max_utilization_percent": 10, "min_free_memory_mib": 30000,
+}
+assert stage22_protocol["seeds"] == [1300, 1301]
+assert stage22_protocol["num_samples"] == 64
+assert stage22_protocol["nfe"] == 128
+assert not set(stage22_protocol["seeds"]).intersection({0, 1, 2})
+assert stage22_protocol["design"]["temperature"] == 0.5
+assert stage22_protocol["design"]["top_p"] == 1.0
+assert stage22_protocol["design"]["partial_v5_observed_before_design"]
+stage22_entries = stage22_protocol["entries"]
+assert len(stage22_entries) == 6
+assert len({entry["attempt_id"] for entry in stage22_entries}) == 6
+stage22_pairs = {}
+stage22_preview_rows = []
+for stage22_entry in stage22_entries:
+    stage22_path = (stage22_root / stage22_entry["config"]).resolve()
+    assert stage22_path.is_relative_to(stage22_root)
+    stage22_config_bytes = stage22_path.read_bytes()
+    assert stage22_hashlib.sha256(stage22_config_bytes).hexdigest() == (
+        stage22_entry["config_sha256"]
+    )
+    stage22_config = stage22_yaml.safe_load(stage22_config_bytes)
+    assert stage22_config["diffusion_type"] == "udlm"
+    assert stage22_config["num_steps"] == 128
+    assert stage22_config["softmax_temp"] == 0.5
+    assert stage22_config.get("raw_loo_top_p", 1.0) == 1.0
+    stage22_corrector = stage22_config.pop("gibbs_corrector", False)
+    assert type(stage22_corrector) is bool
+    stage22_arm_pair = stage22_pairs.setdefault(stage22_entry["arm_id"], {})
+    assert stage22_corrector not in stage22_arm_pair
+    stage22_arm_pair[stage22_corrector] = (
+        stage22_config,
+        stage22_entry["checkpoint"],
+        stage22_entry["checkpoint_sha256"],
+    )
+    stage22_predictor_calls = 64 if stage22_corrector else 128
+    stage22_corrector_calls = 64 if stage22_corrector else 0
+    assert stage22_predictor_calls + stage22_corrector_calls == 128
+    stage22_preview_rows.append({
+        "attempt": stage22_entry["attempt_id"],
+        "arm": stage22_entry["arm_id"],
+        "gibbs_corrector": stage22_corrector,
+        "predictor_calls": stage22_predictor_calls,
+        "corrector_calls": stage22_corrector_calls,
+        "total_nfe": 128,
+    })
+assert set(stage22_pairs) == {"R", "S", "E"}
+for stage22_pair in stage22_pairs.values():
+    assert set(stage22_pair) == {False, True}
+    assert stage22_pair[False] == stage22_pair[True]
+
+stage22_alpha, stage22_loo, stage22_prior = 0.75, [0.2, 0.8], [0.7, 0.3]
+stage22_conditional = [
+    stage22_alpha * raw + (1 - stage22_alpha) * prior
+    for raw, prior in zip(stage22_loo, stage22_prior)
+]
+assert all(stage22_math.isfinite(p) and p >= 0 for p in stage22_conditional)
+assert stage22_math.isclose(sum(stage22_conditional), 1.0)
+assert all(
+    stage22_math.isclose(actual, expected)
+    for actual, expected in zip(stage22_conditional, [0.325, 0.675])
+)
+stage22_original = [
+    ["BOS", 0, 1, "EOS", "PAD"],
+    ["BOS", 1, 1, "EOS", "PAD"],
+]
+stage22_masks = [
+    [False, True, True, False, False],
+    [False, False, False, False, False],
+]
+stage22_rng = stage22_random.Random(1300)
+stage22_corrected = [row.copy() for row in stage22_original]
+stage22_selected_coordinates = []
+for row, fixed_mask in zip(stage22_corrected, stage22_masks):
+    positions = [index for index, editable in enumerate(fixed_mask) if editable]
+    coordinate = stage22_rng.choice(positions) if positions else None
+    stage22_selected_coordinates.append(coordinate)
+    if coordinate is not None:
+        row[coordinate] = stage22_rng.choices([0, 1], weights=stage22_conditional, k=1)[0]
+for original, corrected, fixed_mask in zip(
+    stage22_original, stage22_corrected, stage22_masks
+):
+    assert sum(a != b for a, b in zip(original, corrected)) <= 1
+    assert all(a == b for a, b, editable in zip(original, corrected, fixed_mask) if not editable)
+assert stage22_selected_coordinates[0] in {1, 2}
+assert stage22_selected_coordinates[1] is None
+stage22_preview = {
+    "protocol_sha256": stage22_hashlib.sha256(stage22_protocol_bytes).hexdigest(),
+    "entries": stage22_preview_rows,
+    "total_requests": len(stage22_entries) * 2 * stage22_protocol["num_samples"],
+    "toy_conditional": stage22_conditional,
+    "toy_original": stage22_original,
+    "toy_corrected": stage22_corrected,
+    "toy_selected_coordinates": stage22_selected_coordinates,
+    "gpu_queries": 0,
+    "checkpoint_loads": 0,
+    "process_launches": 0,
+    "artifact_writes": 0,
+    "superiority_claim": False,
+}
+assert stage22_preview["total_requests"] == 768
+print(stage22_json.dumps(stage22_preview, indent=2))
+""",
+            "stage-22-engineering-v6-code",
+        ),
+    ]
+
+
 def _replace_required(text: str, old: str, new: str, *, label: str) -> str:
     """Apply one migration exactly once while remaining idempotent."""
     if new in text:
@@ -5716,7 +5968,7 @@ def update_notebook(source: Path, destination: Path):
         *late_stage20_cells,
         *v4_campaign_cells,
     ]
-    engineering_cells = _engineering_v5_cells()
+    engineering_cells = [*_engineering_v5_cells(), *_engineering_v6_cells()]
     engineering_ids = {cell["id"] for cell in engineering_cells}
     notebook["cells"] = [
         cell for cell in notebook["cells"] if cell.get("id") not in engineering_ids

@@ -32,6 +32,7 @@ from genmol.utils.utils_chem import safe_to_smiles, filter_by_substructure, mix_
 from genmol.utils.bracket_safe_converter import BracketSAFEConverter, bracketsafe2safe
 from genmol.utils.checkpoint_io import verified_checkpoint_file  # noqa: E402
 from genmol.model import GenMol
+from genmol.corrector import random_scan_gibbs_step  # noqa: E402
 
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -229,9 +230,20 @@ class Sampler:
         num_steps=None,
         raw_loo_top_p=1.0,
         return_token_ids=False,
+        gibbs_corrector=False,
         **kwargs,
     ):
-        """Generate molecules or raw IDs; ``randomness`` is MDLM-only."""
+        """Generate molecules or raw IDs; ``randomness`` is MDLM-only.
+
+        UDLM ``num_steps`` is the total backbone-evaluation budget. The
+        opt-in Gibbs path uses half as many predictor transitions, each with
+        one fresh-logit, single-coordinate corrector at the resulting time.
+        The default path retains its original predictor-only sampling law.
+        """
+        if type(gibbs_corrector) is not bool:
+            raise ValueError('gibbs_corrector must be a boolean')
+        if gibbs_corrector and self.diffusion_type != 'udlm':
+            raise ValueError('gibbs_corrector is supported only for UDLM')
         softmax_temp = _finite_positive_sampling_scalar(
             softmax_temp, 'softmax_temp'
         )
@@ -248,6 +260,23 @@ class Sampler:
                     'GenMol MCG blends clean logits and is not a valid UDLM '
                     'posterior-space guidance rule; UDLM guidance is not yet enabled.'
                 )
+            if gibbs_corrector:
+                budget = num_steps
+                if budget is None:
+                    budget = self.model.config.training.get('udlm', {}).get(
+                        'sampling_steps', 128
+                    )
+                if (
+                    isinstance(budget, bool)
+                    or not isinstance(budget, numbers.Integral)
+                    or budget < 2
+                    or budget % 2 != 0
+                ):
+                    raise ValueError(
+                        'gibbs_corrector requires an even integer num_steps >= 2 '
+                        '(total backbone evaluations)'
+                    )
+                num_steps = int(budget)
             editable_mask = x == self.model.mask_index
             prior = self.mdlm.sample_prior(x.shape, device=x.device)
             x = torch.where(editable_mask, prior, x)
@@ -260,14 +289,15 @@ class Sampler:
             if not 0 < inference_eps < 1:
                 raise ValueError('UDLM inference_eps must lie strictly between 0 and 1')
 
+            predictor_steps = num_steps // 2 if gibbs_corrector else num_steps
             timesteps = torch.linspace(
                 1.0,
                 inference_eps,
-                num_steps + 1,
+                predictor_steps + 1,
                 device=x.device,
                 dtype=torch.float32,
             )
-            for i in range(num_steps):
+            for i in range(predictor_steps):
                 t = timesteps[i].expand(x.shape[0])
                 s = timesteps[i + 1].expand(x.shape[0])
                 logits = self.model(x, attention_mask, t=t)
@@ -280,6 +310,17 @@ class Sampler:
                     temperature=softmax_temp,
                     raw_loo_top_p=raw_loo_top_p,
                 )
+                if gibbs_corrector:
+                    corrector_logits = self.model(x, attention_mask, t=s)
+                    x = random_scan_gibbs_step(
+                        self.mdlm,
+                        corrector_logits,
+                        x,
+                        s,
+                        mutable_mask=editable_mask,
+                        temperature=softmax_temp,
+                        raw_loo_top_p=raw_loo_top_p,
+                    )
         else:
             num_steps = max(self.mdlm.get_num_steps_confidence(x), 2)
             for i in range(num_steps):

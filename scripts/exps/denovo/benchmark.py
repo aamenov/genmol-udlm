@@ -234,6 +234,11 @@ IMPLEMENTATION_INPUT_PATHS = {
     "artifact_io_source": REPO_ROOT / ARTIFACT_IO_RELATIVE_PATH,
     "length_distribution": REPO_ROOT / "data/len.pk",
 }
+GIBBS_CORRECTOR_SOURCE_PATH = REPO_ROOT / "src/genmol/corrector.py"
+GIBBS_CORRECTOR_NUM_STEPS_SOURCE = "explicit UDLM total predictor-plus-corrector NFE budget"
+GIBBS_CORRECTOR_NFE_DEFINITION = (
+    "one full backbone forward evaluation per predictor transition and per fresh Gibbs corrector"
+)
 
 RAW_SAMPLE_FIELDS = (
     "sample_index",
@@ -1291,6 +1296,7 @@ def generate_raw_model_text(
     prior_variant: str | None,
     prior_metadata_sha256: str | None,
     raw_loo_top_p: float | None = None,
+    gibbs_corrector: bool = False,
 ) -> tuple[list[str], dict[str, Any], Any, Any]:
     """Run either diffusion backend through the shared raw-token sampler API.
 
@@ -1300,6 +1306,17 @@ def generate_raw_model_text(
     """
     import torch
 
+    if type(gibbs_corrector) is not bool:
+        raise BenchmarkConfigurationError("gibbs_corrector must be a boolean")
+    if gibbs_corrector and (
+        diffusion_type != "udlm"
+        or type(num_steps) is not int
+        or num_steps < 2
+        or num_steps % 2
+    ):
+        raise BenchmarkConfigurationError(
+            "gibbs_corrector requires UDLM and an even num_steps NFE budget of at least 2"
+        )
     loaded_diffusion_type = str(getattr(sampler, "diffusion_type", "mdlm")).lower()
     if loaded_diffusion_type != diffusion_type:
         raise BenchmarkConfigurationError(
@@ -1355,7 +1372,11 @@ def generate_raw_model_text(
                     "UDLM sampling requires normalized raw_loo_top_p"
                 )
             nfe = num_steps
-            num_steps_source = "explicit UDLM reverse-transition count"
+            num_steps_source = (
+                GIBBS_CORRECTOR_NUM_STEPS_SOURCE
+                if gibbs_corrector
+                else "explicit UDLM reverse-transition count"
+            )
         else:
             nfe = max(int(sampler.mdlm.get_num_steps_confidence(x)), 2)
             num_steps_source = (
@@ -1370,6 +1391,8 @@ def generate_raw_model_text(
         }
         if diffusion_type == "udlm":
             generate_arguments["raw_loo_top_p"] = raw_loo_top_p
+        if gibbs_corrector:
+            generate_arguments["gibbs_corrector"] = True
         token_ids = sampler.generate(x, **generate_arguments)
         decoded = sampler.model.tokenizer.batch_decode(
             token_ids, skip_special_tokens=True
@@ -1396,6 +1419,15 @@ def generate_raw_model_text(
     }
     if diffusion_type == "udlm":
         protocol["raw_loo_top_p"] = raw_loo_top_p
+    if gibbs_corrector:
+        protocol.update(
+            {
+                "gibbs_corrector": True,
+                "predictor_transitions_per_molecule": num_steps // 2,
+                "corrector_steps_per_molecule": num_steps // 2,
+                "nfe_definition": GIBBS_CORRECTOR_NFE_DEFINITION,
+            }
+        )
     return (
         [str(value) for value in decoded],
         protocol,
@@ -2556,6 +2588,11 @@ def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
     prior_variant: str | None = None
     prior_metadata_sha256: str | None = None
     raw_loo_top_p: float | None = None
+    gibbs_corrector = config.get("gibbs_corrector", False)
+    if type(gibbs_corrector) is not bool:
+        raise BenchmarkConfigurationError("gibbs_corrector must be a boolean")
+    if gibbs_corrector and diffusion_type != "udlm":
+        raise BenchmarkConfigurationError("gibbs_corrector requires UDLM")
     if diffusion_type == "udlm":
         missing_udlm = [
             key
@@ -2580,6 +2617,10 @@ def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
             or float(num_steps) != float(config["num_steps"])
         ):
             raise BenchmarkConfigurationError("num_steps must be a positive integer")
+        if gibbs_corrector and (num_steps < 2 or num_steps % 2):
+            raise BenchmarkConfigurationError(
+                "gibbs_corrector requires an even num_steps NFE budget of at least 2"
+            )
         if not math.isfinite(inference_eps) or not 0 < inference_eps < 1:
             raise BenchmarkConfigurationError(
                 "inference_eps must be finite and lie strictly between 0 and 1"
@@ -2653,6 +2694,9 @@ def validate_sampling_config(config: Mapping[str, Any]) -> dict[str, Any]:
     }
     if diffusion_type == "udlm":
         normalized["raw_loo_top_p"] = raw_loo_top_p
+    if gibbs_corrector:
+        # Omit the inactive setting to preserve historical canonical identities.
+        normalized["gibbs_corrector"] = True
     return normalized
 
 
@@ -2991,10 +3035,15 @@ def git_provenance() -> dict[str, Any]:
     }
 
 
-def load_implementation_input_snapshot() -> ImplementationInputSnapshot:
+def load_implementation_input_snapshot(
+    *, gibbs_corrector: bool = False,
+) -> ImplementationInputSnapshot:
     """Fingerprint direct inputs and retain the exact generation-length values."""
     result: dict[str, Any] = {}
-    for name, path in IMPLEMENTATION_INPUT_PATHS.items():
+    input_paths = dict(IMPLEMENTATION_INPUT_PATHS)
+    if gibbs_corrector:
+        input_paths["corrector_source"] = GIBBS_CORRECTOR_SOURCE_PATH
+    for name, path in input_paths.items():
         if not path.is_file():
             raise FileNotFoundError(f"Required benchmark input does not exist: {path}")
         result[name] = {
@@ -3042,9 +3091,11 @@ def load_implementation_input_snapshot() -> ImplementationInputSnapshot:
     )
 
 
-def implementation_input_provenance() -> dict[str, Any]:
+def implementation_input_provenance(*, gibbs_corrector: bool = False) -> dict[str, Any]:
     """Fingerprint source/data inputs that directly define generation semantics."""
 
+    if gibbs_corrector:
+        return dict(load_implementation_input_snapshot(gibbs_corrector=True).provenance)
     return dict(load_implementation_input_snapshot().provenance)
 
 
@@ -3222,6 +3273,8 @@ def assert_runtime_module_provenance(
     }
     if "artifact_io_source" in implementation_inputs:
         modules["artifact_io_source"] = artifact_io
+    if "corrector_source" in implementation_inputs:
+        modules["corrector_source"] = importlib.import_module("genmol.corrector")
     for source_name, module in modules.items():
         module_path = Path(module.__file__).resolve()
         recorded = implementation_inputs[source_name]
@@ -3388,7 +3441,11 @@ def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
         metric_inputs = dict(sa_metric_snapshot.provenance)
         # Capture every direct generation implementation before checkpoint metadata
         # imports the stable-descriptor helper or the sampler imports model code.
-        implementation_snapshot = load_implementation_input_snapshot()
+        implementation_snapshot = (
+            load_implementation_input_snapshot(gibbs_corrector=True)
+            if sampling_config.get("gibbs_corrector", False)
+            else load_implementation_input_snapshot()
+        )
         implementation_inputs = dict(implementation_snapshot.provenance)
         if not candidate_schema:
             # Schema 7 predates artifact_io and remains byte-schema compatible.

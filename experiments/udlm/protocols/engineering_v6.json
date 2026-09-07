@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "study_id": "engineering-v6-gibbs",
+  "purpose": "Prospective equal-NFE comparison of predictor-only UDLM against one random-scan Gibbs correction after every predictor at the same total 128 model evaluations.",
+  "claim": "engineering_screen_only_no_superiority_claim",
+  "gpu_policy": {
+    "max_gpus": 2,
+    "max_utilization_percent": 10,
+    "min_free_memory_mib": 30000
+  },
+  "seeds": [
+    1300,
+    1301
+  ],
+  "num_samples": 64,
+  "nfe": 128,
+  "entries": [
+    {
+      "attempt_id": "v6-e-t050-predictor",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "arm_id": "E",
+      "config_id": "e_t050_predictor",
+      "config": "experiments/udlm/protocols/engineering_v6_configs/e_t050_predictor.yaml",
+      "config_sha256": "610b6f44a0ef84bf4719a5e5e0783bceaf34e4ed2fa83420b5ad4a1b1068640e",
+      "checkpoint": "output/udlm/scaleup-w1-e-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005"
+    },
+    {
+      "attempt_id": "v6-e-t050-gibbs",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "arm_id": "E",
+      "config_id": "e_t050_gibbs",
+      "config": "experiments/udlm/protocols/engineering_v6_configs/e_t050_gibbs.yaml",
+      "config_sha256": "901b2d826708c2ff4c7212761db1bb9d5f50ae4ffce2e05b8d2dae9b832fa7f1",
+      "checkpoint": "output/udlm/scaleup-w1-e-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005"
+    },
+    {
+      "attempt_id": "v6-s-t050-predictor",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "arm_id": "S",
+      "config_id": "s_t050_predictor",
+      "config": "experiments/udlm/protocols/engineering_v6_configs/s_t050_predictor.yaml",
+      "config_sha256": "c0d062f7f1445844e00d40c293ecc32ff90def6137eb93420e005f7f1fe31c8e",
+      "checkpoint": "output/udlm/scaleup-w1-s-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72"
+    },
+    {
+      "attempt_id": "v6-s-t050-gibbs",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "arm_id": "S",
+      "config_id": "s_t050_gibbs",
+      "config": "experiments/udlm/protocols/engineering_v6_configs/s_t050_gibbs.yaml",
+      "config_sha256": "8ee41ce679b397559ec951a937f361d746f00ed60cb8aa5e0f50600ceaea6251",
+      "checkpoint": "output/udlm/scaleup-w1-s-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72"
+    },
+    {
+      "attempt_id": "v6-r-t050-predictor",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "arm_id": "R",
+      "config_id": "r_t050_predictor",
+      "config": "experiments/udlm/protocols/engineering_v6_configs/r_t050_predictor.yaml",
+      "config_sha256": "765bf9589f2f371c105d8da533aab4ac9bf8f1f756ebd60332bcbc0381695e46",
+      "checkpoint": "output/udlm/scaleup-w1-r-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c"
+    },
+    {
+      "attempt_id": "v6-r-t050-gibbs",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "arm_id": "R",
+      "config_id": "r_t050_gibbs",
+      "config": "experiments/udlm/protocols/engineering_v6_configs/r_t050_gibbs.yaml",
+      "config_sha256": "26b7a5f246263324f13859f475e0f298ffc5a658dc403e5ef97d6baa07258a83",
+      "checkpoint": "output/udlm/scaleup-w1-r-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c"
+    }
+  ],
+  "baseline": {
+    "manifest": "experiments/udlm/baselines/mdlm_50000.json",
+    "validity": 1.0,
+    "uniqueness": 0.9986666666666667,
+    "quality": 0.858,
+    "diversity": 0.8230213192558725,
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "samples_per_seed": 1000,
+    "training_updates": 50000
+  },
+  "prior_incident": {
+    "source_revision": "34c990ebb3e5d51656e860c54ba306f5ede35d06",
+    "status": "preserved_failed_v4_diagnostic_not_reclassified_or_retried",
+    "failure_receipt": "output/udlm/de_novo_candidate_campaign_v1/attempts/stage-d-e_t100_p100/seed_1100/failure_receipt.json",
+    "reason": "UDLM identity top-p default omitted by expected effective config; generation completed but completion validator rejected it.",
+    "diagnostic_chemistry_observed_before_this_protocol": true
+  },
+  "training": {
+    "initialization": "MDLM 50000-step EMA warm start",
+    "extra_updates": 1000,
+    "global_batch_size": 16,
+    "training_seed": 17,
+    "arms": {
+      "R": "official uniform with released schedule mismatch",
+      "S": "schedule-consistent uniform categorical",
+      "E": "schedule-consistent empirical SAFE prior with 0.0002 uniform floor"
+    }
+  },
+  "selection": {
+    "rule": "No final candidate selection. Compare each arm pair using independently rescored mean repaired quality and strict validity; all failures remain disclosed.",
+    "next_step": "A separately specified held-out experiment is required before any confirmatory comparison.",
+    "final_seeds_reserved": [
+      0,
+      1,
+      2
+    ],
+    "failures": "No automatic retries."
+  },
+  "limitations": [
+    "Exploratory parameter selection, not a confirmatory benchmark.",
+    "Only 1000 UDLM continuation updates: matched method training superiority is not isolated.",
+    "Historical baseline has 1000 samples per seed versus 64 here; diversity and uniqueness vary with sample count.",
+    "Strict molecular validity is reported separately from repaired validity.",
+    "The corrector changes transition allocation at fixed total NFE, not training.",
+    "Temperature 0.5 is a common engineering choice informed by partial v5 syntax diagnostics.",
+    "Corrector predictions can depend on their own noisy token; exact stationarity is not asserted for the learned model."
+  ],
+  "design": {
+    "arms": [
+      "R",
+      "S",
+      "E"
+    ],
+    "temperature": 0.5,
+    "top_p": 1.0,
+    "predictor_control": {
+      "predictor_transitions": 128,
+      "corrector_updates": 0,
+      "nfe": 128
+    },
+    "gibbs_treatment": {
+      "predictor_transitions": 64,
+      "corrector_updates": 64,
+      "nfe": 128
+    },
+    "corrector_coordinate_selection": "one uniformly selected editable coordinate per row, fresh prediction at the post-predictor state and time",
+    "frozen_before_v6_generation": true,
+    "partial_v5_observed_before_design": "E and S temperature outcomes through 0.85; no final evaluation seeds. Temperature 0.5 is fixed across arms to favor syntactic fidelity, not selected as the global quality winner.",
+    "claim_boundary": "Learned/tempered LOO conditionals are approximate; exact Gibbs stationarity is established only for the toy true-conditional tests."
+  }
+}
