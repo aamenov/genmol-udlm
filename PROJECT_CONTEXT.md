@@ -1,3 +1,34 @@
+# Follow-through evaluation — isolated checkout
+
+This checkout owns evaluation and reporting only. Training is owned by
+`../udlm_followthrough_learning`, using its r2 protocol and output namespace.
+Do not launch the inherited training wrappers here. The controller is
+`scripts/udlm/run_followthrough_curve_evaluation.py`; run it in tmux after
+committing and pushing this source. It waits for successful CT and MDLM terminal
+receipts, checks exposure and cleanup evidence, then audits and copies all six
+1k/2k/4k checkpoints and the common 50k MDLM baseline locally.
+
+The prospective screen uses seeds17500/17501,100 requests each: CT temperature0.5,
+128 predictor calls; MDLM native temperature0.5/randomness0.5 sampling. Actual
+sampling calls are reported. These settings were selected from the completed
+pilot evidence before the new curve outputs. Both new arms use seed17400,
+batch128 and a fresh4k schedule. Normal Lightning startup seeding is retained;
+the failed special reseeding attempt is preserved in the training checkout.
+
+After training succeeds, the controller freezes and pushes checkpoint hashes and
+evaluation configs before sampling, then independently rescores all1400 requests.
+Its final PDF is `output/udlm/followthrough_curve_reports/complete/followthrough_study.pdf`.
+The PDF includes the curve and completed CT/CE temperature/resolution appendices.
+These are pilot experiments with one training seed. No superiority claim or
+held-out confirmation is automated. Final seeds0/1/2 remain untouched.
+
+Use tmux `genmol-udlm-followthrough-curve`; log to
+`output/logs/followthrough-curve-pipeline.log`. At most two dynamically selected
+GPUs below10% utilization with at least30000MiB free may be used. Keep this source
+frozen while waiting and running. Historical training ownership below is superseded.
+
+---
+
 # Follow-through learning curve — isolated checkout
 
 This checkout prepares only the 4,000-update adaptation curve and matched MDLM

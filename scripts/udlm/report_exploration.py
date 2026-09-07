@@ -523,7 +523,7 @@ def _objective_evidence(run: dict[str, Any]) -> dict[str, Any]:
 def _sampling_budget(run: dict[str, Any]) -> dict[str, Any]:
     """Expose certified NFE; recover unchanged predictor counts for old schemas."""
     protocol = run.get("generation_protocol", {})
-    if run.get("status") != "completed" or protocol.get("diffusion_type") != "udlm":
+    if run.get("status") != "completed" or protocol.get("diffusion_type") not in {"udlm", "mdlm"}:
         return {}
     corrector = protocol.get("gibbs_corrector", False)
     return {
