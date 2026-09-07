@@ -1,0 +1,12 @@
+diffusion_type: udlm
+exclude_special_tokens: false
+inference_eps: 1.0e-05
+min_add_len: 40
+model_path: output/udlm/followthrough_curve_inputs/ct_2000.ckpt
+num_samples: 100
+num_steps: 128
+prior_metadata_sha256: f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612
+prior_variant: empirical_frequency
+randomness: 0.0
+raw_loo_top_p: 1.0
+softmax_temp: 0.5

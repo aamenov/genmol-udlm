@@ -1,0 +1,6 @@
+diffusion_type: mdlm
+min_add_len: 40
+model_path: output/udlm/followthrough_curve_inputs/mdlm_4000.ckpt
+num_samples: 100
+randomness: 0.5
+softmax_temp: 0.5

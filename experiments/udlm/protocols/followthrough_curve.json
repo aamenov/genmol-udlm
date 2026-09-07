@@ -1,0 +1,760 @@
+{
+  "claim": "engineering_screen_only_no_superiority_claim",
+  "entries": [
+    {
+      "additional_updates": 0,
+      "arm_id": "MDLM",
+      "attempt_id": "followthrough-curve-mdlm-0",
+      "candidate_id": "followthrough-mdlm-0-8d00aa47b02f",
+      "checkpoint": "output/udlm/followthrough_curve_inputs/mdlm_0.ckpt",
+      "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "config": "experiments/udlm/protocols/followthrough_curve_configs/mdlm_0.yaml",
+      "config_id": "mdlm_0",
+      "config_sha256": "e40796f2e003ee41b83487bdbae3253f9d403236ac4c5485066da6863da4a17f",
+      "parameterization": null
+    },
+    {
+      "additional_updates": 1000,
+      "arm_id": "CT",
+      "attempt_id": "followthrough-curve-ct-1000",
+      "candidate_id": "followthrough-ct-1000-72ac46329abe",
+      "checkpoint": "output/udlm/followthrough_curve_inputs/ct_1000.ckpt",
+      "checkpoint_sha256": "72ac46329abe7c73130c0e48c66ad11440ce8623231c8b47f073b38ab6fcca29",
+      "config": "experiments/udlm/protocols/followthrough_curve_configs/ct_1000.yaml",
+      "config_id": "ct_1000",
+      "config_sha256": "072f9d0baf58c73cdd109ad46020c4c91aa471f69758bec92b0d916f85cc4988",
+      "parameterization": "raw_loo"
+    },
+    {
+      "additional_updates": 2000,
+      "arm_id": "CT",
+      "attempt_id": "followthrough-curve-ct-2000",
+      "candidate_id": "followthrough-ct-2000-fab40041bf27",
+      "checkpoint": "output/udlm/followthrough_curve_inputs/ct_2000.ckpt",
+      "checkpoint_sha256": "fab40041bf27975f6f949ab33ead38f6c3608c22d4e92ac25d31d9189cca0b17",
+      "config": "experiments/udlm/protocols/followthrough_curve_configs/ct_2000.yaml",
+      "config_id": "ct_2000",
+      "config_sha256": "e74cff679f48601bbe0b26408550b7c8635101be5e668925850cf4ff9d85aa03",
+      "parameterization": "raw_loo"
+    },
+    {
+      "additional_updates": 4000,
+      "arm_id": "CT",
+      "attempt_id": "followthrough-curve-ct-4000",
+      "candidate_id": "followthrough-ct-4000-3ac4b1a30826",
+      "checkpoint": "output/udlm/followthrough_curve_inputs/ct_4000.ckpt",
+      "checkpoint_sha256": "3ac4b1a30826124746dafe685f47f7d5dd226e1a4fbc93b8f79bbce521d5da7b",
+      "config": "experiments/udlm/protocols/followthrough_curve_configs/ct_4000.yaml",
+      "config_id": "ct_4000",
+      "config_sha256": "fa3f59a495e40e29568792e88d577d536d3d59d0348bc468aa9509acdd0599ca",
+      "parameterization": "raw_loo"
+    },
+    {
+      "additional_updates": 1000,
+      "arm_id": "MDLM",
+      "attempt_id": "followthrough-curve-mdlm-1000",
+      "candidate_id": "followthrough-mdlm-1000-229bac52be37",
+      "checkpoint": "output/udlm/followthrough_curve_inputs/mdlm_1000.ckpt",
+      "checkpoint_sha256": "229bac52be37e958552da3dcb9d966d03d3246bbaa2d23e16fa696fe634eda65",
+      "config": "experiments/udlm/protocols/followthrough_curve_configs/mdlm_1000.yaml",
+      "config_id": "mdlm_1000",
+      "config_sha256": "760be4ab2ad00b3aed6df1c48ee721026ee62e10ae09fc96f5d2a0258b70266d",
+      "parameterization": null
+    },
+    {
+      "additional_updates": 2000,
+      "arm_id": "MDLM",
+      "attempt_id": "followthrough-curve-mdlm-2000",
+      "candidate_id": "followthrough-mdlm-2000-33b7fc2121d4",
+      "checkpoint": "output/udlm/followthrough_curve_inputs/mdlm_2000.ckpt",
+      "checkpoint_sha256": "33b7fc2121d40e9812ade9dc6fb2c6e3012d9dcd1d8fc2ebc8310e154acfe9e3",
+      "config": "experiments/udlm/protocols/followthrough_curve_configs/mdlm_2000.yaml",
+      "config_id": "mdlm_2000",
+      "config_sha256": "32dc56de98dcdac3a7540d9f3039aadc9612f0c57241d1c6773e290f7c0d1786",
+      "parameterization": null
+    },
+    {
+      "additional_updates": 4000,
+      "arm_id": "MDLM",
+      "attempt_id": "followthrough-curve-mdlm-4000",
+      "candidate_id": "followthrough-mdlm-4000-7bf5ccc18bd5",
+      "checkpoint": "output/udlm/followthrough_curve_inputs/mdlm_4000.ckpt",
+      "checkpoint_sha256": "7bf5ccc18bd5e14a730dd370bf28cc7fcbb6557e27be2973b42f9b2b1af726aa",
+      "config": "experiments/udlm/protocols/followthrough_curve_configs/mdlm_4000.yaml",
+      "config_id": "mdlm_4000",
+      "config_sha256": "404cefa29d039f113ceccce7184e6a8a5828eed384e31d9cbc836a6d80d075f9",
+      "parameterization": null
+    }
+  ],
+  "gpu_policy": {
+    "max_gpus": 2,
+    "max_utilization_percent": 10,
+    "min_free_memory_mib": 30000
+  },
+  "limitations": [
+    "One training seed per method; generation seeds are not independent training runs.",
+    "Same extra example exposure does not imply equal training or sampling compute.",
+    "MDLM uses native confidence sampling, temperature0.5 and randomness0.5; CT uses128 predictor calls.",
+    "Final seeds0/1/2 remain untouched. These pilots cannot establish superiority."
+  ],
+  "num_samples": 100,
+  "schema_version": 1,
+  "seeds": [
+    17500,
+    17501
+  ],
+  "study_id": "followthrough-learning-curve",
+  "training": {
+    "fresh_scheduler_horizon": 4000,
+    "global_batch_size": 128,
+    "intermediate_checkpoint_audits": [
+      {
+        "additional_updates": 0,
+        "arm": "mdlm",
+        "audit": {
+          "global_step": 50000,
+          "sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6"
+        },
+        "source": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt"
+      },
+      {
+        "additional_updates": 1000,
+        "arm": "ct",
+        "audit": {
+          "ctime_ns": 1788789686005776064,
+          "device": 48,
+          "finite_tensor_count": 1155,
+          "global_step": 1000,
+          "inode": 2630713609,
+          "link_count": 1,
+          "mode": 33188,
+          "mtime_ns": 1788789686005776064,
+          "relative_path": "output/udlm/followthrough_curve_inputs/ct_1000.ckpt",
+          "sha256": "72ac46329abe7c73130c0e48c66ad11440ce8623231c8b47f073b38ab6fcca29",
+          "size_bytes": 1636492424
+        },
+        "source": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/ct_4000_b128_w2/checkpoints/1000.ckpt"
+      },
+      {
+        "additional_updates": 2000,
+        "arm": "ct",
+        "audit": {
+          "ctime_ns": 1788789728325456041,
+          "device": 48,
+          "finite_tensor_count": 1155,
+          "global_step": 2000,
+          "inode": 2630716442,
+          "link_count": 1,
+          "mode": 33188,
+          "mtime_ns": 1788789728325456041,
+          "relative_path": "output/udlm/followthrough_curve_inputs/ct_2000.ckpt",
+          "sha256": "fab40041bf27975f6f949ab33ead38f6c3608c22d4e92ac25d31d9189cca0b17",
+          "size_bytes": 1636492424
+        },
+        "source": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/ct_4000_b128_w2/checkpoints/2000.ckpt"
+      },
+      {
+        "additional_updates": 4000,
+        "arm": "ct",
+        "audit": {
+          "ctime_ns": 1788789758185230350,
+          "device": 48,
+          "finite_tensor_count": 1155,
+          "global_step": 4000,
+          "inode": 2630710994,
+          "link_count": 1,
+          "mode": 33188,
+          "mtime_ns": 1788789758185230350,
+          "relative_path": "output/udlm/followthrough_curve_inputs/ct_4000.ckpt",
+          "sha256": "3ac4b1a30826124746dafe685f47f7d5dd226e1a4fbc93b8f79bbce521d5da7b",
+          "size_bytes": 1636492424
+        },
+        "source": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/ct_4000_b128_w2/checkpoints/4000.ckpt"
+      },
+      {
+        "additional_updates": 1000,
+        "arm": "mdlm",
+        "audit": {
+          "ctime_ns": 1788789785915020840,
+          "device": 48,
+          "finite_tensor_count": 1012,
+          "global_step": 1000,
+          "inode": 2630721074,
+          "link_count": 1,
+          "mode": 33188,
+          "mtime_ns": 1788789785915020840,
+          "relative_path": "output/udlm/followthrough_curve_inputs/mdlm_1000.ckpt",
+          "sha256": "229bac52be37e958552da3dcb9d966d03d3246bbaa2d23e16fa696fe634eda65",
+          "size_bytes": 1397003991
+        },
+        "source": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/checkpoints/1000.ckpt"
+      },
+      {
+        "additional_updates": 2000,
+        "arm": "mdlm",
+        "audit": {
+          "ctime_ns": 1788789810284836780,
+          "device": 48,
+          "finite_tensor_count": 1012,
+          "global_step": 2000,
+          "inode": 2630706120,
+          "link_count": 1,
+          "mode": 33188,
+          "mtime_ns": 1788789810284836780,
+          "relative_path": "output/udlm/followthrough_curve_inputs/mdlm_2000.ckpt",
+          "sha256": "33b7fc2121d40e9812ade9dc6fb2c6e3012d9dcd1d8fc2ebc8310e154acfe9e3",
+          "size_bytes": 1397003991
+        },
+        "source": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/checkpoints/2000.ckpt"
+      },
+      {
+        "additional_updates": 4000,
+        "arm": "mdlm",
+        "audit": {
+          "ctime_ns": 1788789835364647420,
+          "device": 48,
+          "finite_tensor_count": 1012,
+          "global_step": 4000,
+          "inode": 2630717363,
+          "link_count": 1,
+          "mode": 33188,
+          "mtime_ns": 1788789835364647420,
+          "relative_path": "output/udlm/followthrough_curve_inputs/mdlm_4000.ckpt",
+          "sha256": "7bf5ccc18bd5e14a730dd370bf28cc7fcbb6557e27be2973b42f9b2b1af726aa",
+          "size_bytes": 1397003991
+        },
+        "source": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/checkpoints/4000.ckpt"
+      }
+    ],
+    "optimizer_updates": 4000,
+    "receipts": {
+      "ct": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/ct_4000_b128_w2/terminal_manifest.json",
+        "receipt": {
+          "artifact_hashes": {
+            "output/logs/followthrough_learning_r2/ct_4000_b128_w2.training.log": "8efa0bfc6b07180d4cea49c8c7ae07fa33841c9593db9fa8312286ecdd171644",
+            "output/udlm/followthrough_learning_r2/ct_4000_b128_w2/checkpoints/1000.ckpt": "72ac46329abe7c73130c0e48c66ad11440ce8623231c8b47f073b38ab6fcca29",
+            "output/udlm/followthrough_learning_r2/ct_4000_b128_w2/checkpoints/2000.ckpt": "fab40041bf27975f6f949ab33ead38f6c3608c22d4e92ac25d31d9189cca0b17",
+            "output/udlm/followthrough_learning_r2/ct_4000_b128_w2/checkpoints/3000.ckpt": "38de15a011d9b1adf07d912bfceeff4b11b886f0c8d9fefa6a2fccd34a783e39",
+            "output/udlm/followthrough_learning_r2/ct_4000_b128_w2/checkpoints/4000.ckpt": "3ac4b1a30826124746dafe685f47f7d5dd226e1a4fbc93b8f79bbce521d5da7b",
+            "output/udlm/followthrough_learning_r2/ct_4000_b128_w2/gpu_telemetry.jsonl": "897a346791e9d27b6b6f0f92136cdd72dcd870c75312ef442bdafde29be06057"
+          },
+          "checkpoint": {
+            "ctime_ns": 1788787131884817641,
+            "device": 48,
+            "finite_tensor_count": 1155,
+            "global_step": 4000,
+            "inode": 2630650586,
+            "link_count": 1,
+            "mode": 33152,
+            "mtime_ns": 1788787125576684945,
+            "relative_path": "output/udlm/followthrough_learning_r2/ct_4000_b128_w2/checkpoints/4000.ckpt",
+            "sha256": "3ac4b1a30826124746dafe685f47f7d5dd226e1a4fbc93b8f79bbce521d5da7b",
+            "size_bytes": 1636492424
+          },
+          "completed_example_exposures": 512000,
+          "controller_seconds": 3823.2191397949937,
+          "end_to_end_training_examples_per_second": 135.06345663373136,
+          "finished_at": "2026-09-07T13:19:23.428456+00:00",
+          "kind": "manual_engineering_training_terminal",
+          "launch_sha256": "aa934ba0c9f76cd25317da73f90237b22b47c089ebecd8a2fa066ffcf65f8597",
+          "leases": [
+            {
+              "ctime_ns": 1788783340111017320,
+              "device": 48,
+              "inode": 2630484471,
+              "link_count": 1,
+              "mode": 33188,
+              "mtime_ns": 1788783340111017320,
+              "relative_path": "output/.single_generation_job.lock",
+              "sha256": "46d8d3ba44c039661ab719af7a7dd482b76fd9b0c02e08a5bc25776cad6b242e",
+              "size_bytes": 506
+            },
+            {
+              "ctime_ns": 1788783340121017253,
+              "device": 48,
+              "inode": 2630512708,
+              "link_count": 1,
+              "mode": 33188,
+              "mtime_ns": 1788783340121017253,
+              "relative_path": "output/udlm/.single_training_job.lock",
+              "sha256": "46d8d3ba44c039661ab719af7a7dd482b76fd9b0c02e08a5bc25776cad6b242e",
+              "size_bytes": 506
+            }
+          ],
+          "leases_release_authorized": true,
+          "max_observed_aggregate_gpu_used_mib": {
+            "GPU-7ae42da2-3c8d-efa0-99ec-845b7f85399a": 23443,
+            "GPU-d7e40ce5-9260-a208-16a0-3372e3f204de": 19987
+          },
+          "memory_measurement": "Two-second nvidia-smi aggregate memory samples, including existing processes; not allocator peaks.",
+          "plan": {
+            "argv_sha256": "4d2798c17320a3aea23e2eef5a1b39fa50c8f874c604ebdba81f9dab960388d0",
+            "arm_id": "ct",
+            "attempt_id": "ct_4000_b128_w2",
+            "checkpoint_path": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+            "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+            "config": {
+              "callback": {
+                "_target_": "lightning.pytorch.callbacks.ModelCheckpoint",
+                "auto_insert_metric_name": false,
+                "dirpath": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/ct_4000_b128_w2/checkpoints",
+                "enable_version_counter": false,
+                "every_n_train_steps": 1000,
+                "filename": "{step}",
+                "save_top_k": -1
+              },
+              "data": "safe",
+              "loader": {
+                "batch_size": 16,
+                "global_batch_size": 128,
+                "num_workers": 1,
+                "pin_memory": true
+              },
+              "model": {
+                "attention_probs_dropout_prob": 0.1,
+                "classifier_dropout": null,
+                "hidden_act": "gelu",
+                "hidden_dropout_prob": 0.1,
+                "hidden_size": 768,
+                "initializer_range": 0.02,
+                "intermediate_size": 3072,
+                "layer_norm_eps": 1e-12,
+                "max_position_embeddings": 256,
+                "model_type": "bert",
+                "num_attention_heads": 12,
+                "num_hidden_layers": 12,
+                "pad_token_id": 3,
+                "position_embedding_type": "absolute",
+                "torch_dtype": "float32",
+                "type_vocab_size": 2,
+                "use_cache": true,
+                "vocab_size": 1880
+              },
+              "noise": {
+                "type": "loglinear"
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.999,
+                "eps": 1e-08,
+                "lr": 0.0003,
+                "scheduler": {
+                  "decay_floor_lr": 3e-06,
+                  "horizon_updates": 4000,
+                  "name": "half_cosine_with_linear_warmup_and_floor",
+                  "warmup_updates": 50
+                },
+                "weight_decay": 0
+              },
+              "seed": 17400,
+              "trainer": {
+                "_target_": "lightning.Trainer",
+                "accelerator": "cuda",
+                "accumulate_grad_batches": 4,
+                "detect_anomaly": false,
+                "devices": 2,
+                "gradient_clip_val": 1.0,
+                "log_every_n_steps": 10,
+                "max_steps": 4000,
+                "num_nodes": 1,
+                "precision": "bf16"
+              },
+              "training": {
+                "T": 0,
+                "antithetic_sampling": true,
+                "diffusion": "udlm",
+                "ema": 0.9999,
+                "global_mean_loss": true,
+                "init_from_mdlm_checkpoint": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+                "init_from_mdlm_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+                "init_from_mdlm_ema": true,
+                "pilot_fail_on_nonfinite_loss": false,
+                "reseed_after_model_initialization": false,
+                "sampling_eps": 0.001,
+                "udlm": {
+                  "conditioning_variant": "film_adaln",
+                  "empirical_uniform_mix": 0.0002,
+                  "exclude_special_tokens": false,
+                  "inference_eps": 1e-05,
+                  "mask_all_special_tokens": true,
+                  "noise_eps": 0.001,
+                  "parameterization": "raw_loo",
+                  "prior_variant": "empirical_frequency",
+                  "sampling_steps": 128,
+                  "time_embedding_size": 256,
+                  "zero_init_conditioning": false
+                },
+                "use_bracket_safe": false
+              },
+              "wandb": {
+                "name": null,
+                "project": "genmol"
+              }
+            },
+            "config_sha256": "93341b850aaf959d54df895a3e04e178b82f3d9c7460d263c02a724cb6f56925",
+            "config_source_sha256": "de2ca268cef361166e847161b672f98bd745ecf7f13355ab2889f04d974a7095",
+            "example_exposures": 512000,
+            "gpu_count": 2,
+            "kind": "manual_engineering_training",
+            "log_relative": "output/logs/followthrough_learning_r2/ct_4000_b128_w2.training.log",
+            "output_relative": "output/udlm/followthrough_learning_r2/ct_4000_b128_w2",
+            "protocol": {
+              "checkpoint": "outputs/paper_v1/checkpoints/50000.ckpt",
+              "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+              "deviations": [
+                "MDLM destination is newly permitted by the existing verified backbone-only EMA initialization helper.",
+                "Equal extra examples and updates are not equal FLOPs; UDLM has additional FiLM parameters.",
+                "No improvement or final benchmark claim follows from a completed training run.",
+                "Normal Lightning startup seeding and manual V8 runtime behavior are retained. Final tensor finiteness is audited; intermediate-update finiteness is not independently established."
+              ],
+              "evaluation_checkpoints": [
+                1000,
+                2000,
+                4000
+              ],
+              "example_exposures_per_arm": 512000,
+              "execution": "One UDLM objective selected after the completed resolution diagnostic, then one MDLM exposure control; fresh starts and independent optimizers.",
+              "global_batch_size": 128,
+              "gpu_policy": {
+                "active_compute_processes_allowed": true,
+                "max_gpus": 2,
+                "max_utilization_percent": 10,
+                "min_free_memory_mib": 30000
+              },
+              "infrastructure_amendment": {
+                "namespace": "output/udlm/followthrough_learning_r1",
+                "original_protocol_sha256": "ec9a3cb98e637dc10372a4249668fd860101e9c1cc0bde7c4fcc730a4950906a",
+                "original_source": "0062945",
+                "original_terminal_sha256": "71a4cf91229242e139701ec48e6286ffc9df27d771611aa4143491ae6c17140d",
+                "reason": "Final GPU utilization changed from8% to11%, so the original CT request stopped before creating any child. Keep that receipt. A new request waits/reselects on valid availability changes before launch; identity/query errors and any started training failure still stop.",
+                "scientific_changes": []
+              },
+              "memory_measurement": "Two-second nvidia-smi aggregate memory samples, including existing processes; not allocator peaks.",
+              "micro_batch_size": 16,
+              "optimizer_updates": 4000,
+              "schema_version": 1,
+              "seed": 17400,
+              "startup_amendment": {
+                "output_namespace": "output/udlm/followthrough_learning_r2",
+                "previous_protocol_sha256": "c8b6229683c53eb528e771b66f3e8a5687bb6bfa2fca670fbf60c5430ed62fe8",
+                "previous_terminal_sha256": "2d9d8f97d88e5ecf15dca71045f7948929e429f90c13ffab731c8ceaab6546ae",
+                "reason": "The manual launcher has no launch-bound pilot reseeding contract. The child failed at the reseeding guard before dataloader/trainer construction or any optimizer update. Restore V8 reseeding/nonfinite-flag defaults for both new arms. Preserve the failed child receipt and use a fresh namespace.",
+                "training_seed_retained": 17400
+              },
+              "study_id": "followthrough-learning-4000-b128-r2"
+            },
+            "protocol_sha256": "5facd4dd6bc53c92856e609cf85ba60b479db88f5ac9aacc80c0cbaaff661bf0",
+            "schema_version": 1,
+            "training_argv": [
+              "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+              "-u",
+              "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/scripts/train.py",
+              "--config-name",
+              "followthrough_learning_ct",
+              "trainer.devices=2",
+              "trainer.accumulate_grad_batches=4",
+              "training.init_from_mdlm_checkpoint=/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+              "training.init_from_mdlm_checkpoint_sha256=8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+              "callback.dirpath=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/ct_4000_b128_w2/checkpoints",
+              "hydra.run.dir=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/ct_4000_b128_w2/hydra"
+            ]
+          },
+          "process_group_exit_grace": {
+            "elapsed_seconds": 0.7511675800196826,
+            "finished_at": "2026-09-07T13:18:56.793324+00:00",
+            "grace_seconds": 15.0,
+            "group_present_at_end": false,
+            "initially_present": true,
+            "outcome": "exited_during_grace",
+            "poll_interval_seconds": 0.25,
+            "probe_count": 4,
+            "process_group_id": 565598,
+            "started_at": "2026-09-07T13:18:56.042110+00:00"
+          },
+          "request_sha256": "c29332574904a7b73e566027aaba031472eb3cf65fac8d3a2aa1f407efa8ca10",
+          "schema_version": 1,
+          "selected_gpu_uuids": [
+            "GPU-d7e40ce5-9260-a208-16a0-3372e3f204de",
+            "GPU-7ae42da2-3c8d-efa0-99ec-845b7f85399a"
+          ],
+          "source": {
+            "head": "f339b247f6a73c5a0bdc0e33db85ac9de10d8e71",
+            "upstream": "f339b247f6a73c5a0bdc0e33db85ac9de10d8e71"
+          },
+          "started_at": "2026-09-07T12:15:40.209368+00:00",
+          "status": "completed",
+          "telemetry_errors": [],
+          "training_pid": 565598,
+          "training_return_code": 0,
+          "training_subprocess_seconds": 3790.810725276009
+        },
+        "sha256": "b160fd6631159e138031a418e73b1dc5eb7a1a32f64a81f091e3fad96a4c57cd"
+      },
+      "mdlm": {
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/terminal_manifest.json",
+        "receipt": {
+          "artifact_hashes": {
+            "output/logs/followthrough_learning_r2/mdlm_4000_b128_w2.training.log": "c976ed169bf192ab0ec186bfc448598057558ac1eec1972e4d708400bda15d78",
+            "output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/checkpoints/1000.ckpt": "229bac52be37e958552da3dcb9d966d03d3246bbaa2d23e16fa696fe634eda65",
+            "output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/checkpoints/2000.ckpt": "33b7fc2121d40e9812ade9dc6fb2c6e3012d9dcd1d8fc2ebc8310e154acfe9e3",
+            "output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/checkpoints/3000.ckpt": "b5683fa629e6df91c213e431271e9043bb8d07c6aac18926ae2b86f95ebb3a90",
+            "output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/checkpoints/4000.ckpt": "7bf5ccc18bd5e14a730dd370bf28cc7fcbb6557e27be2973b42f9b2b1af726aa",
+            "output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/gpu_telemetry.jsonl": "79c988f8889276d79cfbe42a7b4826656f7f9d006e9e07fc99634ccfb29afcb1"
+          },
+          "checkpoint": {
+            "ctime_ns": 1788789604076396148,
+            "device": 48,
+            "finite_tensor_count": 1012,
+            "global_step": 4000,
+            "inode": 2630693856,
+            "link_count": 1,
+            "mode": 33152,
+            "mtime_ns": 1788789598760229378,
+            "relative_path": "output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/checkpoints/4000.ckpt",
+            "sha256": "7bf5ccc18bd5e14a730dd370bf28cc7fcbb6557e27be2973b42f9b2b1af726aa",
+            "size_bytes": 1397003991
+          },
+          "completed_example_exposures": 512000,
+          "controller_seconds": 2433.487638385035,
+          "end_to_end_training_examples_per_second": 214.5122531477485,
+          "finished_at": "2026-09-07T14:00:33.866889+00:00",
+          "kind": "manual_engineering_training_terminal",
+          "launch_sha256": "d36f19c3d35504fd8aa171341ffcaf3daad224ccb8b1a081e5af2d97f6887969",
+          "leases": [
+            {
+              "ctime_ns": 1788787200384329732,
+              "device": 48,
+              "inode": 2630654122,
+              "link_count": 1,
+              "mode": 33188,
+              "mtime_ns": 1788787200384329732,
+              "relative_path": "output/.single_generation_job.lock",
+              "sha256": "16484421d457660959bd212ab96d2cf7a3df9a578089bd8eee5335a136fa63cb",
+              "size_bytes": 508
+            },
+            {
+              "ctime_ns": 1788787200394329660,
+              "device": 48,
+              "inode": 2630650852,
+              "link_count": 1,
+              "mode": 33188,
+              "mtime_ns": 1788787200394329660,
+              "relative_path": "output/udlm/.single_training_job.lock",
+              "sha256": "16484421d457660959bd212ab96d2cf7a3df9a578089bd8eee5335a136fa63cb",
+              "size_bytes": 508
+            }
+          ],
+          "leases_release_authorized": true,
+          "max_observed_aggregate_gpu_used_mib": {
+            "GPU-2cd1aa5b-616e-e6d3-b54d-49241cc8f959": 11219,
+            "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece": 9575
+          },
+          "memory_measurement": "Two-second nvidia-smi aggregate memory samples, including existing processes; not allocator peaks.",
+          "plan": {
+            "argv_sha256": "36dfb5225b9ff197c32c90bc42728b210061fab3a43e10b953e90c9a5a4e3b0e",
+            "arm_id": "mdlm",
+            "attempt_id": "mdlm_4000_b128_w2",
+            "checkpoint_path": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+            "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+            "config": {
+              "callback": {
+                "_target_": "lightning.pytorch.callbacks.ModelCheckpoint",
+                "auto_insert_metric_name": false,
+                "dirpath": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/checkpoints",
+                "enable_version_counter": false,
+                "every_n_train_steps": 1000,
+                "filename": "{step}",
+                "save_top_k": -1
+              },
+              "data": "safe",
+              "loader": {
+                "batch_size": 16,
+                "global_batch_size": 128,
+                "num_workers": 1,
+                "pin_memory": true
+              },
+              "model": {
+                "attention_probs_dropout_prob": 0.1,
+                "classifier_dropout": null,
+                "hidden_act": "gelu",
+                "hidden_dropout_prob": 0.1,
+                "hidden_size": 768,
+                "initializer_range": 0.02,
+                "intermediate_size": 3072,
+                "layer_norm_eps": 1e-12,
+                "max_position_embeddings": 256,
+                "model_type": "bert",
+                "num_attention_heads": 12,
+                "num_hidden_layers": 12,
+                "pad_token_id": 3,
+                "position_embedding_type": "absolute",
+                "torch_dtype": "float32",
+                "type_vocab_size": 2,
+                "use_cache": true,
+                "vocab_size": 1880
+              },
+              "noise": {
+                "type": "loglinear"
+              },
+              "optim": {
+                "beta1": 0.9,
+                "beta2": 0.999,
+                "eps": 1e-08,
+                "lr": 0.0003,
+                "scheduler": {
+                  "decay_floor_lr": 3e-06,
+                  "horizon_updates": 4000,
+                  "name": "half_cosine_with_linear_warmup_and_floor",
+                  "warmup_updates": 50
+                },
+                "weight_decay": 0
+              },
+              "seed": 17400,
+              "trainer": {
+                "_target_": "lightning.Trainer",
+                "accelerator": "cuda",
+                "accumulate_grad_batches": 4,
+                "detect_anomaly": false,
+                "devices": 2,
+                "gradient_clip_val": 1.0,
+                "log_every_n_steps": 10,
+                "max_steps": 4000,
+                "num_nodes": 1,
+                "precision": "bf16"
+              },
+              "training": {
+                "T": 0,
+                "antithetic_sampling": true,
+                "diffusion": "mdlm",
+                "ema": 0.9999,
+                "global_mean_loss": true,
+                "init_from_mdlm_checkpoint": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+                "init_from_mdlm_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+                "init_from_mdlm_ema": true,
+                "pilot_fail_on_nonfinite_loss": false,
+                "reseed_after_model_initialization": false,
+                "sampling_eps": 0.001,
+                "udlm": {
+                  "conditioning_variant": "film_adaln",
+                  "empirical_uniform_mix": 0.0002,
+                  "exclude_special_tokens": false,
+                  "inference_eps": 1e-05,
+                  "mask_all_special_tokens": true,
+                  "noise_eps": 0.001,
+                  "parameterization": "raw_loo",
+                  "prior_variant": "empirical_frequency",
+                  "sampling_steps": 128,
+                  "time_embedding_size": 256,
+                  "zero_init_conditioning": false
+                },
+                "use_bracket_safe": false
+              },
+              "wandb": {
+                "name": null,
+                "project": "genmol"
+              }
+            },
+            "config_sha256": "1dfadeaf9af0ec471951bd99a86d5bfa690f5dedee8b5e691272bba6218e0b2d",
+            "config_source_sha256": "5d99e191cef0d9c765f43400fc2fb621cd8bdaecde9fba4d2af53f45807041d4",
+            "example_exposures": 512000,
+            "gpu_count": 2,
+            "kind": "manual_engineering_training",
+            "log_relative": "output/logs/followthrough_learning_r2/mdlm_4000_b128_w2.training.log",
+            "output_relative": "output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2",
+            "protocol": {
+              "checkpoint": "outputs/paper_v1/checkpoints/50000.ckpt",
+              "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+              "deviations": [
+                "MDLM destination is newly permitted by the existing verified backbone-only EMA initialization helper.",
+                "Equal extra examples and updates are not equal FLOPs; UDLM has additional FiLM parameters.",
+                "No improvement or final benchmark claim follows from a completed training run.",
+                "Normal Lightning startup seeding and manual V8 runtime behavior are retained. Final tensor finiteness is audited; intermediate-update finiteness is not independently established."
+              ],
+              "evaluation_checkpoints": [
+                1000,
+                2000,
+                4000
+              ],
+              "example_exposures_per_arm": 512000,
+              "execution": "One UDLM objective selected after the completed resolution diagnostic, then one MDLM exposure control; fresh starts and independent optimizers.",
+              "global_batch_size": 128,
+              "gpu_policy": {
+                "active_compute_processes_allowed": true,
+                "max_gpus": 2,
+                "max_utilization_percent": 10,
+                "min_free_memory_mib": 30000
+              },
+              "infrastructure_amendment": {
+                "namespace": "output/udlm/followthrough_learning_r1",
+                "original_protocol_sha256": "ec9a3cb98e637dc10372a4249668fd860101e9c1cc0bde7c4fcc730a4950906a",
+                "original_source": "0062945",
+                "original_terminal_sha256": "71a4cf91229242e139701ec48e6286ffc9df27d771611aa4143491ae6c17140d",
+                "reason": "Final GPU utilization changed from8% to11%, so the original CT request stopped before creating any child. Keep that receipt. A new request waits/reselects on valid availability changes before launch; identity/query errors and any started training failure still stop.",
+                "scientific_changes": []
+              },
+              "memory_measurement": "Two-second nvidia-smi aggregate memory samples, including existing processes; not allocator peaks.",
+              "micro_batch_size": 16,
+              "optimizer_updates": 4000,
+              "schema_version": 1,
+              "seed": 17400,
+              "startup_amendment": {
+                "output_namespace": "output/udlm/followthrough_learning_r2",
+                "previous_protocol_sha256": "c8b6229683c53eb528e771b66f3e8a5687bb6bfa2fca670fbf60c5430ed62fe8",
+                "previous_terminal_sha256": "2d9d8f97d88e5ecf15dca71045f7948929e429f90c13ffab731c8ceaab6546ae",
+                "reason": "The manual launcher has no launch-bound pilot reseeding contract. The child failed at the reseeding guard before dataloader/trainer construction or any optimizer update. Restore V8 reseeding/nonfinite-flag defaults for both new arms. Preserve the failed child receipt and use a fresh namespace.",
+                "training_seed_retained": 17400
+              },
+              "study_id": "followthrough-learning-4000-b128-r2"
+            },
+            "protocol_sha256": "5facd4dd6bc53c92856e609cf85ba60b479db88f5ac9aacc80c0cbaaff661bf0",
+            "schema_version": 1,
+            "training_argv": [
+              "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+              "-u",
+              "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/scripts/train.py",
+              "--config-name",
+              "followthrough_learning_mdlm",
+              "trainer.devices=2",
+              "trainer.accumulate_grad_batches=4",
+              "training.init_from_mdlm_checkpoint=/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+              "training.init_from_mdlm_checkpoint_sha256=8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+              "callback.dirpath=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/checkpoints",
+              "hydra.run.dir=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_followthrough_learning/output/udlm/followthrough_learning_r2/mdlm_4000_b128_w2/hydra"
+            ]
+          },
+          "process_group_exit_grace": {
+            "elapsed_seconds": 0.7516582160023972,
+            "finished_at": "2026-09-07T14:00:08.805116+00:00",
+            "grace_seconds": 15.0,
+            "group_present_at_end": false,
+            "initially_present": true,
+            "outcome": "exited_during_grace",
+            "poll_interval_seconds": 0.25,
+            "probe_count": 4,
+            "process_group_id": 669870,
+            "started_at": "2026-09-07T14:00:08.053416+00:00"
+          },
+          "request_sha256": "fe4b9cadb7072fe4a0091d0bdd82418be9d382f11a235f95f7a9c74688361cab",
+          "schema_version": 1,
+          "selected_gpu_uuids": [
+            "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece",
+            "GPU-2cd1aa5b-616e-e6d3-b54d-49241cc8f959"
+          ],
+          "source": {
+            "head": "f339b247f6a73c5a0bdc0e33db85ac9de10d8e71",
+            "upstream": "f339b247f6a73c5a0bdc0e33db85ac9de10d8e71"
+          },
+          "started_at": "2026-09-07T13:20:00.379297+00:00",
+          "status": "completed",
+          "telemetry_errors": [],
+          "training_pid": 669870,
+          "training_return_code": 0,
+          "training_subprocess_seconds": 2386.8100422559655
+        },
+        "sha256": "f13cf7c4983af984fafe67d2c1bd38c901eecf5b728569ce4dbc9425c441dfcf"
+      }
+    },
+    "seed": 17400
+  }
+}
