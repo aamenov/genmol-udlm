@@ -1,0 +1,1623 @@
+{
+  "baseline_requests": 3000,
+  "ce_status": "implemented_untrained",
+  "configuration_count": 18,
+  "configurations": [
+    {
+      "arm_id": "E",
+      "attempt_id": "v5-e-t050-p100",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "e_t050_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.892145737755472,
+            "sample_sd": 0.005508692983862273
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.453125,
+            "sample_sd": 0.06629126073623882
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.9765625,
+            "sample_sd": 0.011048543456039806
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8784674397560253,
+            "sample_sd": 0.0021270597792448953
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.2265625,
+            "sample_sd": 0.05524271728019903
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.4765625,
+            "sample_sd": 0.011048543456039806
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 0.5
+    },
+    {
+      "arm_id": "E",
+      "attempt_id": "v5-e-t070-p100",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "e_t070_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8993512838650037,
+            "sample_sd": 0.0028093307560282
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.453125,
+            "sample_sd": 0.11048543456039805
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9920634920634921,
+            "sample_sd": 0.01122391716169127
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.984375,
+            "sample_sd": 0.0
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8717806228941776,
+            "sample_sd": 0.015267632871773818
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.2109375,
+            "sample_sd": 0.09943689110435824
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.40625,
+            "sample_sd": 0.11048543456039805
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 0.7
+    },
+    {
+      "arm_id": "E",
+      "attempt_id": "v5-e-t085-p100",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "e_t085_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.9037523722061618,
+            "sample_sd": 0.005417307600586574
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.3984375,
+            "sample_sd": 0.03314563036811941
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9668032786885246,
+            "sample_sd": 0.02376342461364629
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.9453125,
+            "sample_sd": 0.011048543456039806
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8833320231651525,
+            "sample_sd": 0.010081615027221099
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.1328125,
+            "sample_sd": 0.03314563036811941
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.3203125,
+            "sample_sd": 0.03314563036811941
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 0.85
+    },
+    {
+      "arm_id": "E",
+      "attempt_id": "v5-e-t100-p100",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "e_t100_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.9200869700065286,
+            "sample_sd": 0.011520447763677269
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.359375,
+            "sample_sd": 0.06629126073623882
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9913793103448276,
+            "sample_sd": 0.012191496227354291
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.9375,
+            "sample_sd": 0.04419417382415922
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8838851717914283,
+            "sample_sd": 0.0066477220109931005
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.09375,
+            "sample_sd": 0.04419417382415922
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.1796875,
+            "sample_sd": 0.03314563036811941
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 1.0
+    },
+    {
+      "arm_id": "S",
+      "attempt_id": "v5-s-t050-p100",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "s_t050_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.896685911226746,
+            "sample_sd": 0.00429821896176722
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.4140625,
+            "sample_sd": 0.14363106492851746
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9919354838709677,
+            "sample_sd": 0.011404948083653983
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.9765625,
+            "sample_sd": 0.011048543456039806
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8780630912849505,
+            "sample_sd": 0.0035975062360352962
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.234375,
+            "sample_sd": 0.08838834764831845
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.6015625,
+            "sample_sd": 0.011048543456039806
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 0.5
+    },
+    {
+      "arm_id": "S",
+      "attempt_id": "v5-s-t070-p100",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "s_t070_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8982502277920321,
+            "sample_sd": 0.006396237359391458
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.421875,
+            "sample_sd": 0.1988737822087165
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.9765625,
+            "sample_sd": 0.011048543456039806
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8641193761081354,
+            "sample_sd": 0.004221310222344754
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.2109375,
+            "sample_sd": 0.011048543456039806
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.4296875,
+            "sample_sd": 0.011048543456039806
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 0.7
+    },
+    {
+      "arm_id": "S",
+      "attempt_id": "v5-s-t085-p100",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "s_t085_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.9044678668809303,
+            "sample_sd": 0.0043761557678982255
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.5078125,
+            "sample_sd": 0.05524271728019903
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.9609375,
+            "sample_sd": 0.011048543456039806
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8712624272994314,
+            "sample_sd": 0.003614746137389866
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.2421875,
+            "sample_sd": 0.03314563036811941
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.3984375,
+            "sample_sd": 0.05524271728019903
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 0.85
+    },
+    {
+      "arm_id": "S",
+      "attempt_id": "v5-s-t100-p100",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "s_t100_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.9242190971827071,
+            "sample_sd": 0.005256226408390791
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.3203125,
+            "sample_sd": 0.011048543456039806
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9841269841269842,
+            "sample_sd": 0.02244783432338246
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.9296875,
+            "sample_sd": 0.07733980419227864
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8859499534687945,
+            "sample_sd": 0.0015130352229571278
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.1171875,
+            "sample_sd": 0.011048543456039806
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.25,
+            "sample_sd": 0.0
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 1.0
+    },
+    {
+      "arm_id": "R",
+      "attempt_id": "v5-r-t050-p100",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "r_t050_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8808509394641746,
+            "sample_sd": 0.0009642266970439074
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.484375,
+            "sample_sd": 0.04419417382415922
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.9921875,
+            "sample_sd": 0.011048543456039806
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.868616926746705,
+            "sample_sd": 0.0007182216602339851
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.296875,
+            "sample_sd": 0.04419417382415922
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.6328125,
+            "sample_sd": 0.05524271728019903
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 0.5
+    },
+    {
+      "arm_id": "R",
+      "attempt_id": "v5-r-t070-p100",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "r_t070_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8941843302287331,
+            "sample_sd": 0.0018594844340658904
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.4453125,
+            "sample_sd": 0.011048543456039806
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.9765625,
+            "sample_sd": 0.03314563036811941
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8748622619145763,
+            "sample_sd": 0.0015510502075268765
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.1953125,
+            "sample_sd": 0.05524271728019903
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.4609375,
+            "sample_sd": 0.011048543456039806
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 0.7
+    },
+    {
+      "arm_id": "R",
+      "attempt_id": "v5-r-t085-p100",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "r_t085_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.9113942453499935,
+            "sample_sd": 0.002028863035777044
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.359375,
+            "sample_sd": 0.06629126073623882
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9920634920634921,
+            "sample_sd": 0.01122391716169127
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.96875,
+            "sample_sd": 0.02209708691207961
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8771887328184046,
+            "sample_sd": 0.01026624947728455
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.2109375,
+            "sample_sd": 0.05524271728019903
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.3984375,
+            "sample_sd": 0.03314563036811941
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 0.85
+    },
+    {
+      "arm_id": "R",
+      "attempt_id": "v5-r-t100-p100",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1200,
+        1201
+      ],
+      "config_id": "r_t100_p100",
+      "expected_seeds": [
+        1200,
+        1201
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.9109993996676083,
+            "sample_sd": 0.005079776081854843
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.3046875,
+            "sample_sd": 0.011048543456039806
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9916666666666667,
+            "sample_sd": 0.011785113019775828
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.9375,
+            "sample_sd": 0.0
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8810548521823776,
+            "sample_sd": 0.0029934141769675446
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.140625,
+            "sample_sd": 0.02209708691207961
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.375,
+            "sample_sd": 0.06629126073623882
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1200,
+        1201
+      ],
+      "study": "V5",
+      "temperature": 1.0
+    },
+    {
+      "arm_id": "E",
+      "attempt_id": "v6-e-t050-predictor",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1300,
+        1301
+      ],
+      "config_id": "e_t050_predictor",
+      "expected_seeds": [
+        1300,
+        1301
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8958885040809719,
+            "sample_sd": 0.010196726745709128
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.46875,
+            "sample_sd": 0.08838834764831845
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9919354838709677,
+            "sample_sd": 0.011404948083653983
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.96875,
+            "sample_sd": 0.0
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8874305814012682,
+            "sample_sd": 0.005565294849627014
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.3125,
+            "sample_sd": 0.02209708691207961
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.5390625,
+            "sample_sd": 0.05524271728019903
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1300,
+        1301
+      ],
+      "study": "V6",
+      "temperature": 0.5
+    },
+    {
+      "arm_id": "E",
+      "attempt_id": "v6-e-t050-gibbs",
+      "candidate_id": "e-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1300,
+        1301
+      ],
+      "config_id": "e_t050_gibbs",
+      "expected_seeds": [
+        1300,
+        1301
+      ],
+      "gibbs_corrector": true,
+      "kernel": "64P+64G",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.88856683468826,
+            "sample_sd": 0.0033007004642875946
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.515625,
+            "sample_sd": 0.06629126073623882
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9841229838709677,
+            "sample_sd": 0.00035640462761417715
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.984375,
+            "sample_sd": 0.02209708691207961
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8744490314753801,
+            "sample_sd": 0.0028564931847266124
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.296875,
+            "sample_sd": 0.0
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.5546875,
+            "sample_sd": 0.09943689110435824
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1300,
+        1301
+      ],
+      "study": "V6",
+      "temperature": 0.5
+    },
+    {
+      "arm_id": "S",
+      "attempt_id": "v6-s-t050-predictor",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1300,
+        1301
+      ],
+      "config_id": "s_t050_predictor",
+      "expected_seeds": [
+        1300,
+        1301
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8821878772715943,
+            "sample_sd": 0.006372177890709878
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.546875,
+            "sample_sd": 0.04419417382415922
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9919354838709677,
+            "sample_sd": 0.011404948083653983
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.984375,
+            "sample_sd": 0.02209708691207961
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8658624299640236,
+            "sample_sd": 0.006724280926171933
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.3359375,
+            "sample_sd": 0.011048543456039806
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.6171875,
+            "sample_sd": 0.011048543456039806
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1300,
+        1301
+      ],
+      "study": "V6",
+      "temperature": 0.5
+    },
+    {
+      "arm_id": "S",
+      "attempt_id": "v6-s-t050-gibbs",
+      "candidate_id": "s-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1300,
+        1301
+      ],
+      "config_id": "s_t050_gibbs",
+      "expected_seeds": [
+        1300,
+        1301
+      ],
+      "gibbs_corrector": true,
+      "kernel": "64P+64G",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8921012828088704,
+            "sample_sd": 0.005226762407594722
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.5703125,
+            "sample_sd": 0.011048543456039806
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9760584677419355,
+            "sample_sd": 0.01176135271126816
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.984375,
+            "sample_sd": 0.02209708691207961
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8775744750209045,
+            "sample_sd": 0.004458221940727566
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.3671875,
+            "sample_sd": 0.011048543456039806
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.5546875,
+            "sample_sd": 0.07733980419227864
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1300,
+        1301
+      ],
+      "study": "V6",
+      "temperature": 0.5
+    },
+    {
+      "arm_id": "R",
+      "attempt_id": "v6-r-t050-predictor",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1300,
+        1301
+      ],
+      "config_id": "r_t050_predictor",
+      "expected_seeds": [
+        1300,
+        1301
+      ],
+      "gibbs_corrector": false,
+      "kernel": "128P",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8849554637492169,
+            "sample_sd": 0.0070345676960039925
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.5390625,
+            "sample_sd": 0.05524271728019903
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.984375,
+            "sample_sd": 0.02209708691207961
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8743386356084691,
+            "sample_sd": 0.0009493238084727649
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.3671875,
+            "sample_sd": 0.03314563036811941
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.65625,
+            "sample_sd": 0.08838834764831845
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1300,
+        1301
+      ],
+      "study": "V6",
+      "temperature": 0.5
+    },
+    {
+      "arm_id": "R",
+      "attempt_id": "v6-r-t050-gibbs",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "complete": true,
+      "completed_seeds": [
+        1300,
+        1301
+      ],
+      "config_id": "r_t050_gibbs",
+      "expected_seeds": [
+        1300,
+        1301
+      ],
+      "gibbs_corrector": true,
+      "kernel": "64P+64G",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8932409441045168,
+            "sample_sd": 0.012353911166239028
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.4765625,
+            "sample_sd": 0.03314563036811941
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.9765625,
+            "sample_sd": 0.011048543456039806
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8768671656983684,
+            "sample_sd": 0.00797161726062995
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.3203125,
+            "sample_sd": 0.05524271728019903
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.6171875,
+            "sample_sd": 0.07733980419227864
+          }
+        }
+      },
+      "samples": 128,
+      "seeds": [
+        1300,
+        1301
+      ],
+      "study": "V6",
+      "temperature": 0.5
+    }
+  ],
+  "formal_promotions": [],
+  "independently_rescored_requests": 2304,
+  "paired_gibbs_deltas": [
+    {
+      "arm_id": "R",
+      "branch": "released_comparable",
+      "metrics": {
+        "diversity": {
+          "mean": 0.008285480355300023,
+          "paired_seed_count": 2,
+          "sample_sd": 0.01938847886224302,
+          "values_by_seed": {
+            "1300": -0.005424244525084054,
+            "1301": 0.0219952052356841
+          }
+        },
+        "quality": {
+          "mean": -0.0625,
+          "paired_seed_count": 2,
+          "sample_sd": 0.02209708691207961,
+          "values_by_seed": {
+            "1300": -0.078125,
+            "1301": -0.046875
+          }
+        },
+        "uniqueness": {
+          "mean": 0.015625,
+          "paired_seed_count": 2,
+          "sample_sd": 0.02209708691207961,
+          "values_by_seed": {
+            "1300": 0.03125,
+            "1301": 0.0
+          }
+        },
+        "validity": {
+          "mean": -0.0234375,
+          "paired_seed_count": 2,
+          "sample_sd": 0.011048543456039806,
+          "values_by_seed": {
+            "1300": -0.015625,
+            "1301": -0.03125
+          }
+        }
+      }
+    },
+    {
+      "arm_id": "R",
+      "branch": "strict",
+      "metrics": {
+        "diversity": {
+          "mean": 0.002528530089899228,
+          "paired_seed_count": 2,
+          "sample_sd": 0.008920941069102715,
+          "values_by_seed": {
+            "1300": -0.0037795278346288708,
+            "1301": 0.008836588014427327
+          }
+        },
+        "quality": {
+          "mean": -0.046875,
+          "paired_seed_count": 2,
+          "sample_sd": 0.02209708691207961,
+          "values_by_seed": {
+            "1300": -0.03125,
+            "1301": -0.0625
+          }
+        },
+        "uniqueness": {
+          "mean": 0.0,
+          "paired_seed_count": 2,
+          "sample_sd": 0.0,
+          "values_by_seed": {
+            "1300": 0.0,
+            "1301": 0.0
+          }
+        },
+        "validity": {
+          "mean": -0.0390625,
+          "paired_seed_count": 2,
+          "sample_sd": 0.16572815184059708,
+          "values_by_seed": {
+            "1300": 0.078125,
+            "1301": -0.15625
+          }
+        }
+      }
+    },
+    {
+      "arm_id": "S",
+      "branch": "released_comparable",
+      "metrics": {
+        "diversity": {
+          "mean": 0.009913405537276099,
+          "paired_seed_count": 2,
+          "sample_sd": 0.001145415483115156,
+          "values_by_seed": {
+            "1300": 0.010723336592662891,
+            "1301": 0.009103474481889307
+          }
+        },
+        "quality": {
+          "mean": 0.0234375,
+          "paired_seed_count": 2,
+          "sample_sd": 0.03314563036811941,
+          "values_by_seed": {
+            "1300": 0.046875,
+            "1301": 0.0
+          }
+        },
+        "uniqueness": {
+          "mean": -0.01587701612903225,
+          "paired_seed_count": 2,
+          "sample_sd": 0.02316630079492214,
+          "values_by_seed": {
+            "1300": 0.0005040322580645018,
+            "1301": -0.032258064516129004
+          }
+        },
+        "validity": {
+          "mean": 0.0,
+          "paired_seed_count": 2,
+          "sample_sd": 0.04419417382415922,
+          "values_by_seed": {
+            "1300": 0.03125,
+            "1301": -0.03125
+          }
+        }
+      }
+    },
+    {
+      "arm_id": "S",
+      "branch": "strict",
+      "metrics": {
+        "diversity": {
+          "mean": 0.011712045056880893,
+          "paired_seed_count": 2,
+          "sample_sd": 0.011182502866899499,
+          "values_by_seed": {
+            "1300": 0.019619268664703537,
+            "1301": 0.003804821449058249
+          }
+        },
+        "quality": {
+          "mean": 0.03125,
+          "paired_seed_count": 2,
+          "sample_sd": 0.0,
+          "values_by_seed": {
+            "1300": 0.03125,
+            "1301": 0.03125
+          }
+        },
+        "uniqueness": {
+          "mean": 0.0,
+          "paired_seed_count": 2,
+          "sample_sd": 0.0,
+          "values_by_seed": {
+            "1300": 0.0,
+            "1301": 0.0
+          }
+        },
+        "validity": {
+          "mean": -0.0625,
+          "paired_seed_count": 2,
+          "sample_sd": 0.06629126073623882,
+          "values_by_seed": {
+            "1300": -0.015625,
+            "1301": -0.109375
+          }
+        }
+      }
+    },
+    {
+      "arm_id": "E",
+      "branch": "released_comparable",
+      "metrics": {
+        "diversity": {
+          "mean": -0.007321669392711783,
+          "paired_seed_count": 2,
+          "sample_sd": 0.006896026281421533,
+          "values_by_seed": {
+            "1300": -0.0024454424458779656,
+            "1301": -0.0121978963395456
+          }
+        },
+        "quality": {
+          "mean": 0.046875,
+          "paired_seed_count": 2,
+          "sample_sd": 0.02209708691207961,
+          "values_by_seed": {
+            "1300": 0.03125,
+            "1301": 0.0625
+          }
+        },
+        "uniqueness": {
+          "mean": -0.0078125,
+          "paired_seed_count": 2,
+          "sample_sd": 0.01176135271126816,
+          "values_by_seed": {
+            "1300": -0.016129032258064502,
+            "1301": 0.0005040322580645018
+          }
+        },
+        "validity": {
+          "mean": 0.015625,
+          "paired_seed_count": 2,
+          "sample_sd": 0.02209708691207961,
+          "values_by_seed": {
+            "1300": 0.0,
+            "1301": 0.03125
+          }
+        }
+      }
+    },
+    {
+      "arm_id": "E",
+      "branch": "strict",
+      "metrics": {
+        "diversity": {
+          "mean": -0.012981549925888125,
+          "paired_seed_count": 2,
+          "sample_sd": 0.0027088016649004015,
+          "values_by_seed": {
+            "1300": -0.011066137899747641,
+            "1301": -0.014896961952028609
+          }
+        },
+        "quality": {
+          "mean": -0.015625,
+          "paired_seed_count": 2,
+          "sample_sd": 0.02209708691207961,
+          "values_by_seed": {
+            "1300": -0.03125,
+            "1301": 0.0
+          }
+        },
+        "uniqueness": {
+          "mean": 0.0,
+          "paired_seed_count": 2,
+          "sample_sd": 0.0,
+          "values_by_seed": {
+            "1300": 0.0,
+            "1301": 0.0
+          }
+        },
+        "validity": {
+          "mean": 0.015625,
+          "paired_seed_count": 2,
+          "sample_sd": 0.15467960838455727,
+          "values_by_seed": {
+            "1300": -0.09375,
+            "1301": 0.125
+          }
+        }
+      }
+    }
+  ],
+  "pdf_sections": [
+    {
+      "first_page": 1,
+      "input_pdf_sha256": "639f98d99791d7663f952bff57b2de65612a69c9073704d9e5c1baa293e8dc76",
+      "last_page": 3,
+      "page_count": 3,
+      "title": "Study overview"
+    },
+    {
+      "first_page": 4,
+      "input_pdf_sha256": "eb718e316a237b70cdeba239ee18142f3cdee972e9bd7a285300ffc58ebaeeb4",
+      "last_page": 13,
+      "page_count": 10,
+      "title": "V5 full independent report"
+    },
+    {
+      "first_page": 14,
+      "input_pdf_sha256": "c9105da785e30ab3fb50c39f5b101c6e4f5c3c76d4482f86fec3d61c8a2819ca",
+      "last_page": 22,
+      "page_count": 9,
+      "title": "V6 full independent report"
+    },
+    {
+      "first_page": 23,
+      "input_pdf_sha256": "c3acd529f909da4e223904608c1e33aaedaa1a3bd4c5766378963c757911818e",
+      "last_page": 27,
+      "page_count": 5,
+      "title": "Local MDLM baseline report"
+    }
+  ],
+  "reserved_udlm_final_seeds": [
+    0,
+    1,
+    2
+  ],
+  "samples_per_engineering_configuration": 128,
+  "scheduled_runs": 36,
+  "schema_version": 1,
+  "snapshot_utc": "2026-09-07T10:09:32.675735+00:00",
+  "status": "complete",
+  "superiority_established": false,
+  "training": {
+    "E": {
+      "accounting": {
+        "accumulate_grad_batches": 8,
+        "effective_global_examples_per_optimizer_step": 16,
+        "hosted_stream_rank_partition_policy": "huggingface_split_dataset_by_node_disjoint_rank_streams",
+        "micro_batch_size_per_rank": 2,
+        "optimizer_updates": 1000,
+        "total_requested_example_exposures": 16000,
+        "trainable_parameter_counts": {
+          "base_backbone": 87291992,
+          "film_modulation": 14174208,
+          "time_conditioner": 787968,
+          "total": 102254168
+        },
+        "training_seed": 17,
+        "world_size": 1
+      },
+      "checkpoint": "dce870e8d63453f73c428b9115f33556f67a21d45788d3112c2777ea82623005"
+    },
+    "R": {
+      "accounting": {
+        "accumulate_grad_batches": 8,
+        "effective_global_examples_per_optimizer_step": 16,
+        "hosted_stream_rank_partition_policy": "huggingface_split_dataset_by_node_disjoint_rank_streams",
+        "micro_batch_size_per_rank": 2,
+        "optimizer_updates": 1000,
+        "total_requested_example_exposures": 16000,
+        "trainable_parameter_counts": {
+          "base_backbone": 87291992,
+          "film_modulation": 14174208,
+          "time_conditioner": 787968,
+          "total": 102254168
+        },
+        "training_seed": 17,
+        "world_size": 1
+      },
+      "checkpoint": "d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c"
+    },
+    "S": {
+      "accounting": {
+        "accumulate_grad_batches": 8,
+        "effective_global_examples_per_optimizer_step": 16,
+        "hosted_stream_rank_partition_policy": "huggingface_split_dataset_by_node_disjoint_rank_streams",
+        "micro_batch_size_per_rank": 2,
+        "optimizer_updates": 1000,
+        "total_requested_example_exposures": 16000,
+        "trainable_parameter_counts": {
+          "base_backbone": 87291992,
+          "film_modulation": 14174208,
+          "time_conditioner": 787968,
+          "total": 102254168
+        },
+        "training_seed": 17,
+        "world_size": 1
+      },
+      "checkpoint": "100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72"
+    }
+  }
+}

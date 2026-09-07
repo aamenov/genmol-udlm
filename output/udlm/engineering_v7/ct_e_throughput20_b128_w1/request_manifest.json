@@ -1,0 +1,159 @@
+{
+  "created_at": "2026-09-07T10:13:29.348936+00:00",
+  "plan": {
+    "argv_sha256": "8d23ee43f3330ae52d4ad060c1385162b0292586cd20493517f3e56494ce2764",
+    "attempt_id": "ct_e_throughput20_b128_w1",
+    "checkpoint_path": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+    "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+    "config": {
+      "callback": {
+        "_target_": "lightning.pytorch.callbacks.ModelCheckpoint",
+        "auto_insert_metric_name": false,
+        "dirpath": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v7/ct_e_throughput20_b128_w1/checkpoints",
+        "enable_version_counter": false,
+        "every_n_train_steps": 20,
+        "filename": "{step}",
+        "save_top_k": -1
+      },
+      "data": "safe",
+      "loader": {
+        "batch_size": 16,
+        "global_batch_size": 128,
+        "num_workers": 1,
+        "pin_memory": true
+      },
+      "model": {
+        "attention_probs_dropout_prob": 0.1,
+        "classifier_dropout": null,
+        "hidden_act": "gelu",
+        "hidden_dropout_prob": 0.1,
+        "hidden_size": 768,
+        "initializer_range": 0.02,
+        "intermediate_size": 3072,
+        "layer_norm_eps": 1e-12,
+        "max_position_embeddings": 256,
+        "model_type": "bert",
+        "num_attention_heads": 12,
+        "num_hidden_layers": 12,
+        "pad_token_id": 3,
+        "position_embedding_type": "absolute",
+        "torch_dtype": "float32",
+        "type_vocab_size": 2,
+        "use_cache": true,
+        "vocab_size": 1880
+      },
+      "noise": {
+        "type": "loglinear"
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "eps": 1e-08,
+        "lr": 0.0003,
+        "scheduler": {
+          "decay_floor_lr": 3e-06,
+          "horizon_updates": 1000,
+          "name": "half_cosine_with_linear_warmup_and_floor",
+          "warmup_updates": 50
+        },
+        "weight_decay": 0
+      },
+      "seed": 1400,
+      "trainer": {
+        "_target_": "lightning.Trainer",
+        "accelerator": "cuda",
+        "accumulate_grad_batches": 8,
+        "detect_anomaly": false,
+        "devices": 1,
+        "gradient_clip_val": 1.0,
+        "log_every_n_steps": 1,
+        "max_steps": 20,
+        "num_nodes": 1,
+        "precision": "bf16"
+      },
+      "training": {
+        "T": 0,
+        "antithetic_sampling": true,
+        "diffusion": "udlm",
+        "ema": 0.9999,
+        "global_mean_loss": true,
+        "init_from_mdlm_checkpoint": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+        "init_from_mdlm_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+        "init_from_mdlm_ema": true,
+        "pilot_fail_on_nonfinite_loss": false,
+        "reseed_after_model_initialization": false,
+        "sampling_eps": 0.001,
+        "udlm": {
+          "conditioning_variant": "film_adaln",
+          "empirical_uniform_mix": 0.0002,
+          "exclude_special_tokens": false,
+          "inference_eps": 1e-05,
+          "noise_eps": 0.001,
+          "prior_variant": "empirical_frequency",
+          "sampling_steps": 128,
+          "time_embedding_size": 256,
+          "zero_init_conditioning": false
+        },
+        "use_bracket_safe": false
+      },
+      "wandb": {
+        "name": null,
+        "project": "genmol"
+      }
+    },
+    "config_sha256": "eb248eae315c1ea1fff629e4b0dd2fed1778e4f7250ffb85da66bfa314d7e949",
+    "config_source_sha256": "50d2d45e647d9aa0f1be094f11835e427847a8536cc7203a4ddb03b7e72e1994",
+    "example_exposures": 2560,
+    "gpu_count": 1,
+    "kind": "manual_engineering_training",
+    "log_relative": "output/logs/engineering_v7/ct_e_throughput20_b128_w1.training.log",
+    "output_relative": "output/udlm/engineering_v7/ct_e_throughput20_b128_w1",
+    "protocol": {
+      "checkpoint": "outputs/paper_v1/checkpoints/50000.ckpt",
+      "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "claim": "resource_measurement_only_no_superiority_claim",
+      "config": "configs/udlm_e_throughput20.yaml",
+      "config_sha256": "50d2d45e647d9aa0f1be094f11835e427847a8536cc7203a4ddb03b7e72e1994",
+      "final_benchmark_seeds_reserved": [
+        0,
+        1,
+        2
+      ],
+      "follow_up": "Review throughput, memory and finite checkpoint first; start any CT/CE 1000-update batch128 comparison fresh from the common MDLM EMA",
+      "global_batch_size": 128,
+      "gpu_policy": {
+        "active_compute_processes_allowed": true,
+        "max_gpus": 2,
+        "max_utilization_percent": 10,
+        "min_free_memory_mib": 30000
+      },
+      "memory_measurement": "External NVIDIA snapshots every 2 seconds; observed aggregate GPU use includes other processes and is not allocator peak memory",
+      "micro_batch_size": 16,
+      "objective": "existing_categorical_ct_raw_loo",
+      "optimizer_updates": 20,
+      "purpose": "Prospective manual engineering throughput pilot; no registered-stage replay or automatic longer training",
+      "schema_version": 1,
+      "seed": 1400,
+      "study_id": "engineering-v7-ct-e-throughput20"
+    },
+    "protocol_sha256": "69f418a080fd93a667d89c6a7dad32cf287add75349ddcbeba901b7d82e771f5",
+    "schema_version": 1,
+    "training_argv": [
+      "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+      "-u",
+      "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/train.py",
+      "--config-name",
+      "udlm_e_throughput20",
+      "trainer.devices=1",
+      "trainer.accumulate_grad_batches=8",
+      "training.init_from_mdlm_checkpoint=/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+      "training.init_from_mdlm_checkpoint_sha256=8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "callback.dirpath=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v7/ct_e_throughput20_b128_w1/checkpoints",
+      "hydra.run.dir=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v7/ct_e_throughput20_b128_w1/hydra"
+    ]
+  },
+  "source": {
+    "head": "e78267b098103baa822273e82e5a654a97b9daf4",
+    "upstream": "e78267b098103baa822273e82e5a654a97b9daf4"
+  }
+}

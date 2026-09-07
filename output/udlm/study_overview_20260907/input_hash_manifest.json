@@ -1,0 +1,892 @@
+{
+  "generation_mode": "CPU deterministic aggregation and PDF concatenation; no new molecular sampling or rescoring",
+  "generator_sha256": "b862fbb9100fdd4e6fe3c3a3d60b6a533f09c1bb2f57c22ca89ce0ca2df156ad",
+  "inputs": [
+    {
+      "roles": [
+        "frozen local baseline aggregate"
+      ],
+      "sha256": "b474efc593b665489359425dbe1ed0873f8ae1d44b77478b871aff6d6b555904",
+      "size_bytes": 42570,
+      "workspace_relative_path": "output/benchmarks/denovo_50000/report/aggregate.json"
+    },
+    {
+      "roles": [
+        "frozen local baseline PDF"
+      ],
+      "sha256": "c3acd529f909da4e223904608c1e33aaedaa1a3bd4c5766378963c757911818e",
+      "size_bytes": 18683,
+      "workspace_relative_path": "output/pdf/genmol_denovo_50000_benchmark.pdf"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "6ba6c860cd6db8064bbe42bdb81bbbeaba00438e56027a32aecc1ccb670d4f30",
+      "size_bytes": 621,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t050_p100.yaml"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "0a1afddbd71ef75acb2f007a7595f59817f51289123d386e489d47d4c3ed5c97",
+      "size_bytes": 621,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t070_p100.yaml"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "3bdfe69f94a3d69d2bd02ccf63a900298e5a329cbcef7904c99950569252f381",
+      "size_bytes": 622,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/de_novo_candidate_configs_v1/e_t085_p100.yaml"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "1e1fe8b61b6a23174f23e814bbbccc1b3c81fd9d896ae9fc49834d7c2ec014b5",
+      "size_bytes": 632,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t050_p100.yaml"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "532fcd20914b08beea333147b726522ef6004a67d169b75e25b6b261df2d035a",
+      "size_bytes": 632,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t070_p100.yaml"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "d5e522480a0e21048fd836e2d2cabaf3be2d2b3943ad64203bd142a00340b7c3",
+      "size_bytes": 633,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/de_novo_candidate_configs_v1/r_t085_p100.yaml"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "8f01a9c8dc6c53560554b6a7b081eb2061d35688ac732eee0bd3607dd0c612ff",
+      "size_bytes": 537,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t050_p100.yaml"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "c1568f403bf4d340cd838eefa0bf517bd5189a4c3e93b7f1bd7f5d4316189733",
+      "size_bytes": 537,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t070_p100.yaml"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "1fa3c17f6ffcdead6df18a5ef537eaefcb4b402a6995ab59839c25b7c1a62753",
+      "size_bytes": 538,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/de_novo_candidate_configs_v1/s_t085_p100.yaml"
+    },
+    {
+      "roles": [
+        "V5 protocol"
+      ],
+      "sha256": "ecd4722c23deebe193aeb50c034122ca20e501cf7c379e4beb6514b4d496d1a7",
+      "size_bytes": 8734,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v5.json"
+    },
+    {
+      "roles": [
+        "V6 protocol"
+      ],
+      "sha256": "b50d97dcdd10f35c85aba61c9b9b948081ae9726809abb25b6c9e0a8834a92e9",
+      "size_bytes": 6808,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v6.json"
+    },
+    {
+      "roles": [
+        "V6 sampling configuration"
+      ],
+      "sha256": "901b2d826708c2ff4c7212761db1bb9d5f50ae4ffce2e05b8d2dae9b832fa7f1",
+      "size_bytes": 719,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v6_configs/e_t050_gibbs.yaml"
+    },
+    {
+      "roles": [
+        "V6 sampling configuration"
+      ],
+      "sha256": "610b6f44a0ef84bf4719a5e5e0783bceaf34e4ed2fa83420b5ad4a1b1068640e",
+      "size_bytes": 697,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v6_configs/e_t050_predictor.yaml"
+    },
+    {
+      "roles": [
+        "V6 sampling configuration"
+      ],
+      "sha256": "26b7a5f246263324f13859f475e0f298ffc5a658dc403e5ef97d6baa07258a83",
+      "size_bytes": 730,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v6_configs/r_t050_gibbs.yaml"
+    },
+    {
+      "roles": [
+        "V6 sampling configuration"
+      ],
+      "sha256": "765bf9589f2f371c105d8da533aab4ac9bf8f1f756ebd60332bcbc0381695e46",
+      "size_bytes": 708,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v6_configs/r_t050_predictor.yaml"
+    },
+    {
+      "roles": [
+        "V6 sampling configuration"
+      ],
+      "sha256": "8ee41ce679b397559ec951a937f361d746f00ed60cb8aa5e0f50600ceaea6251",
+      "size_bytes": 635,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v6_configs/s_t050_gibbs.yaml"
+    },
+    {
+      "roles": [
+        "V6 sampling configuration"
+      ],
+      "sha256": "c0d062f7f1445844e00d40c293ecc32ff90def6137eb93420e005f7f1fe31c8e",
+      "size_bytes": 613,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v6_configs/s_t050_predictor.yaml"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "575549aadb838cc83426a13fe3bc3233922f0f4b8ca79a618a6ba630e6e9f414",
+      "size_bytes": 20244,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t050-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "25e6bcc043d0400d5841ae4567ff4204466ad1672202607a8badc22d68516022",
+      "size_bytes": 61478,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t050-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "8894501102bb1dc32ae64feec0d3e932dd7a24a364ae4ca6dc74d76db8e7febb",
+      "size_bytes": 20232,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t050-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "16cc01215c65fadbbe9a1c1c74608f70a6a606a2a9c81ded883d382a0c03b721",
+      "size_bytes": 60469,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t050-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "a0832e0b5489c32d25e9732b24e9160b32c48c485b39406f45d3a54c0ecc7cf8",
+      "size_bytes": 20130,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t070-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "72e3e519283d2155ab26067fe6b288f790d652ff96deba7c47a71822aa5f525e",
+      "size_bytes": 61499,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t070-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "ab42728b2bea5adc25950a81f569a3df5c94b8f6a1ebdc8f585edd4631df541d",
+      "size_bytes": 19412,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t070-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "33d0bdaf3d8210eadb7e1a806b4f91657098f07ba8d502ddf8cab72ab112d7f1",
+      "size_bytes": 60625,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t070-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "06f0d2cfcf3215f70541d7c88c00cec89579b47d0975a8e99efdf35566240a8d",
+      "size_bytes": 19118,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t085-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "92625df0db2b31065ee961317e553f92cf6ffff2f9ad79ed9936c04d812a56d7",
+      "size_bytes": 61499,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t085-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "327e7b74d31709973085a72743b62661abe2663f0969ea8ae44237ee6b1d88de",
+      "size_bytes": 19054,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t085-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "aff7ff72d01c6d790456b50d5fce68c02b833c9ac7a9b1f31d5d4542f45193c5",
+      "size_bytes": 60472,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t085-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "c5441a763ac9843d4a0865bbb0f33db9e47a9a1c55d2195de1bc29d1bbde9e51",
+      "size_bytes": 18276,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t100-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "0b5704ed4030eba606c18ace97ea3958e381521831e7ccb6fb9786619258fcf4",
+      "size_bytes": 61519,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t100-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "dd15322742447031c8d04ef61c37f6e0a98f46f32c57ff4e50a258b32ef20693",
+      "size_bytes": 18294,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t100-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "f52aed8efc0f0f1955323a843d334414c5aa752fb900f184f10203c369c4fa5d",
+      "size_bytes": 60334,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-e-t100-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "f941d5b4cc21edeef012814945ec2ac534d0d5ab655336e93ef4ac1b821168e6",
+      "size_bytes": 21718,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t050-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "f1051e794701d7e79fbfbfa78fd51232ddca7d4f589ccbef784fb2277aba2a58",
+      "size_bytes": 59422,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t050-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "d27ee7308b3596eb46dae8c165aafa22ca96aeb21135a6411d7ab030c7ce2b28",
+      "size_bytes": 20790,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t050-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "dabc49569cae1e031f2ab30dc59a601bfbf05d5a19474beda462de3ac648d7b3",
+      "size_bytes": 58413,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t050-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "bbeb58d2bbb6faeece43f13fc7a21d2204137f61406eac9a48e7f352d42cd820",
+      "size_bytes": 20237,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t070-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "04ef7427485ba3d91be25c9a545e44fd274b8afaeb08db752f7380629f4f56d4",
+      "size_bytes": 59265,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t070-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "f9b92cd25a1cff261b49f516fc350bda523480b5320e59c8f2b259bcf3b0adc6",
+      "size_bytes": 20340,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t070-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "b76b524131e1767af0dc3788b05c7e81d3fc6936693d649f97c5613911f189ed",
+      "size_bytes": 58245,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t070-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "81d10fb2e12e415f8c54fb1471ddbd2a22242a90a9b18c2b8e672a0edc05ce72",
+      "size_bytes": 19906,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t085-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "7c6a16a76c152b9095fe6d1fd842ed320ea9f206e740db5c7f71c5f51dc268cb",
+      "size_bytes": 59285,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t085-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "76cb87c29b6008868ad7a92ee99bc1d266030d4290f0b344185c8f99aa5f89b0",
+      "size_bytes": 19645,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t085-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "c9dc8d87a53a0ba6a8b9675fa03ce858b2e5609ee457f530d305ccd4d5a849a2",
+      "size_bytes": 58258,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t085-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "a6a569384cc07e077edc60ce7e3883a0b4866a62d64024a6526dad5dea81dfa3",
+      "size_bytes": 19414,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t100-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "dfd1dedca757c45b61acfbf4147e5dce515a16fce86c824332e1168cf64789f4",
+      "size_bytes": 58954,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t100-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "a1bb88ced33cd8c2b6716b415fcfe2a83e54cd7d9eb2012d676be09ff54f3049",
+      "size_bytes": 19966,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t100-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "a83fe88e699349392171e606c415eaa7d2f949a3d61255c602f959898d3925d8",
+      "size_bytes": 57962,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-r-t100-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "67750d50a016eae3431aa95d3ec47a4976e1c6295323bc69777bcefa49d4caf9",
+      "size_bytes": 21059,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t050-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "5f2082fbab9a2347a2337870ffb6577f4535aaa418dc87f1e6c7a7bc93f1ddd3",
+      "size_bytes": 61137,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t050-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "1de893cf2f402a2021f8eb08dd6e9eca5a55e3627ada5dc54b990c1e7fe04af2",
+      "size_bytes": 21005,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t050-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "22cc8f71ad3fd0cc86cc94cb79e3e6444e3576a918312f251cdcd4b263866bee",
+      "size_bytes": 60134,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t050-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "ca74886bf6be3cee9a7a51f43724141fb63bd9ffd26b6ebc5a99c658d6cb8290",
+      "size_bytes": 19956,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t070-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "bf900b5ab8745ae767f55eb52a77286592a85cb1f54e2985bb4c60c2c160262c",
+      "size_bytes": 61135,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t070-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "fc3769c7bcf5071f1b8984559bb86f1abac89b8c07b47828c0770b8d2081b298",
+      "size_bytes": 19596,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t070-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "64fd954f50285c6c9dc68c73a6a0dfa038506d48646150704f521491be62aa2e",
+      "size_bytes": 60241,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t070-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "db612b3231bc4f17e07b052863303215c6de0d5930e8a8114adced6f1ed89f7d",
+      "size_bytes": 19991,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t085-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "59f535280650244f0fc0d6bc8afaa4fc3b78efc9cd2b96484aad4d6b5a72a770",
+      "size_bytes": 61459,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t085-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "86c26ea024fb46143df0f5de9c67801411e5489c2a6db8dad7e37064c4e2b947",
+      "size_bytes": 19489,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t085-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "1b95e72a5975653a56cfb5c2bd830720db62ccfb0dfaa17285a201ee91d0bbe0",
+      "size_bytes": 60286,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t085-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "6356b28ba7eeea9c2128ac0add101b0705c8f408b2309963798fa71fb282be8e",
+      "size_bytes": 18533,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t100-p100/seed_1200/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "ff2178202d068ba53950a3adb1fb4c7443f5fe0bc481d136a480e438e4de1084",
+      "size_bytes": 61133,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t100-p100/seed_1200/summary.json"
+    },
+    {
+      "roles": [
+        "V5 run raw_samples.csv"
+      ],
+      "sha256": "f56974a534d8a39435858a77c3c341c459780fb6f4dda83798bd4ab55430ae34",
+      "size_bytes": 18519,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t100-p100/seed_1201/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V5 run summary.json"
+      ],
+      "sha256": "a48af92c612d2388d0c96377c55a23d22d02a294ab8d0b2df9e264f09ca5b9f3",
+      "size_bytes": 60096,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5/v5-s-t100-p100/seed_1201/summary.json"
+    },
+    {
+      "roles": [
+        "V5 report CSV"
+      ],
+      "sha256": "8263a7e7019ca1cfc67d1b2dd9540d0cde312f1df69beb398c18cd0b4c3b8cf5",
+      "size_bytes": 9081,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5_reports/complete/report.csv"
+    },
+    {
+      "roles": [
+        "V5 independent report"
+      ],
+      "sha256": "f05c0a16e07696a91df80fe4f60fa6ed9011de19c67323b90614c764216b1092",
+      "size_bytes": 789148,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5_reports/complete/report.json"
+    },
+    {
+      "roles": [
+        "V5 original PDF"
+      ],
+      "sha256": "eb718e316a237b70cdeba239ee18142f3cdee972e9bd7a285300ffc58ebaeeb4",
+      "size_bytes": 23414,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v5_reports/complete/report.pdf"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "7912f9c622d82870edbb211c1688a73fb100b0cefd49e8a614a8622ae88db94b",
+      "size_bytes": 19526,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-e-t050-gibbs/seed_1300/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "a84bcfbbf23b471466c99b8e948e92d2bb27f8d0002033173ee9e6f768429156",
+      "size_bytes": 61448,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-e-t050-gibbs/seed_1300/summary.json"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "64c88ce12d8ac7a022d6b1715cbef0ffa2ec0434145bae6f9995895d94eb492f",
+      "size_bytes": 20839,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-e-t050-gibbs/seed_1301/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "af2187fd05f5f80100ccb43e58ad60d98cb54fd0d57b50dda34e003068eac314",
+      "size_bytes": 60060,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-e-t050-gibbs/seed_1301/summary.json"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "e65e1f806e958601528d3c48b31e727f004318f427956ba7dd77ceece5d3b5d2",
+      "size_bytes": 20407,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-e-t050-predictor/seed_1300/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "e6d69f95e43b5bbd1bd0a8ed43b21be0d71f267bf1990e8874cf01ee28a602fd",
+      "size_bytes": 60989,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-e-t050-predictor/seed_1300/summary.json"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "30f4f1668bd4716728fe9efed2adbe5efc397a709c75716a17f57c8f0c57b167",
+      "size_bytes": 20096,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-e-t050-predictor/seed_1301/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "b14428684a3874c19edf6a7b562caf05c92483f31b9ab84138c2a57b70561fe3",
+      "size_bytes": 59465,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-e-t050-predictor/seed_1301/summary.json"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "82a3ed576ca875885098408c9279a0b75d1d33d4590b7d82bcb0ea23d8f32823",
+      "size_bytes": 20943,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-r-t050-gibbs/seed_1300/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "4fb3a26a636792f0afb49144db1e90c06ad14737957576e988c6fda64f3a9c7e",
+      "size_bytes": 59374,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-r-t050-gibbs/seed_1300/summary.json"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "a7f427c0741144239f64a594a7cca57bdbb98d8297cf62a2dbfb7065105dc678",
+      "size_bytes": 20300,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-r-t050-gibbs/seed_1301/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "f3a05614f2457e44de93c7f1437b5e13784c610017cbe5c72386c44da3871354",
+      "size_bytes": 58006,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-r-t050-gibbs/seed_1301/summary.json"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "72525be9b9e5ccfcafa3c4af4a1310f56328499f291dfe5290d57789777f52d2",
+      "size_bytes": 20472,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-r-t050-predictor/seed_1300/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "c971a6e969f66ecb824e2c92d8c9c3a8e795a5d5c974f2ddeb0bcc30736f7df3",
+      "size_bytes": 58931,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-r-t050-predictor/seed_1300/summary.json"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "af6ecd7bbb3baad91217fe15a63e7fc88c2a06d1713b0cfe2ca71035ff6a22c2",
+      "size_bytes": 21730,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-r-t050-predictor/seed_1301/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "af0ba58714d5adb0f12beca3e7e410ffb7c57251f1cc19ee277265aee1080c2d",
+      "size_bytes": 57551,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-r-t050-predictor/seed_1301/summary.json"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "3d389848d51f373a2f911fb06c34048f23276cef913b5acb201495d40cfdb0d1",
+      "size_bytes": 20711,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-s-t050-gibbs/seed_1300/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "5a27ad2766ec3b438603608654b66f927369395e01965d29887e13805e9811cb",
+      "size_bytes": 61243,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-s-t050-gibbs/seed_1300/summary.json"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "54e950c3bd6b893a1cd3b291aa7803cd0ceb46e312053322bd434954c49de100",
+      "size_bytes": 19878,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-s-t050-gibbs/seed_1301/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "52a0bccf90f347285a60463fdcd9781cd6417a9aaa5f8e2da28f8c37b338428b",
+      "size_bytes": 59879,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-s-t050-gibbs/seed_1301/summary.json"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "cfe608dd00991b6b95db83694542150cc55feeabfa262953d9a312f317ea3017",
+      "size_bytes": 20527,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-s-t050-predictor/seed_1300/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "db452fb543a1dd1ea0404277e825c60cbe4088e481617b02068ab5fb4649cefc",
+      "size_bytes": 60816,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-s-t050-predictor/seed_1300/summary.json"
+    },
+    {
+      "roles": [
+        "V6 run raw_samples.csv"
+      ],
+      "sha256": "df3e72494039fd6a19e51489cfdea60f69d74bea55deee8f94c44b6d19c20ff0",
+      "size_bytes": 20731,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-s-t050-predictor/seed_1301/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "V6 run summary.json"
+      ],
+      "sha256": "3557caddabd67e73ca2658323634ccf7c4fe422c786719613e9676c3bebfd7f9",
+      "size_bytes": 59427,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6/v6-s-t050-predictor/seed_1301/summary.json"
+    },
+    {
+      "roles": [
+        "V6 report CSV"
+      ],
+      "sha256": "1368f3df781c0330ae56751654ef28e1f9b8edf31c7c40bd1cb525867c9d56f9",
+      "size_bytes": 34546,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6_reports/complete/report.csv"
+    },
+    {
+      "roles": [
+        "V6 independent report"
+      ],
+      "sha256": "36675c3743d8cee7073f31d21ed048c4342ae60f9f693475aac4147a5d4b0792",
+      "size_bytes": 404306,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6_reports/complete/report.json"
+    },
+    {
+      "roles": [
+        "V6 original PDF"
+      ],
+      "sha256": "c9105da785e30ab3fb50c39f5b101c6e4f5c3c76d4482f86fec3d61c8a2819ca",
+      "size_bytes": 24636,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v6_reports/complete/report.pdf"
+    },
+    {
+      "roles": [
+        "E continuation training summary"
+      ],
+      "sha256": "7afb20ab5cc9d8b147452dd62be3aae00a44240227e292c3752c5df7894e8bed",
+      "size_bytes": 9723,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/scaleup-w1-e-dcb271453411/training_summary.json"
+    },
+    {
+      "roles": [
+        "R continuation training summary"
+      ],
+      "sha256": "d8f1861f51b8529d3847d1c096fabff487eee30124eb6039eef3cbb67c3ab233",
+      "size_bytes": 9723,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/scaleup-w1-r-dcb271453411/training_summary.json"
+    },
+    {
+      "roles": [
+        "S continuation training summary"
+      ],
+      "sha256": "1576733d5f9bf9ce56c6673ad99d7d856629d78cc67b88f581d893f2b8f87d57",
+      "size_bytes": 9723,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/scaleup-w1-s-dcb271453411/training_summary.json"
+    },
+    {
+      "roles": [
+        "reproducible overview generator"
+      ],
+      "sha256": "b862fbb9100fdd4e6fe3c3a3d60b6a533f09c1bb2f57c22ca89ce0ca2df156ad",
+      "size_bytes": 29996,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/study_overview_20260907/generate_study_overview.py"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "bc28eb26297702624e009eed77d13b2a600aeba341b21fbc938d7d01d4c0d84d",
+      "size_bytes": 613,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/scripts/exps/denovo/hparams_udlm.yaml"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "309bbed7b67ad2090def3ba5429f00f4e56b4fb7af2f6be245b9e79619aa3c06",
+      "size_bytes": 602,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/scripts/exps/denovo/hparams_udlm_categorical_floor0002.yaml"
+    },
+    {
+      "roles": [
+        "V5 sampling configuration"
+      ],
+      "sha256": "8f07751d3504eabc938dbccf91b90217df809945cb06b2fc8f96671cde59f739",
+      "size_bytes": 518,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/scripts/exps/denovo/hparams_udlm_schedule_uniform.yaml"
+    }
+  ],
+  "outputs": {
+    "all_configurations.csv": {
+      "sha256": "6391d632aab860c53a1bf6f74e38c20c4a73ac860a1b8c39b89e748aa4354caf",
+      "size_bytes": 6355
+    },
+    "overview.json": {
+      "sha256": "301768dfe226dbe92f46255e7fdc347ae680a3a57d9b26e6f686f868374aa7f9",
+      "size_bytes": 42024
+    },
+    "overview_cover.pdf": {
+      "sha256": "639f98d99791d7663f952bff57b2de65612a69c9073704d9e5c1baa293e8dc76",
+      "size_bytes": 10727
+    },
+    "study_overview.pdf": {
+      "sha256": "96934c4eeabc89d61f3d507eb6a455e157adb51ac7fa48cb76a82344ab3b3963",
+      "size_bytes": 75667
+    }
+  },
+  "pdf_sections": [
+    {
+      "first_page": 1,
+      "input_pdf_sha256": "639f98d99791d7663f952bff57b2de65612a69c9073704d9e5c1baa293e8dc76",
+      "last_page": 3,
+      "page_count": 3,
+      "title": "Study overview"
+    },
+    {
+      "first_page": 4,
+      "input_pdf_sha256": "eb718e316a237b70cdeba239ee18142f3cdee972e9bd7a285300ffc58ebaeeb4",
+      "last_page": 13,
+      "page_count": 10,
+      "title": "V5 full independent report"
+    },
+    {
+      "first_page": 14,
+      "input_pdf_sha256": "c9105da785e30ab3fb50c39f5b101c6e4f5c3c76d4482f86fec3d61c8a2819ca",
+      "last_page": 22,
+      "page_count": 9,
+      "title": "V6 full independent report"
+    },
+    {
+      "first_page": 23,
+      "input_pdf_sha256": "c3acd529f909da4e223904608c1e33aaedaa1a3bd4c5766378963c757911818e",
+      "last_page": 27,
+      "page_count": 5,
+      "title": "Local MDLM baseline report"
+    }
+  ],
+  "schema_version": 1,
+  "software": {
+    "pypdf": "6.16.2",
+    "reportlab": "5.0.1"
+  },
+  "status": "complete"
+}

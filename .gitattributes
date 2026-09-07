@@ -3,3 +3,6 @@
 # Evidence digests cover exact emitted bytes, including CSV record endings.
 output/** -text
 output/**/*.csv whitespace=cr-at-eol
+
+# Preserve terminal progress whitespace in original training log evidence.
+output/**/*.log whitespace=cr-at-eol,-blank-at-eol

@@ -1,6 +1,21 @@
 # GenMol-UDLM project context
 
-## Active continuation: Gibbs screen complete; training pilot next, 2026-09-07
+## Active continuation: training resource pilot passed, 2026-09-07
+
+V7 completed successfully at 10:16:18 UTC. Its one-GPU CT-E20 checkpoint has
+SHA-256 `07ad66498ccaf629fd61e8485c6ddb310c84c4a86770a0be5e3d4911fe341cc0`;
+2,560 exposures, subprocess146.333s including startup/save, observed aggregate
+GPU maximum9,637MiB. Both leases were released. See
+`experiments/udlm/results/engineering_v7_throughput.md`. Do not relaunch this
+immutable attempt. A prospective V8 CT/CE1000-update comparison is being
+prepared on `codex/udlm-ce-ct-training`; root chose two GPUs for both arms,
+subject to fresh utilization/memory probes. It must start each arm from the
+common MDLM EMA, not V7. Verify source/launch state before acting.
+
+The complete 27-page V5/V6 plus MDLM study report is
+`output/udlm/study_overview_20260907/study_overview.pdf`, SHA-256
+`96934c4eeabc89d61f3d507eb6a455e157adb51ac7fa48cb76a82344ab3b3963`.
+Its generator and input-hash manifest are preserved alongside it.
 
 V6 generation and independent CPU rescoring both ended successfully at
 10:09:33 UTC. All 12 runs and 768 raw rows were accepted. Its best selected
