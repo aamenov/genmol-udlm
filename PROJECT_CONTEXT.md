@@ -10,10 +10,25 @@ The training group exited during the cleanup grace and both leases are absent.
 Read `experiments/udlm/results/engineering_v11b_mask_training.md`. Do not rerun
 V11b. Its source was `be18a3244a717978e027d6e43ba0ac20b8137e4a`.
 
-V12 checkpoint/protocol acceptance is now the next action, using the reviewed
-materializer and the actual completed terminal digest above. Its fixed design
-and inference YAMLs are published; no molecular generation has started at this
-snapshot. Verify live state before acting. No superiority is established.
+V12 checkpoint acceptance passed on both actual CE checkpoints. The materialized
+protocol `experiments/udlm/protocols/engineering_v12_mask_prior.json` has SHA-256
+`f4ea756fabb9e5133c72f302e8398bcbb8d0eabaa81f183b017af8c19b02cadd`.
+It binds the published design, all four inference configs, 14 evidence references,
+and the trained checkpoints. The fixed comparison is empirical CE versus
+MASK-rich CE at temperatures 1.0/0.5, 128 predictor evaluations, seeds 2000/2001
+and 100 requests per seed: eight runs, 800 requests. Both signed prior contrasts
+are required. All four configs and the existing launcher protocol validator
+passed; no outcome was used to alter this panel.
+
+After the clean pushed dry-run, launch the one-shot wrapper
+`output/logs/engineering-v12-pipeline.py` in tmux `genmol-udlm-v12-prior`.
+Use pipeline log `output/logs/engineering-v12-pipeline.log`, generation root
+`output/udlm/engineering_v12`, job logs `output/logs/engineering_v12` and
+CPU report `output/udlm/engineering_v12_reports/complete`. Source/HEAD must stay
+frozen until generation and independent rescoring both terminate. The wrapper
+always records the report outcome, including a failed or partial screen. Before
+acting, verify live logs rather than assuming this prelaunch snapshot is current.
+No superiority is established; final seeds 0/1/2 remain reserved.
 The V11/V11b launch instructions below are retained historical context.
 
 V10 ended at 11:40:49 UTC on 2026-09-07; generation and independent CPU
