@@ -1,0 +1,65 @@
+{
+  "artifacts": {
+    "output/udlm/engineering_v6/v6-r-t050-gibbs/seed_1300/raw_samples.csv": "82a3ed576ca875885098408c9279a0b75d1d33d4590b7d82bcb0ea23d8f32823",
+    "output/udlm/engineering_v6/v6-r-t050-gibbs/seed_1300/summary.json": "4fb3a26a636792f0afb49144db1e90c06ad14737957576e988c6fda64f3a9c7e",
+    "output/udlm/engineering_v6/v6-r-t050-gibbs/seed_1301/raw_samples.csv": "a7f427c0741144239f64a594a7cca57bdbb98d8297cf62a2dbfb7065105dc678",
+    "output/udlm/engineering_v6/v6-r-t050-gibbs/seed_1301/summary.json": "f3a05614f2457e44de93c7f1437b5e13784c610017cbe5c72386c44da3871354"
+  },
+  "command": [
+    "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/exps/denovo/launch_benchmark.py",
+    "--checkpoint",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/scaleup-w1-r-dcb271453411/checkpoints/1000.ckpt",
+    "--config",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v6_configs/r_t050_gibbs.yaml",
+    "--pilot",
+    "--attempt-id",
+    "v6-r-t050-gibbs",
+    "--candidate-id",
+    "r-w1-1000u-dcb271453411",
+    "--num-samples",
+    "64",
+    "--seeds",
+    "1300",
+    "1301",
+    "--gpu-count",
+    "2",
+    "--max-utilization-percent",
+    "10",
+    "--min-free-memory-mib",
+    "30000",
+    "--poll-seconds",
+    "10",
+    "--output-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v6",
+    "--log-root",
+    "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/logs/engineering_v6"
+  ],
+  "completed_at_utc": "2026-09-07T10:07:17.624990+00:00",
+  "identity": {
+    "entry": {
+      "arm_id": "R",
+      "attempt_id": "v6-r-t050-gibbs",
+      "candidate_id": "r-w1-1000u-dcb271453411",
+      "checkpoint": "output/udlm/scaleup-w1-r-dcb271453411/checkpoints/1000.ckpt",
+      "checkpoint_sha256": "d0310d2e2402043ab9ab6a99268263581a35d60fb2262ddd988ea38cd6f6395c",
+      "config": "experiments/udlm/protocols/engineering_v6_configs/r_t050_gibbs.yaml",
+      "config_id": "r_t050_gibbs",
+      "config_sha256": "26b7a5f246263324f13859f475e0f298ffc5a658dc403e5ef97d6baa07258a83"
+    },
+    "num_samples": 64,
+    "protocol_sha256": "b50d97dcdd10f35c85aba61c9b9b948081ae9726809abb25b6c9e0a8834a92e9",
+    "seeds": [
+      1300,
+      1301
+    ],
+    "source": {
+      "head": "84e909d983c0c413a9bce71357deba24df717b85",
+      "upstream": "84e909d983c0c413a9bce71357deba24df717b85"
+    }
+  },
+  "process_return_code": 0,
+  "return_code": 0,
+  "started_at_utc": "2026-09-07T10:05:59.637021+00:00",
+  "validation_error": null
+}

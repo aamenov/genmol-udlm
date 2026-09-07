@@ -1,6 +1,35 @@
 # GenMol-UDLM project context
 
-## Active continuation: completed temperature screen, 2026-09-07
+## Active continuation: Gibbs screen complete; training pilot next, 2026-09-07
+
+V6 generation and independent CPU rescoring both ended successfully at
+10:09:33 UTC. All 12 runs and 768 raw rows were accepted. Its best selected
+pilot quality is S+Gibbs at 57.03125%, below local MDLM 85.8%; Gibbs changed
+quality by +4.6875pp E, +2.34375pp S and −6.25pp R. See
+`experiments/udlm/results/engineering_v6.md` and
+`output/udlm/engineering_v6_reports/complete/report.pdf`. No superiority.
+
+The opt-in CE clean-denoiser implementation, conversion, checkpoint safeguards,
+benchmark provenance and notebook Stage 23 are merged. No CE model is trained.
+Historical checkpoints retain CT/raw-LOO semantics. The next frozen resource
+pilot is `experiments/udlm/protocols/engineering_v7_throughput.json`: CT-E,
+fresh MDLM EMA, seed1400, 20 updates, global128/micro16, one GPU/accumulation8.
+Use project `.venv` and `scripts/udlm/launch_engineering_training.py --gpu-count 1`
+in session `genmol-udlm-v7-throughput`, with controller output redirected to
+`output/logs/engineering-v7-throughput-controller.log`. Its immutable manifests
+will be under `output/udlm/engineering_v7/ct_e_throughput20_b128_w1/` and the
+training log under `output/logs/engineering_v7/`. Verify live status first.
+
+V7 holds both generation and training leases, dynamically rechecks UUIDs
+strictly below 10% utilization with at least 30,000 MiB free, and allows recorded
+external processes. Completed-exposure throughput is reported only after a
+successful finite step20 checkpoint is verified. No automatic longer training
+is configured. Future CT/CE comparison must match both active vocabulary and
+clean-target masks; CE masks all tokenizer controls, while historical CT masks
+BOS/EOS/PAD only. The throughput pilot itself retains historical CT masking.
+
+## Completed V5/V6 workflow details (historical commands)
+
 
 V5 finished all 24 runs and independent rescoring accepted all 1,536 raw rows.
 The selected pilot quality leader is S at temperature 0.85: 50.78125% quality,
