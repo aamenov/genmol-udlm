@@ -351,6 +351,46 @@ def validate_checkpoint_output(path, config, *, expected_steps=20):
         raise RuntimeError(
             "final raw-LOO checkpoint contains incompatible denoiser identity"
         )
+    prior_audit = {}
+    training = config.get("training", {})
+    udlm = training.get("udlm", {})
+    if str(udlm.get("prior_variant", "")).lower() == "mask_rich_empirical":
+        from scripts.exps.denovo import benchmark as checkpoint_audit
+
+        if training.get("diffusion") != "udlm":
+            raise RuntimeError("final mask-rich checkpoint must use UDLM")
+        if (
+            type(training.get("antithetic_sampling")) is not bool
+            or type(udlm.get("exclude_special_tokens", False)) is not bool
+        ):
+            raise RuntimeError(
+                "final mask-rich checkpoint has invalid Boolean settings"
+            )
+        metadata = checkpoint_audit.validate_udlm_prior_metadata_record(
+            checkpoint.get(checkpoint_audit.UDLM_PRIOR_CHECKPOINT_KEY),
+            expected_variant="mask_rich_empirical",
+            expected_full_vocab_size=checkpoint_audit._strict_integer(
+                config.get("model", {}).get("vocab_size"),
+                "final model.vocab_size",
+                minimum=2,
+            ),
+            expected_exclude_special_tokens=udlm.get("exclude_special_tokens", False),
+            expected_sampling_eps=checkpoint_audit._strict_probability(
+                training.get("sampling_eps"), "final training.sampling_eps"
+            ),
+            expected_noise_eps=checkpoint_audit._strict_probability(
+                udlm.get("noise_eps", 1e-3), "final training.udlm.noise_eps"
+            ),
+            expected_antithetic_sampling=training["antithetic_sampling"],
+            expected_uniform_mixture_weight=checkpoint_audit._strict_probability(
+                udlm.get("empirical_uniform_mix"), "final empirical_uniform_mix"
+            ),
+            expected_mask_mixture_weight=checkpoint_audit._strict_mask_mixture_weight(
+                udlm.get("mask_mixture_weight"), "final mask_mixture_weight"
+            ),
+            state_dict=state_dict,
+        )
+        prior_audit["udlm_prior_metadata_sha256"] = canonical_digest(metadata)
     tensor_count = 0
 
     def check(value):
@@ -381,6 +421,7 @@ def validate_checkpoint_output(path, config, *, expected_steps=20):
         **asdict(after),
         "global_step": expected_steps,
         "finite_tensor_count": tensor_count,
+        **prior_audit,
     }
 
 
@@ -590,11 +631,20 @@ def execute(plan, source, *, plan_builder=None):
                 raise RuntimeError(
                     f"training process exited with status {process.returncode}"
                 )
-        terminal["checkpoint"] = validate_checkpoint_output(
+        validated_checkpoint = validate_checkpoint_output(
             ROOT / output / "checkpoints" / f"{expected_steps}.ckpt",
             plan["config"],
             expected_steps=expected_steps,
         )
+        if (
+            "expected_prior_metadata_sha256" in plan
+            and validated_checkpoint.get("udlm_prior_metadata_sha256")
+            != plan["expected_prior_metadata_sha256"]
+        ):
+            raise RuntimeError(
+                "final checkpoint prior differs from the prospective plan"
+            )
+        terminal["checkpoint"] = validated_checkpoint
         if benchmark._require_clean_pushed_source() != source:
             raise RuntimeError("source changed during training")
         check_leases(ROOT, leases)
