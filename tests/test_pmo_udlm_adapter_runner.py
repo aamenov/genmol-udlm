@@ -139,8 +139,9 @@ def install_adapter(monkeypatch, *, sampler=None):
         return adapter
 
     def evaluator(smiles):
-        observed.scored.append(smiles)
-        return len(smiles) / 100
+        assert type(smiles) is list and len(smiles) == 1
+        observed.scored.append(smiles[0])
+        return [len(smiles[0]) / 100]
 
     def oracle_factory(**kwargs):
         assert kwargs == {"name": "qed"}

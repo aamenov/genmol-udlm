@@ -119,6 +119,7 @@ def test_actual_tiny_checkpoint_and_sources_bind_inference(tmp_path):
     assert receipt["checkpoint"]["byte_identity_verified_before_and_after_load"] is True
     assert receipt["inference_weights"]["ema_applied"] is True
     assert receipt["temperature_space"] == "x0_denoiser"
+    assert receipt["oracle_call_protocol"] == sampling.ORACLE_CALL_PROTOCOL
     assert receipt["reverse_bridge_temperature"] == 1.0
     assert receipt["tokenizer"]["effective_size"] == 5
     assert {"pmo_runner", "pmo_sampling_adapter", "denoiser_source"} <= set(
