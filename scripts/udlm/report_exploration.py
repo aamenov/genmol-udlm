@@ -407,7 +407,7 @@ def build_report(
         if counts["completed"] == len(runs) and not unexpected
         else "incomplete"
     )
-    return {
+    result = {
         "schema_version": 1,
         "study_id": protocol.get("study_id"),
         "status": status,
@@ -434,6 +434,39 @@ def build_report(
         "baselines": BASELINES,
         "caveats": CAVEATS,
     }
+    if _has_denoiser_design(result):
+        result["caveats"] = [
+            CAVEATS[0],
+            _objective_training_description(protocol),
+            "CT and clean CE share the training settings recorded in this protocol. "
+            "Equal updates and examples do not imply equal compute or independently "
+            "optimized objectives; training losses have different scales and targets.",
+            *CAVEATS[3:],
+        ]
+    return result
+
+
+def _objective_training_description(protocol: dict[str, Any]) -> str:
+    training = protocol.get("training", {})
+    settings = [
+        f"{label}: {training[key]}"
+        for key, label in (
+            ("initialization", "initialization"),
+            ("optimizer_updates", "optimizer updates per arm"),
+            ("global_batch_size", "global batch"),
+            ("training_seed", "training seed"),
+            ("gpu_count", "training GPUs"),
+            ("example_exposures_per_arm", "requested example exposures per arm"),
+            ("common_mask_policy", "common clean-target mask"),
+        )
+        if key in training
+    ]
+    description = (
+        "Prospective training settings: " + "; ".join(settings) + "."
+        if settings
+        else "Training settings are not recorded in this protocol."
+    )
+    return description + " The MDLM and paper baselines remain contextual comparisons."
 
 
 def _has_gibbs_design(report: dict[str, Any]) -> bool:
@@ -442,6 +475,49 @@ def _has_gibbs_design(report: dict[str, Any]) -> bool:
         run.get("generation_protocol", {}).get("gibbs_corrector") is True
         for run in report["runs"]
     )
+
+
+def _has_denoiser_design(report: dict[str, Any]) -> bool:
+    protocol = report["protocol"]["configuration"]
+    return (
+        "objective_comparison" in protocol.get("design", {})
+        or any(
+            entry.get("parameterization") == "x0_denoiser"
+            for entry in protocol.get("entries", [])
+        )
+        or any(
+            run.get("config", {}).get("sampling", {}).get("parameterization")
+            == "x0_denoiser"
+            for run in report["runs"]
+        )
+    )
+
+
+def _objective_evidence(run: dict[str, Any]) -> dict[str, Any]:
+    """Describe completed UDLM runs using independently certified identity."""
+    if (
+        run.get("status") != "completed"
+        or run.get("generation_protocol", {}).get("diffusion_type") != "udlm"
+    ):
+        return {}
+    parameterization = run["config"]["sampling"].get("parameterization", "raw_loo")
+    identity = run["independent_rescore"].get("identity", {})
+    generation = identity.get("generation", {})
+    evidence = {
+        "objective": "clean CE"
+        if parameterization == "x0_denoiser"
+        else "CT / raw-LOO",
+        "parameterization": parameterization,
+        "inference_weights": generation.get("inference_weights"),
+    }
+    if parameterization == "x0_denoiser":
+        evidence.update(
+            udlm_denoiser_metadata=generation.get("udlm_denoiser_metadata"),
+            denoiser_source_sha256=identity.get("source", {}).get(
+                "denoiser_source_sha256"
+            ),
+        )
+    return evidence
 
 
 def _sampling_budget(run: dict[str, Any]) -> dict[str, Any]:
@@ -481,8 +557,9 @@ def _csv_bytes(report: dict[str, Any]) -> bytes:
         "raw_sha256",
         "failure_reason",
     ]
-    include_gibbs = _has_gibbs_design(report)
-    if include_gibbs:
+    include_denoiser = _has_denoiser_design(report)
+    include_sampling = _has_gibbs_design(report) or include_denoiser
+    if include_sampling:
         fields.extend(
             [
                 "nfe",
@@ -493,6 +570,18 @@ def _csv_bytes(report: dict[str, Any]) -> bytes:
                 "corrector_source_sha256",
                 "protocol_design",
                 "protocol_limitations",
+            ]
+        )
+    if include_denoiser:
+        fields.extend(
+            [
+                "planned_parameterization",
+                "objective",
+                "parameterization",
+                "inference_weights",
+                "udlm_denoiser_metadata",
+                "denoiser_source_sha256",
+                "protocol_training",
             ]
         )
     stream = io.StringIO(newline="")
@@ -512,10 +601,10 @@ def _csv_bytes(report: dict[str, Any]) -> bytes:
             gpu_uuid=run.get("gpu_mapping", {}).get("cuda_visible_devices"),
             raw_sha256=run["artifacts"].get("raw_samples.csv", {}).get("sha256"),
         )
-        if include_gibbs:
+        if include_sampling:
             protocol = report["protocol"]["configuration"]
-            source = run.get("independent_rescore", {}).get("identity", {}).get(
-                "source", {}
+            source = (
+                run.get("independent_rescore", {}).get("identity", {}).get("source", {})
             )
             row.update(
                 **_sampling_budget(run),
@@ -525,6 +614,30 @@ def _csv_bytes(report: dict[str, Any]) -> bytes:
                 corrector_source_sha256=source.get("corrector_source_sha256"),
                 protocol_design=json.dumps(protocol.get("design", {}), sort_keys=True),
                 protocol_limitations=json.dumps(protocol.get("limitations", [])),
+            )
+        if include_denoiser:
+            objective = _objective_evidence(run)
+            metadata = objective.get("udlm_denoiser_metadata")
+            weights = objective.get("inference_weights")
+            row.update(
+                **objective,
+                planned_parameterization=next(
+                    (
+                        entry.get("parameterization")
+                        for entry in protocol.get("entries", [])
+                        if entry["attempt_id"] == run["attempt_id"]
+                    ),
+                    None,
+                ),
+                protocol_training=json.dumps(
+                    protocol.get("training", {}), sort_keys=True
+                ),
+            )
+            row["udlm_denoiser_metadata"] = (
+                json.dumps(metadata, sort_keys=True) if metadata is not None else None
+            )
+            row["inference_weights"] = (
+                json.dumps(weights, sort_keys=True) if weights is not None else None
             )
         writer.writerow(row)
     return stream.getvalue().encode("utf-8")
@@ -559,8 +672,9 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
     ]
     for caveat in report["caveats"]:
         story.append(Paragraph(escape(caveat), styles["BodyText"]))
-    include_gibbs = _has_gibbs_design(report)
-    if include_gibbs:
+    include_denoiser = _has_denoiser_design(report)
+    include_sampling = _has_gibbs_design(report) or include_denoiser
+    if include_sampling:
         protocol = report["protocol"]["configuration"]
         story.append(Paragraph("Prospective sampling design", styles["Heading2"]))
         story.append(
@@ -571,6 +685,29 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
         )
         for caveat in protocol.get("limitations", []):
             story.append(Paragraph(escape(caveat), styles["BodyText"]))
+    if include_denoiser:
+        story.append(Paragraph("Objective comparison", styles["Heading2"]))
+        story.append(
+            Paragraph(
+                "CT / raw-LOO predicts clean leave-one-out probabilities. Clean CE "
+                "predicts clean denoiser probabilities, converted to LOO logits at "
+                "the current noisy state and time before temperature or top-p. "
+                "The conversion adds no backbone evaluation. Shared sampling "
+                "settings do not imply independently optimized objectives. "
+                "Objective labels and checkpoint evidence below describe completed "
+                "runs only; the prospective design also covers pending runs.",
+                styles["BodyText"],
+            )
+        )
+        story.append(
+            Paragraph(
+                escape(
+                    "Training provenance: "
+                    + json.dumps(protocol.get("training", {}), sort_keys=True)
+                ),
+                styles["BodyText"],
+            )
+        )
     story.append(Paragraph("Reference means (context only)", styles["Heading2"]))
     rows = [["Reference", *METRICS]]
     for name, baseline in report["baselines"].items():
@@ -592,7 +729,7 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
         story.extend([table, Spacer(1, 10)])
 
     add_table(rows)
-    if include_gibbs:
+    if include_sampling:
         story.append(Paragraph("Sampling evaluation budget", styles["Heading2"]))
         story.append(
             Paragraph(
@@ -612,6 +749,21 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
                     budget.get("nfe", "--"),
                     budget.get("predictor_transitions_per_molecule", "--"),
                     budget.get("corrector_steps_per_molecule", "--"),
+                ]
+            )
+        add_table(rows)
+    if include_denoiser:
+        story.append(Paragraph("Checkpoint logit interpretation", styles["Heading2"]))
+        rows = [["Config", "Seed", "Objective", "Parameterization", "Weights"]]
+        for run in report["runs"]:
+            evidence = _objective_evidence(run)
+            rows.append(
+                [
+                    run["config_id"],
+                    run["seed"],
+                    evidence.get("objective", "--"),
+                    evidence.get("parameterization", "--"),
+                    (evidence.get("inference_weights") or {}).get("source", "--"),
                 ]
             )
         add_table(rows)
@@ -697,14 +849,20 @@ def _pdf_bytes(report: dict[str, Any]) -> bytes:
                 "gpu": run["gpu_mapping"],
                 "raw": run["artifacts"]["raw_samples.csv"],
             }
-            if include_gibbs:
+            if include_sampling:
                 detail["generation_protocol"] = run["generation_protocol"]
                 detail["sampling_budget"] = _sampling_budget(run)
-                source = run.get("independent_rescore", {}).get("identity", {}).get(
-                    "source", {}
+                source = (
+                    run.get("independent_rescore", {})
+                    .get("identity", {})
+                    .get("source", {})
                 )
                 if "corrector_source_sha256" in source:
-                    detail["corrector_source_sha256"] = source["corrector_source_sha256"]
+                    detail["corrector_source_sha256"] = source[
+                        "corrector_source_sha256"
+                    ]
+            if include_denoiser:
+                detail.update(_objective_evidence(run))
             story.append(
                 Paragraph(
                     escape(

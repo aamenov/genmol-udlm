@@ -84,9 +84,9 @@ def screen(tmp_path: Path):
 
     def terminal(return_code: int = 0) -> None:
         artifacts = {
-            path.relative_to(tmp_path)
-            .as_posix(): hashlib.sha256(path.read_bytes())
-            .hexdigest()
+            path.relative_to(tmp_path).as_posix(): hashlib.sha256(
+                path.read_bytes()
+            ).hexdigest()
             for path in output.glob(f"{entry['attempt_id']}/seed_*/*")
             if path.is_file()
         }
@@ -308,6 +308,8 @@ def test_gibbs_csv_exports_certified_budget_provenance_and_design_caveats(screen
     result = _gibbs_export_fixture(screen)
     rows = list(csv.DictReader(io.StringIO(report._csv_bytes(result).decode())))
     control, corrected = rows
+    assert "denoiser_source_sha256" not in control
+    assert "objective" not in control
     assert control["gibbs_corrector"] == "False"
     assert corrected["gibbs_corrector"] == "True"
     assert control["nfe"] == corrected["nfe"] == "128"
@@ -374,4 +376,241 @@ def test_historical_temperature_csv_preserves_columns_without_gibbs_fields(scree
     assert "gibbs_corrector" not in rows[0]
     assert "generation_protocol" not in rows[0]
     assert "protocol_design" not in rows[0]
+    assert "denoiser_source_sha256" not in rows[0]
+    assert "objective" not in rows[0]
     assert report._has_gibbs_design(result) is False
+    assert report._has_denoiser_design(result) is False
+
+
+def _denoiser_export_fixture(screen, *, gibbs=False):
+    result = _gibbs_export_fixture(screen)
+    specification = result["protocol"]["configuration"]
+    if not gibbs:
+        specification["design"].pop("gibbs_treatment")
+    specification["design"]["objective_comparison"] = {
+        "primary_temperature": 1.0,
+        "secondary_temperature": 0.5,
+        "prior_results_observed": "V5 and V6 informed the engineering design.",
+    }
+    specification["limitations"] = [
+        "Shared hyperparameters do not independently optimize CT and CE."
+    ]
+    specification["training"] = {
+        "global_batch_size": 128,
+        "example_exposures_per_arm": 128000,
+        "common_mask_policy": "all tokenizer special IDs immutable",
+        "training_protocol_sha256": "7" * 64,
+    }
+    specification["entries"] = []
+    for run, parameterization in zip(result["runs"], ("raw_loo", "x0_denoiser")):
+        ce = parameterization == "x0_denoiser"
+        run["attempt_id"] = "v9-ce-t100" if ce else "v9-ct-t100"
+        run["config_id"] = "ce_t100" if ce else "ct_t100"
+        run["checkpoint"]["sha256"] = ("d" if ce else "a") * 64
+        run["config"]["sampling"]["diffusion_type"] = "udlm"
+        if ce:
+            run["config"]["sampling"]["parameterization"] = parameterization
+        specification["entries"].append(
+            {"attempt_id": run["attempt_id"], "parameterization": parameterization}
+        )
+        identity = {
+            "generation": {
+                "inference_weights": {
+                    "source": "ema",
+                    "ema_applied": True,
+                    "ema": {
+                        "decay": 0.9999,
+                        "num_updates": 1000,
+                        "shadow_parameter_count": 12,
+                    },
+                }
+            },
+            "source": {},
+        }
+        if not gibbs:
+            for key in (
+                "gibbs_corrector",
+                "predictor_transitions_per_molecule",
+                "corrector_steps_per_molecule",
+            ):
+                run["generation_protocol"].pop(key, None)
+        elif ce:
+            identity["source"]["corrector_source_sha256"] = "9" * 64
+        if ce:
+            identity["generation"]["udlm_denoiser_metadata"] = {
+                "schema_version": 1,
+                "parameterization": "x0_denoiser",
+                "objective": "clean_token_cross_entropy",
+                "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
+            }
+            identity["source"]["denoiser_source_sha256"] = "8" * 64
+        run["independent_rescore"]["identity"] = identity
+    return result
+
+
+def test_denoiser_csv_exports_objective_and_certified_checkpoint_semantics(screen):
+    result = _denoiser_export_fixture(screen)
+    before = copy.deepcopy(result)
+    control, ce = list(csv.DictReader(io.StringIO(report._csv_bytes(result).decode())))
+    assert control["objective"] == "CT / raw-LOO"
+    assert (
+        control["parameterization"] == control["planned_parameterization"] == "raw_loo"
+    )
+    assert control["udlm_denoiser_metadata"] == control["denoiser_source_sha256"] == ""
+    assert ce["objective"] == "clean CE"
+    assert ce["parameterization"] == ce["planned_parameterization"] == "x0_denoiser"
+    assert (
+        json.loads(ce["udlm_denoiser_metadata"])
+        == result["runs"][1]["independent_rescore"]["identity"]["generation"][
+            "udlm_denoiser_metadata"
+        ]
+    )
+    assert ce["denoiser_source_sha256"] == "8" * 64
+    assert control["checkpoint_sha256"] == "a" * 64
+    assert ce["checkpoint_sha256"] == "d" * 64
+    for row in (control, ce):
+        assert json.loads(row["inference_weights"])["source"] == "ema"
+        assert json.loads(row["inference_weights"])["ema"]["num_updates"] == 1000
+        assert row["nfe"] == row["predictor_transitions_per_molecule"] == "128"
+        assert row["corrector_steps_per_molecule"] == "0"
+        assert row["corrector_source_sha256"] == ""
+        assert "objective_comparison" in json.loads(row["protocol_design"])
+        assert (
+            json.loads(row["protocol_training"])
+            == result["protocol"]["configuration"]["training"]
+        )
+    assert result == before
+
+
+def test_denoiser_pdf_discloses_conversion_design_training_and_helper_hash(screen):
+    from pypdf import PdfReader
+
+    result = _denoiser_export_fixture(screen)
+    before = copy.deepcopy(result)
+    text = " ".join(
+        " ".join(page.extract_text().split())
+        for page in PdfReader(io.BytesIO(report._pdf_bytes(result))).pages
+    )
+    for expected in (
+        "Prospective sampling design",
+        "Objective comparison",
+        "Checkpoint logit interpretation",
+        "CT / raw-LOO",
+        "clean CE",
+        "x0_denoiser",
+        "before temperature or top-p",
+        "conversion adds no backbone evaluation",
+        "Shared hyperparameters do not independently optimize CT and CE.",
+        "V5 and V6 informed the engineering design.",
+        "Training provenance:",
+        "all tokenizer special IDs immutable",
+        "udlm_denoiser_metadata",
+        "denoiser_source_sha256",
+        "inference_weights",
+    ):
+        assert expected in text
+    assert "8" * 64 in text.replace(" ", "")
+    assert "7" * 64 in text.replace(" ", "")
+    assert result == before
+
+
+@pytest.mark.parametrize("status", ["pending", "failed", "invalid"])
+def test_denoiser_uncompleted_rows_show_plan_without_inventing_observed_identity(
+    screen, status
+):
+    result = _denoiser_export_fixture(screen)
+    for run in result["runs"]:
+        run["status"] = status
+        del run["config"]
+        del run["generation_protocol"]
+        del run["independent_rescore"]
+    rows = list(csv.DictReader(io.StringIO(report._csv_bytes(result).decode())))
+    assert [row["planned_parameterization"] for row in rows] == [
+        "raw_loo",
+        "x0_denoiser",
+    ]
+    for row in rows:
+        for field in (
+            "objective",
+            "parameterization",
+            "inference_weights",
+            "udlm_denoiser_metadata",
+            "denoiser_source_sha256",
+            "nfe",
+        ):
+            assert row[field] == ""
+        assert "objective_comparison" in json.loads(row["protocol_design"])
+    assert report._pdf_bytes(result).startswith(b"%PDF-")
+
+
+def test_denoiser_and_gibbs_export_both_helper_identities_and_total_budget(screen):
+    result = _denoiser_export_fixture(screen, gibbs=True)
+    rows = list(csv.DictReader(io.StringIO(report._csv_bytes(result).decode())))
+    assert rows[1]["denoiser_source_sha256"] == "8" * 64
+    assert rows[1]["corrector_source_sha256"] == "9" * 64
+    assert rows[1]["predictor_transitions_per_molecule"] == "64"
+    assert rows[1]["corrector_steps_per_molecule"] == "64"
+    assert rows[1]["nfe"] == "128"
+
+
+@pytest.mark.parametrize("declaration", ["design", "entry", "completed_run"])
+def test_denoiser_export_detection_supports_prospective_and_observed_studies(
+    screen, declaration
+):
+    result = _denoiser_export_fixture(screen)
+    specification = result["protocol"]["configuration"]
+    if declaration != "design":
+        specification["design"].pop("objective_comparison")
+    if declaration != "entry":
+        for entry in specification["entries"]:
+            del entry["parameterization"]
+    if declaration != "completed_run":
+        for run in result["runs"]:
+            run["status"] = "pending"
+            del run["config"]
+    assert report._has_denoiser_design(result) is True
+
+
+def test_objective_report_derives_training_prose_from_protocol_without_legacy_assumptions(
+    screen,
+):
+    root, protocol, output, _complete, rescore, _terminal = screen
+    document = json.loads(protocol.read_text())
+    document["design"] = {"objective_comparison": {"primary_temperature": 1.0}}
+    document["training"] = {
+        "initialization": "fresh common MDLM50k EMA",
+        "optimizer_updates": 1000,
+        "global_batch_size": 128,
+        "training_seed": 1500,
+        "gpu_count": 2,
+        "example_exposures_per_arm": 128000,
+        "common_mask_policy": "all tokenizer special IDs immutable",
+    }
+    _write(protocol, document)
+    result = report.build_report(protocol, output, root=root, rescore=rescore)
+    text = " ".join(result["caveats"])
+    for expected in (
+        "fresh common MDLM50k EMA",
+        "optimizer updates per arm: 1000",
+        "global batch: 128",
+        "training seed: 1500",
+        "training GPUs: 2",
+        "requested example exposures per arm: 128000",
+        "all tokenizer special IDs immutable",
+        "training losses have different scales and targets",
+    ):
+        assert expected in text
+    assert "R/S/E" not in text
+    assert "selected on E denoising loss" not in text
+    assert result["baselines"] == report.BASELINES
+    assert report.CAVEATS[2].startswith(
+        "The scheduler and FiLM conditioner were selected on E"
+    )
+
+
+def test_missing_objective_training_metadata_does_not_invent_historical_budget():
+    description = report._objective_training_description({})
+    assert description.startswith(
+        "Training settings are not recorded in this protocol."
+    )
+    assert "1000" not in description and "1500" not in description
