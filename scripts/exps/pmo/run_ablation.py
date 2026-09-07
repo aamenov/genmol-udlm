@@ -580,6 +580,13 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--oracle", choices=ORACLES, required=True)
     parser.add_argument("--variant", choices=tuple(VARIANT_SETTINGS), required=True)
     parser.add_argument("--model-path", type=Path, required=True)
+    parser.add_argument(
+        "--sampling-config",
+        type=Path,
+        default=None,
+        help="Opt-in checkpoint-bound sampling YAML; released policy only, no resume. "
+        "Its temperature/randomness override the legacy CLI controls.",
+    )
     parser.add_argument("--vocab-path", type=Path, default=None)
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--seed", type=int, default=0)
@@ -701,7 +708,7 @@ def _resolved_config(args: argparse.Namespace) -> dict[str, Any]:
         args.oracle, args.min_mol_size, args.max_mol_size
     )
     matrix_path = getattr(args, "matrix_path", None)
-    return {
+    config = {
         "experiment_id": args.experiment_id,
         "scientific_status": args.scientific_status,
         "matrix_path": (
@@ -745,6 +752,19 @@ def _resolved_config(args: argparse.Namespace) -> dict[str, Any]:
         "released_duplicate_policy": "repeat cached-child decomposition, matching release",
         "durable_events": bool(args.durable_events),
     }
+    if getattr(args, "sampling_config", None) is not None:
+        from scripts.exps.pmo.udlm_sampling import read_contract
+
+        contract = read_contract(
+            args.sampling_config,
+            gamma=config["gamma"],
+            variant=args.variant,
+            resume=args.resume,
+        )
+        config["pmo_sampling"] = contract
+        config["softmax_temp"] = contract["configuration"]["softmax_temp"]
+        config["randomness"] = contract["configuration"]["randomness"]
+    return config
 
 
 def _run_directory(config: Mapping[str, Any], output_root: Path) -> Path:
@@ -863,6 +883,24 @@ def _run_locked(
     )
     if len(population.active_fragments) < 2:
         raise ValueError("initial vocabulary must provide at least two active fragments")
+    sampling_adapter = None
+    if "pmo_sampling" in config:
+        from scripts.exps.pmo.udlm_sampling import prepare
+
+        if manifest["model"]["sha256"] != config["pmo_sampling"]["checkpoint_sha256"]:
+            raise ValueError("PMO manifest checkpoint differs from sampling-config")
+        sampling_adapter = prepare(
+            config["pmo_sampling"],
+            model_path=config["model_path"],
+            device=str(config["device"]),
+            gamma=float(config["gamma"]),
+            guidance_scale=float(config["guidance_scale"]),
+            sampler_class=Sampler,
+        )
+        sampler = sampling_adapter.sampler
+        manifest["extra"]["sampling"] = sampling_adapter.receipt
+    # Opt-in identity is resolved before the oracle factory. Preserve the legacy
+    # constructor order below when no explicit sampling contract is requested.
     oracle = CachedOracle(TDCOracle(name=str(config["oracle"])), int(config["max_oracle_calls"]))
     event_log = JsonlEventLog(events_path, durable=args.durable_events)
     start_iteration = 0
@@ -870,9 +908,12 @@ def _run_locked(
     elapsed_before_resume = 0.0
     next_checkpoint_call = int(config["checkpoint_every"])
 
-    sampler = Sampler(str(config["model_path"]))
-    sampler.model.to(str(config["device"]))
-    sampler.mdlm.to_device(sampler.model.device)
+    if sampling_adapter is None:
+        sampler = Sampler(str(config["model_path"]))
+        if getattr(sampler, "diffusion_type", "mdlm") != "mdlm":
+            raise ValueError("UDLM PMO requires an explicit --sampling-config")
+        sampler.model.to(str(config["device"]))
+        sampler.mdlm.to_device(sampler.model.device)
     uses_delta_mechanics = str(config["variant"]) in DELTA_MECHANICS_VARIANTS
 
     if args.resume:
@@ -977,13 +1018,16 @@ def _run_locked(
                 parent_atom_count = parent_molecule.GetNumAtoms()
                 child_smiles = parent_smiles
                 if remask_enabled:
-                    child_smiles = sampler.mask_modification(
-                        parent_smiles,
-                        gamma=float(config["gamma"]),
-                        softmax_temp=float(config["softmax_temp"]),
-                        randomness=float(config["randomness"]),
-                        w=float(config["guidance_scale"]),
-                    )
+                    if sampling_adapter is not None:
+                        child_smiles = sampling_adapter.modify(parent_smiles)
+                    else:
+                        child_smiles = sampler.mask_modification(
+                            parent_smiles,
+                            gamma=float(config["gamma"]),
+                            softmax_temp=float(config["softmax_temp"]),
+                            randomness=float(config["randomness"]),
+                            w=float(config["guidance_scale"]),
+                        )
                     child_smiles = _largest_component(child_smiles)
                 child_molecule = Chem.MolFromSmiles(child_smiles) if child_smiles else None
                 if child_molecule is None:
@@ -1010,6 +1054,15 @@ def _run_locked(
                         "proposal_attempts": proposal_attempt,
                         "remask_enabled": remask_enabled,
                     }
+                    if sampling_adapter is not None:
+                        candidate["sampling"] = (
+                            dict(sampling_adapter.last_call)
+                            if remask_enabled else {
+                                "generation_calls": 0,
+                                "backbone_evaluations": 0,
+                                "pre_generation_fallbacks": 0,
+                            }
+                        )
                     break
 
             if candidate is None:
@@ -1122,6 +1175,8 @@ def _run_locked(
 
         if oracle.finished:
             terminal_status = "completed"
+        if sampling_adapter is not None:
+            sampling_adapter.validate_unchanged()
     except KeyboardInterrupt:
         terminal_status = "interrupted"
         terminal_error = "KeyboardInterrupt"
@@ -1216,6 +1271,11 @@ def _run_locked(
             "recoverable_oracle_calls": last_checkpoint_calls,
             "recoverable_events": last_checkpoint_events,
         }
+        if sampling_adapter is not None:
+            summary["sampling"] = {
+                "identity": sampling_adapter.receipt,
+                "observed": dict(sampling_adapter.statistics),
+            }
         write_manifest(summary_path, summary, overwrite=True)
         manifest["status"] = terminal_status
         manifest["error"] = terminal_error
