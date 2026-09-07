@@ -1,6 +1,48 @@
 # GenMol-UDLM project context
 
-## Active continuation: V13 complete; matched PMO pilot preparation
+## Active continuation: V14 fixed PMO pilot ready for final launcher preflight
+
+The next fixed experiment is Fexofenadine property optimization, with local
+MDLM 50k versus MASK-rich CE and schedule-uniform S CT, seeds 2300/2301 and
+2,000 unique canonical oracle calls per run. The six-run panel (12,000 calls
+maximum) is `experiments/udlm/protocols/engineering_v14_pmo.json`, SHA-256
+`8f42ce172b392d27260317f3db7e07ce5c5cbe528eb448234388fcc34e0f4fda`.
+Its prospective design and three sampling YAMLs were pushed before scoring.
+Read `experiments/udlm/designs/engineering_v14_pmo_pilot.md` for both contrasts,
+unequal training/NFE, the exact released fragment policy, warmup, time limits,
+completion/verification gates and the restriction on paper comparisons.
+
+The same deterministic Fexofenadine oracle avoids the statically incompatible
+old GSK3B sklearn pickle; no GSK3B model was unpickled or evaluated. The opt-in
+TDC singleton-list scoring repair (`6bfb033`) propagates evaluator failures
+instead of manufacturing zero scores. All 87 focused tests passed. Source,
+package metadata, RDKit binaries and the vocabulary are bound by 26 auxiliary
+panel inputs. A fixed three-input CPU calibration separately performed six TDC
+evaluations and three manual formula checks, with maximum absolute error
+2.6469779601696886e-22. Calibration SHA-256 is
+`7c1b2b477e4515376717d7974798b9fb1366e8c866779ae669ebc734868576bc`;
+these are calibration calls, and there are still zero V14 optimization calls
+at this prelaunch snapshot.
+
+After the reviewed dynamic controller is merged, run its canonical CPU dry-run
+against the exact panel, commit/push this clean source, inspect fresh GPU state,
+and launch once in tmux `genmol-udlm-v14-pmo`. The one-shot wrapper is
+`output/logs/engineering-v14-pmo-pipeline.py`; its log and status are adjacent.
+The controller writes `output/udlm/engineering_v14_pmo/terminal_manifest.json`,
+with child logs under `output/logs/engineering_v14_pmo/`. Verify actual tmux/logs
+before any action. Do not repeat an existing namespace. The controller uses at
+most two freshly qualifying UUIDs (<10% utilization, >=30,000 MiB free), bounded
+capacity waiting before the first child, and no retries after launch. Source/HEAD
+must remain frozen until children and independent evidence acceptance finish.
+CPU rescore/report features may execute from their own committed isolated
+worktrees while reading the fixed canonical artifacts; merge those features
+only after acceptance if they were not ready before launch.
+
+No PMO outcome, final-seed promotion or GenMol superiority is established.
+The active research goal continues. All earlier instructions below preserve
+historical snapshots and must be checked against current logs.
+
+### Completed V13 and initial PMO preparation
 
 V13 generation and independent reporting completed at 13:15:46.912253 UTC on
 2026-09-07, accepting all eight runs and 800 requests. Frozen execution source
