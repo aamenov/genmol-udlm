@@ -5049,6 +5049,128 @@ print(stage24_json.dumps({"plans": stage24_preview, "molecular_result": None}, i
     ]
 
 
+def _objective_evaluation_cells():
+    """Teach the fixed paired comparison with a standalone exact-count example."""
+    return [
+        _cell(
+            "markdown",
+            r"""
+# Stage 25 — Evaluating the objective on generated molecules
+
+**Paper correspondence.** GenMol's de novo evaluation measures validity,
+uniqueness, diversity and quality. Our released-comparable quality counts
+unique valid molecules with QED $\geq0.6$ and SA $\leq4$, divided by all
+requested samples. Stage 23's CE-to-LOO identity supplies a valid inference
+parameterization; it does not prove molecular quality. We therefore compare
+generated samples directly, with strict decoding and the released
+repair/largest-component path reported separately.
+QED measures drug-likeness; SA is a synthetic-accessibility score, with lower
+values indicating easier synthesis according to that scoring model.
+
+**Intuition and motivation.** One lucky seed can make a method look better.
+V9 fixes CT/CE crossed with temperatures 1.0 and 0.5, seeds 1600/1601, and
+100 requests per seed before seeing these models' molecules. Every setting
+uses EMA weights, 128 predictor evaluations and no nucleus truncation or
+Gibbs corrector. Temperature 1.0 is the primary objective comparison because
+it leaves the proved conversion untempered. Temperature 0.5 is a secondary
+engineering choice informed by V5/V6, not independent confirmation.
+
+**Mathematics, with every symbol defined.** Let $s$ index one of $S$ seeds,
+$m\in\{CT,CE\}$ identify the method, $N$ be requests per seed, and $c_{m,s}$
+be the count of first-occurrence unique valid molecules passing both quality
+thresholds. Then $q_{m,s}=c_{m,s}/N$. At one fixed temperature, the paired
+difference is $\Delta_s=q_{CE,s}-q_{CT,s}$, its mean is
+$\bar\Delta=S^{-1}\sum_s\Delta_s$, and its sample standard deviation is
+$s_\Delta=\sqrt{\sum_s(\Delta_s-\bar\Delta)^2/(S-1)}$. The standard deviation
+describes seed-to-seed spread; it is not a confidence interval. With only
+two seeds, uncertainty remains substantial. Pairing labels seeds consistently;
+it does not make two different models generate identical trajectories.
+
+**Small concrete example.** These counts are synthetic teaching data. At
+$N=10$, CT has quality counts $[5,7]$ and CE has $[6,6]$. The first seed favors
+CE by 10 percentage points, but the second favors CT by 10 points. Their mean
+difference is zero and the paired sample standard deviation is about 14.14
+percentage points. Selecting the first seed alone would suggest a gain that disappears in the paired mean.
+Compute each decoding branch separately: repair may change molecular identity,
+so strict and repaired quality counts cannot be combined into one numerator.
+
+**Code below, shapes, and invariants.** The CPU-only cell accepts two maps
+from seed to integer quality count and one common request count. It requires
+identical seed sets, at least two seeds, and counts between zero and $N$.
+The conceptual quality and difference arrays have shape $[S]$; no model or
+GPU tensors are needed. Exact fractions keep the toy mean difference exactly
+zero. The cell also checks the planned $2\times2\times2=8$ generation runs and
+$8\times100=800$ requests. It reads no checkpoint, launches no job and asserts
+no experimental result; actual results come from independently rescored raw
+rows under the prospective V9 design.
+
+**Differences from released implementations.** This is a local adaptation
+study with two seeds of 100 requests per configuration. The historical local
+MDLM comparator has three seeds of 1,000; its 85.8% quality is context, not a
+matched sample-count or full-training-budget comparison. The two new arms
+share the Stage 24 training setup. An infrastructure amendment uses a separately
+audited V8 CT checkpoint plus a distinct V8b CE run: V8's original controller
+failed during process teardown and remains failed. No molecular output informed
+that amendment. The design and incident record retain the exact hashes and
+caveats. Neither CT-versus-CE training-loss magnitudes nor a selected pilot
+mean authorize a superiority claim; final seeds 0/1/2 remain reserved.
+
+**Comprehension checkpoint.** Why divide quality by requests rather than valid
+molecules? Expected reasoning: invalid outputs must still lower quality, and
+the released definition also counts unique accepted molecules only. Why pair
+the same seed labels? Expected reasoning: define an unambiguous per-seed
+contrast without asserting identical samples. Does the synthetic first seed
+prove CE improved? Expected reasoning: the second reverses its advantage and
+the paired mean is zero. Why show strict results if repair is released behavior?
+Expected reasoning: repair can rescue or alter structures and conceal raw
+syntax failures. Can 800 exploratory requests beat a paper mean statistically?
+Expected reasoning: they are spread over four settings; selection, sample
+size, training budget and reserved final evaluation still matter.
+""",
+            "stage-25-objective-evaluation",
+        ),
+        _cell(
+            "code",
+            """
+from fractions import Fraction as Stage25Fraction
+from math import sqrt as stage25_sqrt
+
+def stage25_paired_quality(ct_counts, ce_counts, requested):
+    if type(requested) is not int or requested <= 0:
+        raise ValueError("requested must be a positive integer")
+    if set(ct_counts) != set(ce_counts) or len(ct_counts) < 2:
+        raise ValueError("both methods require the same two or more seeds")
+    seeds = sorted(ct_counts)
+    for counts in (ct_counts, ce_counts):
+        if any(type(counts[s]) is not int or not 0 <= counts[s] <= requested
+               for s in seeds):
+            raise ValueError("quality counts must be integers within requests")
+    differences = {s: Stage25Fraction(ce_counts[s] - ct_counts[s], requested)
+                   for s in seeds}
+    mean = sum(differences.values()) / len(seeds)
+    variance = sum((value - mean) ** 2 for value in differences.values()) / (len(seeds) - 1)
+    return {"paired_differences": differences, "mean_difference": mean,
+            "paired_sample_sd": stage25_sqrt(float(variance))}
+
+stage25_toy = stage25_paired_quality({1600: 5, 1601: 7}, {1600: 6, 1601: 6}, 10)
+assert stage25_toy["mean_difference"] == 0
+assert stage25_toy["paired_differences"] == {
+    1600: Stage25Fraction(1, 10), 1601: Stage25Fraction(-1, 10)}
+stage25_design = {"methods": ["CT", "CE"], "temperatures": [1.0, 0.5],
+                  "seeds": [1600, 1601], "requests_per_seed": 100,
+                  "predictor_evaluations_per_molecule": 128}
+stage25_runs = (len(stage25_design["methods"]) * len(stage25_design["temperatures"])
+                * len(stage25_design["seeds"]))
+assert stage25_runs == 8
+assert stage25_runs * stage25_design["requests_per_seed"] == 800
+print("Synthetic example only:", stage25_toy)
+print("Planned runs:", stage25_runs, "planned requests:", 800)
+""",
+            "stage-25-objective-evaluation-code",
+        ),
+    ]
+
+
 def _replace_required(text: str, old: str, new: str, *, label: str) -> str:
     """Apply one migration exactly once while remaining idempotent."""
     if new in text:
@@ -6252,6 +6374,7 @@ def update_notebook(source: Path, destination: Path):
         *_engineering_v6_cells(),
         *_denoiser_ce_cells(),
         *_objective_comparison_cells(),
+        *_objective_evaluation_cells(),
     ]
     engineering_ids = {cell["id"] for cell in engineering_cells}
     notebook["cells"] = [
