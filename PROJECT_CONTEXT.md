@@ -1,3 +1,29 @@
+# Isolated follow-through study — active local scope
+
+This checkout owns only the diagnostic sequence authorized in the side conversation
+on 2026-09-07. Read `docs/udlm_diagnostics_followthrough.md`. Do not execute the
+historical canonical-worktree commands below from this checkout.
+
+V9 finished generation and independent rescoring of all eight runs / 800 requests.
+Its snapshot and SHA-256 are in `experiments/udlm/results/followthrough_v9_decision.json`.
+Both V8 CT and V8b CE checkpoint copies here have verified original SHA-256 values.
+
+The next prepared study is `experiments/udlm/protocols/followthrough_resolution.json`:
+CT/CE × 128/512 predictor evaluations, temperature 1.0, seeds 17300/17301,
+100 requests per seed. Source must be frozen and pushed before execution.
+Launch with `bash scripts/udlm/run_followthrough_resolution.sh`; this starts
+tmux `genmol-udlm-followthrough-resolution`, logs to
+`output/logs/followthrough-resolution-pipeline.log`, and runs independent
+CPU rescoring and paired reports after generation. Verify live state before
+launching; no duplicate runs or automatic retries. At most two dynamically
+selected GPUs below 10% utilization, with >=30,000 MiB free, are permitted.
+
+The learning curve and held-out confirmation depend on these results; neither
+has been launched or completed by preparing this protocol. Keep this source
+frozen during the resolution run; use another isolated checkout for later work.
+
+---
+
 # GenMol-UDLM project context
 
 ## Active continuation: completed CT/CE training, paired V9 evaluation

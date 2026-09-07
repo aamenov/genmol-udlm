@@ -1,0 +1,15 @@
+# Follow-through resolution diagnostic: fixed checkpoint, temperature 1.0.
+# Fixed V9 primary clean-CE setting; convert to LOO before sampling controls.
+model_path: output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt
+num_samples: 100
+diffusion_type: udlm
+parameterization: x0_denoiser
+softmax_temp: 1.0
+raw_loo_top_p: 1.0
+randomness: 0.0
+min_add_len: 40
+num_steps: 512
+inference_eps: 1.0e-5
+exclude_special_tokens: false
+prior_variant: empirical_frequency
+prior_metadata_sha256: f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612

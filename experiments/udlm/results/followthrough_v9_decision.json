@@ -1,0 +1,39 @@
+{
+  "accounting": {
+    "independently_rescored_requests": 800,
+    "scheduled_requests": 800,
+    "scheduled_runs": 8,
+    "status_counts": {
+      "completed": 8
+    }
+  },
+  "aggregates": [
+    {
+      "config": "ct_t100",
+      "repaired_quality": 0.46499999999999997,
+      "strict_quality": 0.21000000000000002,
+      "strict_validity": 0.39
+    },
+    {
+      "config": "ce_t100",
+      "repaired_quality": 0.41000000000000003,
+      "strict_quality": 0.26,
+      "strict_validity": 0.645
+    },
+    {
+      "config": "ct_t050",
+      "repaired_quality": 0.545,
+      "strict_quality": 0.44,
+      "strict_validity": 0.77
+    },
+    {
+      "config": "ce_t050",
+      "repaired_quality": 0.525,
+      "strict_quality": 0.395,
+      "strict_validity": 0.6699999999999999
+    }
+  ],
+  "interpretation": "CE is not a general quality improvement. Both objectives retained for a fixed-temperature resolution diagnostic; no superiority established.",
+  "source_report": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v9_reports/complete/report.json",
+  "source_report_sha256": "b880c8bbad2e5e1d5f3639ba8f6848da934c87c2ec44d7e9c466f46a941c7fb6"
+}
