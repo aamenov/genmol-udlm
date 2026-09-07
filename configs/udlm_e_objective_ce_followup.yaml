@@ -1,0 +1,6 @@
+defaults:
+  - udlm_e_objective_ce
+  - _self_
+
+# Fresh V8b namespace; the launcher verifies exact V8 CE training settings.
+# Initialization remains the original MDLM50k EMA, with fresh optimizer/EMA.

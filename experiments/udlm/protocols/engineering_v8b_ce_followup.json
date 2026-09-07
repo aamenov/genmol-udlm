@@ -1,0 +1,51 @@
+{
+  "checkpoint": "outputs/paper_v1/checkpoints/50000.ckpt",
+  "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+  "claim": "separate_ce_followup_original_v8_campaign_remains_failed",
+  "config": "configs/udlm_e_objective_ce_followup.yaml",
+  "config_sha256": "354f58cf3cce3661513bbe24400c38bf0d9dbe22d03de9aa161513226ae76531",
+  "evidence": {
+    "original_campaign_terminal": {
+      "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/campaign_terminal.json",
+      "sha256": "98075a11c7340dafcc855887348201477981bd2a1a8f5d39053da24866cc663b"
+    },
+    "original_ct_terminal": {
+      "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/terminal_manifest.json",
+      "sha256": "1021ba513564a25ca26ea3c2d6c148d271e1cd98d27078056285e848c9c69b5e"
+    },
+    "post_exit_audit": {
+      "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/post_exit_audit.json",
+      "sha256": "959151c37072431be23b1f5696d7215da5291e0bace40d6f307864a7262f93c2"
+    }
+  },
+  "example_exposures_per_arm": 128000,
+  "execution_policy": "One CE-only attempt in a new namespace. Revalidate original failure/audit hashes, the retained CT checkpoint bytes and unchanged training implementation. Require reviewed 15-second process-group cleanup grace. Never automatically resume or retry.",
+  "final_benchmark_seeds_reserved": [
+    0,
+    1,
+    2
+  ],
+  "follow_up": "No automatic generation, promotion or longer training; the prospective V9 design requires an explicit incident-aware protocol amendment before using the separately audited CT plus V8b CE pair.",
+  "global_batch_size": 128,
+  "gpu_count": 2,
+  "gpu_policy": {
+    "active_compute_processes_allowed": true,
+    "max_gpus": 2,
+    "max_utilization_percent": 10,
+    "min_free_memory_mib": 30000
+  },
+  "initialization_policy": "Fresh original MDLM50k EMA; fresh optimizer and EMA; never continue CT or any interrupted CE checkpoint.",
+  "matched_common_config_sha256": "f373121441fca1aaa2f2657a76d7f7ce66be199cd35637597d0df240e257e89a",
+  "memory_measurement": "External NVIDIA snapshots every 2 seconds; observed aggregate GPU use includes other processes and is not allocator peak memory",
+  "micro_batch_size": 16,
+  "optimizer_updates": 1000,
+  "original_protocol": "experiments/udlm/protocols/engineering_v8_objectives.json",
+  "original_protocol_sha256": "a27875752d25a4a7928401434f9bd90ee6e9d01539586bab70ce3ba75499026e",
+  "original_source_revision": "c8434dda105c5fb2a15bb784d24e0387062c733e",
+  "purpose": "Fresh CE-only follow-up after original V8 CT controller failure; preserve the failed campaign and separately audited CT checkpoint.",
+  "reporting_policy": "Original V8 campaign and CT controller remain failed. Report the separately validated CT checkpoint and this new CE controller outcome with their distinct source revisions, immutable receipt/audit hashes and configured-exposure caveat.",
+  "schema_version": 1,
+  "seed": 1500,
+  "separately_validated_ct_checkpoint_sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+  "study_id": "engineering-v8b-ce-e-1000-b128-w2"
+}
