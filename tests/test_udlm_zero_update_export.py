@@ -281,3 +281,50 @@ def test_same_shape_activation_change_is_not_a_frozen_backbone(export_case):
     )
     assert manifest["status"] == "failed"
     assert not (export_case["kwargs"]["output_dir"] / "transfer.ckpt").exists()
+
+
+def test_unused_source_interpolations_remain_unresolved_and_fingerprinted(export_case):
+    config = export_case["source_payload"]["hyper_parameters"]["config"]
+    config.callback = {"dirpath": "${cwd:}"}
+    config.unused_schedule = {"future_horizon": "${unused_schedule_resolver:steps}"}
+    assert not OmegaConf.has_resolver("cwd")
+    assert not OmegaConf.has_resolver("unused_schedule_resolver")
+    torch.save(export_case["source_payload"], export_case["source_path"])
+    export_case["kwargs"]["expected_source_sha256"] = exporter.artifact(
+        export_case["source_path"]
+    )["sha256"]
+    result = run_export(export_case, "x0_denoiser")
+    reference = result["transfer_metadata"]["source_mdlm"]
+    assert reference["config_sha256"] == exporter.digest(
+        OmegaConf.to_container(config, resolve=False)
+    )
+    assert (
+        reference["config_sha256_scope"]
+        == "complete_unresolved_source_configuration_no_eager_interpolation"
+    )
+    assert not OmegaConf.has_resolver("cwd")
+    assert not OmegaConf.has_resolver("unused_schedule_resolver")
+    assert result["status"] == "completed"
+
+
+def test_unresolved_required_source_model_field_still_fails(export_case, monkeypatch):
+    from omegaconf.errors import UnsupportedInterpolationType
+
+    config = export_case["source_payload"]["hyper_parameters"]["config"]
+    config.model.hidden_size = "${unknown_required_model:width}"
+    torch.save(export_case["source_payload"], export_case["source_path"])
+    export_case["kwargs"]["expected_source_sha256"] = exporter.artifact(
+        export_case["source_path"]
+    )["sha256"]
+    monkeypatch.setattr(
+        model_module.GenMol,
+        "initialize_from_mdlm_checkpoint",
+        lambda *_a, **_k: pytest.fail("required interpolation bypassed"),
+    )
+    with pytest.raises(UnsupportedInterpolationType):
+        run_export(export_case)
+    manifest = json.loads(
+        (export_case["kwargs"]["output_dir"] / "manifest.json").read_bytes()
+    )
+    assert manifest["status"] == "failed"
+    assert not (export_case["kwargs"]["output_dir"] / "transfer.ckpt").exists()
