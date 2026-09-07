@@ -1,0 +1,2111 @@
+{
+  "accounting": {
+    "independently_rescored_requests": 800,
+    "scheduled_requests": 800,
+    "scheduled_runs": 8,
+    "status_counts": {
+      "completed": 8
+    }
+  },
+  "configuration_metrics": [
+    {
+      "arm_id": "CT",
+      "attempt_id": "v10-ct-t050-n128",
+      "candidate_id": "v8-ct-e-w2-1000u-48986899c401",
+      "complete": true,
+      "completed_seeds": [
+        1700,
+        1701
+      ],
+      "config_id": "ct_t050_n128",
+      "expected_seeds": [
+        1700,
+        1701
+      ],
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8917595976565214,
+            "sample_sd": 0.006444992999698794
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.455,
+            "sample_sd": 0.07778174593052022
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8753811769613111,
+            "sample_sd": 0.0016025816793986292
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.355,
+            "sample_sd": 0.12020815280171307
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.72,
+            "sample_sd": 0.09899494936611666
+          }
+        }
+      }
+    },
+    {
+      "arm_id": "CT",
+      "attempt_id": "v10-ct-t050-n512",
+      "candidate_id": "v8-ct-e-w2-1000u-48986899c401",
+      "complete": true,
+      "completed_seeds": [
+        1700,
+        1701
+      ],
+      "config_id": "ct_t050_n512",
+      "expected_seeds": [
+        1700,
+        1701
+      ],
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8907209670329008,
+            "sample_sd": 0.0011424188223167625
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.44999999999999996,
+            "sample_sd": 0.028284271247461888
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.995,
+            "sample_sd": 0.007071067811865481
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8763592738016057,
+            "sample_sd": 0.005153167188289081
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.32499999999999996,
+            "sample_sd": 0.03535533905932737
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.735,
+            "sample_sd": 0.021213203435596444
+          }
+        }
+      }
+    },
+    {
+      "arm_id": "CE",
+      "attempt_id": "v10-ce-t050-n128",
+      "candidate_id": "v8b-ce-e-w2-1000u-b7d674ed5bdd",
+      "complete": true,
+      "completed_seeds": [
+        1700,
+        1701
+      ],
+      "config_id": "ce_t050_n128",
+      "expected_seeds": [
+        1700,
+        1701
+      ],
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8927718296509505,
+            "sample_sd": 0.0026208826229325044
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.46499999999999997,
+            "sample_sd": 0.007071067811865442
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 0.9948979591836735,
+            "sample_sd": 0.007215375318230085
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.99,
+            "sample_sd": 0.014142135623730963
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8781425134468657,
+            "sample_sd": 0.0006701999414223982
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.36,
+            "sample_sd": 0.0
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.7250000000000001,
+            "sample_sd": 0.06363961030678926
+          }
+        }
+      }
+    },
+    {
+      "arm_id": "CE",
+      "attempt_id": "v10-ce-t050-n512",
+      "candidate_id": "v8b-ce-e-w2-1000u-b7d674ed5bdd",
+      "complete": true,
+      "completed_seeds": [
+        1700,
+        1701
+      ],
+      "config_id": "ce_t050_n512",
+      "expected_seeds": [
+        1700,
+        1701
+      ],
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8926526810176396,
+            "sample_sd": 0.0011326366339381915
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.48,
+            "sample_sd": 0.042426406871192854
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.985,
+            "sample_sd": 0.007071067811865481
+          }
+        },
+        "strict": {
+          "diversity": {
+            "defined_seed_count": 2,
+            "mean": 0.8778925643383209,
+            "sample_sd": 0.005078602914861515
+          },
+          "quality": {
+            "defined_seed_count": 2,
+            "mean": 0.385,
+            "sample_sd": 0.03535533905932737
+          },
+          "uniqueness": {
+            "defined_seed_count": 2,
+            "mean": 1.0,
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "defined_seed_count": 2,
+            "mean": 0.715,
+            "sample_sd": 0.007071067811865481
+          }
+        }
+      }
+    }
+  ],
+  "contrasts": [
+    {
+      "contrast_id": "ct_512_minus_128",
+      "control_config": "ct_t050_n128",
+      "generation_runtime_ratio": {
+        "complete": true,
+        "defined_seed_count": 2,
+        "expected_seed_count": 2,
+        "mean": 3.7936624265329293,
+        "operation": "512_over_128",
+        "per_seed": [
+          {
+            "control_value": 15.143039368034806,
+            "seed": 1700,
+            "status": "defined",
+            "treatment_value": 57.41494463797426,
+            "value": 3.791507321784458
+          },
+          {
+            "control_value": 13.747878049965948,
+            "seed": 1701,
+            "status": "defined",
+            "treatment_value": 52.1844365199795,
+            "value": 3.7958175312814006
+          }
+        ],
+        "sample_sd": 0.003047778363622854
+      },
+      "lexical_counts": {
+        "bad_parentheses": {
+          "complete": true,
+          "defined_seed_count": 2,
+          "expected_seed_count": 2,
+          "mean": -0.5,
+          "operation": "512_minus_128",
+          "per_seed": [
+            {
+              "control_value": 14,
+              "seed": 1700,
+              "status": "defined",
+              "treatment_value": 14,
+              "value": 0
+            },
+            {
+              "control_value": 12,
+              "seed": 1701,
+              "status": "defined",
+              "treatment_value": 11,
+              "value": -1
+            }
+          ],
+          "sample_sd": 0.7071067811865476
+        },
+        "both_flags": {
+          "complete": true,
+          "defined_seed_count": 2,
+          "expected_seed_count": 2,
+          "mean": -1.5,
+          "operation": "512_minus_128",
+          "per_seed": [
+            {
+              "control_value": 3,
+              "seed": 1700,
+              "status": "defined",
+              "treatment_value": 1,
+              "value": -2
+            },
+            {
+              "control_value": 2,
+              "seed": 1701,
+              "status": "defined",
+              "treatment_value": 1,
+              "value": -1
+            }
+          ],
+          "sample_sd": 0.7071067811865476
+        },
+        "flagged_strict_valid": {
+          "complete": true,
+          "defined_seed_count": 2,
+          "expected_seed_count": 2,
+          "mean": 0,
+          "operation": "512_minus_128",
+          "per_seed": [
+            {
+              "control_value": 0,
+              "seed": 1700,
+              "status": "defined",
+              "treatment_value": 0,
+              "value": 0
+            },
+            {
+              "control_value": 0,
+              "seed": 1701,
+              "status": "defined",
+              "treatment_value": 0,
+              "value": 0
+            }
+          ],
+          "sample_sd": 0.0
+        },
+        "odd_ring": {
+          "complete": true,
+          "defined_seed_count": 2,
+          "expected_seed_count": 2,
+          "mean": -4.5,
+          "operation": "512_minus_128",
+          "per_seed": [
+            {
+              "control_value": 19,
+              "seed": 1700,
+              "status": "defined",
+              "treatment_value": 7,
+              "value": -12
+            },
+            {
+              "control_value": 8,
+              "seed": 1701,
+              "status": "defined",
+              "treatment_value": 11,
+              "value": 3
+            }
+          ],
+          "sample_sd": 10.606601717798213
+        },
+        "syntax_flag": {
+          "complete": true,
+          "defined_seed_count": 2,
+          "expected_seed_count": 2,
+          "mean": -3.5,
+          "operation": "512_minus_128",
+          "per_seed": [
+            {
+              "control_value": 30,
+              "seed": 1700,
+              "status": "defined",
+              "treatment_value": 20,
+              "value": -10
+            },
+            {
+              "control_value": 18,
+              "seed": 1701,
+              "status": "defined",
+              "treatment_value": 21,
+              "value": 3
+            }
+          ],
+          "sample_sd": 9.192388155425117
+        }
+      },
+      "method": "CT",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": -0.00103863062362064,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 0.8963168959113083,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 0.8899131549366854,
+                "value": -0.006403740974622818
+              },
+              {
+                "control_value": 0.8872022994017346,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.8915287791291161,
+                "value": 0.004326479727381538
+              }
+            ],
+            "sample_sd": 0.007587411822015557
+          },
+          "quality": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": -0.005000000000000032,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 0.4,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 0.43,
+                "value": 0.02999999999999997
+              },
+              {
+                "control_value": 0.51,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.47,
+                "value": -0.040000000000000036
+              }
+            ],
+            "sample_sd": 0.04949747468305833
+          },
+          "uniqueness": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": 0.0,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 1.0,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 1.0,
+                "value": 0.0
+              },
+              {
+                "control_value": 1.0,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 1.0,
+                "value": 0.0
+              }
+            ],
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": -0.0050000000000000044,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 1.0,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 1.0,
+                "value": 0.0
+              },
+              {
+                "control_value": 1.0,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.99,
+                "value": -0.010000000000000009
+              }
+            ],
+            "sample_sd": 0.007071067811865481
+          }
+        },
+        "strict": {
+          "diversity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": 0.00097809684029454,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 0.874247980588403,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 0.8727154343381784,
+                "value": -0.0015325462502245868
+              },
+              {
+                "control_value": 0.8765143733342192,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.8800031132650329,
+                "value": 0.003488739930813667
+              }
+            ],
+            "sample_sd": 0.0035505855088904512
+          },
+          "quality": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": -0.030000000000000027,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 0.27,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 0.3,
+                "value": 0.02999999999999997
+              },
+              {
+                "control_value": 0.44,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.35,
+                "value": -0.09000000000000002
+              }
+            ],
+            "sample_sd": 0.08485281374238571
+          },
+          "uniqueness": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": 0.0,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 1.0,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 1.0,
+                "value": 0.0
+              },
+              {
+                "control_value": 1.0,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 1.0,
+                "value": 0.0
+              }
+            ],
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": 0.014999999999999958,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 0.65,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 0.75,
+                "value": 0.09999999999999998
+              },
+              {
+                "control_value": 0.79,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.72,
+                "value": -0.07000000000000006
+              }
+            ],
+            "sample_sd": 0.12020815280171311
+          }
+        }
+      },
+      "operation": "512_minus_128",
+      "treatment_config": "ct_t050_n512"
+    },
+    {
+      "contrast_id": "ce_512_minus_128",
+      "control_config": "ce_t050_n128",
+      "generation_runtime_ratio": {
+        "complete": true,
+        "defined_seed_count": 2,
+        "expected_seed_count": 2,
+        "mean": 4.024671160062097,
+        "operation": "512_over_128",
+        "per_seed": [
+          {
+            "control_value": 14.948143490008079,
+            "seed": 1700,
+            "status": "defined",
+            "treatment_value": 63.67121792800026,
+            "value": 4.259473289814256
+          },
+          {
+            "control_value": 14.051982834003866,
+            "seed": 1701,
+            "status": "defined",
+            "treatment_value": 53.25517455703812,
+            "value": 3.7898690303099376
+          }
+        ],
+        "sample_sd": 0.33206035636959075
+      },
+      "lexical_counts": {
+        "bad_parentheses": {
+          "complete": true,
+          "defined_seed_count": 2,
+          "expected_seed_count": 2,
+          "mean": 0.5,
+          "operation": "512_minus_128",
+          "per_seed": [
+            {
+              "control_value": 8,
+              "seed": 1700,
+              "status": "defined",
+              "treatment_value": 12,
+              "value": 4
+            },
+            {
+              "control_value": 14,
+              "seed": 1701,
+              "status": "defined",
+              "treatment_value": 11,
+              "value": -3
+            }
+          ],
+          "sample_sd": 4.949747468305833
+        },
+        "both_flags": {
+          "complete": true,
+          "defined_seed_count": 2,
+          "expected_seed_count": 2,
+          "mean": -1.5,
+          "operation": "512_minus_128",
+          "per_seed": [
+            {
+              "control_value": 3,
+              "seed": 1700,
+              "status": "defined",
+              "treatment_value": 2,
+              "value": -1
+            },
+            {
+              "control_value": 4,
+              "seed": 1701,
+              "status": "defined",
+              "treatment_value": 2,
+              "value": -2
+            }
+          ],
+          "sample_sd": 0.7071067811865476
+        },
+        "flagged_strict_valid": {
+          "complete": true,
+          "defined_seed_count": 2,
+          "expected_seed_count": 2,
+          "mean": 0,
+          "operation": "512_minus_128",
+          "per_seed": [
+            {
+              "control_value": 0,
+              "seed": 1700,
+              "status": "defined",
+              "treatment_value": 0,
+              "value": 0
+            },
+            {
+              "control_value": 0,
+              "seed": 1701,
+              "status": "defined",
+              "treatment_value": 0,
+              "value": 0
+            }
+          ],
+          "sample_sd": 0.0
+        },
+        "odd_ring": {
+          "complete": true,
+          "defined_seed_count": 2,
+          "expected_seed_count": 2,
+          "mean": -0.5,
+          "operation": "512_minus_128",
+          "per_seed": [
+            {
+              "control_value": 12,
+              "seed": 1700,
+              "status": "defined",
+              "treatment_value": 12,
+              "value": 0
+            },
+            {
+              "control_value": 12,
+              "seed": 1701,
+              "status": "defined",
+              "treatment_value": 11,
+              "value": -1
+            }
+          ],
+          "sample_sd": 0.7071067811865476
+        },
+        "syntax_flag": {
+          "complete": true,
+          "defined_seed_count": 2,
+          "expected_seed_count": 2,
+          "mean": 1.5,
+          "operation": "512_minus_128",
+          "per_seed": [
+            {
+              "control_value": 17,
+              "seed": 1700,
+              "status": "defined",
+              "treatment_value": 22,
+              "value": 5
+            },
+            {
+              "control_value": 22,
+              "seed": 1701,
+              "status": "defined",
+              "treatment_value": 20,
+              "value": -2
+            }
+          ],
+          "sample_sd": 4.949747468305833
+        }
+      },
+      "method": "CE",
+      "metrics": {
+        "released_comparable": {
+          "diversity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": -0.00011914863331086156,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 0.8909185857755809,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 0.8918517859731616,
+                "value": 0.0009332001975806969
+              },
+              {
+                "control_value": 0.89462507352632,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.8934535760621176,
+                "value": -0.00117149746420242
+              }
+            ],
+            "sample_sd": 0.0014882459889943127
+          },
+          "quality": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": 0.015000000000000013,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 0.47,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 0.51,
+                "value": 0.040000000000000036
+              },
+              {
+                "control_value": 0.46,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.45,
+                "value": -0.010000000000000009
+              }
+            ],
+            "sample_sd": 0.03535533905932741
+          },
+          "uniqueness": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": 0.005102040816326536,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 1.0,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 1.0,
+                "value": 0.0
+              },
+              {
+                "control_value": 0.9897959183673469,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 1.0,
+                "value": 0.010204081632653073
+              }
+            ],
+            "sample_sd": 0.007215375318230085
+          },
+          "validity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": -0.0050000000000000044,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 1.0,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 0.99,
+                "value": -0.010000000000000009
+              },
+              {
+                "control_value": 0.98,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.98,
+                "value": 0.0
+              }
+            ],
+            "sample_sd": 0.007071067811865481
+          }
+        },
+        "strict": {
+          "diversity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": -0.00024994910854481134,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 0.8776686105235351,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 0.8743014497782685,
+                "value": -0.003367160745266551
+              },
+              {
+                "control_value": 0.8786164163701963,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.8814836788983732,
+                "value": 0.002867262528176928
+              }
+            ],
+            "sample_sd": 0.004408402973439117
+          },
+          "quality": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": 0.024999999999999994,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 0.36,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 0.41,
+                "value": 0.04999999999999999
+              },
+              {
+                "control_value": 0.36,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.36,
+                "value": 0.0
+              }
+            ],
+            "sample_sd": 0.03535533905932737
+          },
+          "uniqueness": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": 0.0,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 1.0,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 1.0,
+                "value": 0.0
+              },
+              {
+                "control_value": 1.0,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 1.0,
+                "value": 0.0
+              }
+            ],
+            "sample_sd": 0.0
+          },
+          "validity": {
+            "complete": true,
+            "defined_seed_count": 2,
+            "expected_seed_count": 2,
+            "mean": -0.010000000000000064,
+            "operation": "512_minus_128",
+            "per_seed": [
+              {
+                "control_value": 0.77,
+                "seed": 1700,
+                "status": "defined",
+                "treatment_value": 0.72,
+                "value": -0.050000000000000044
+              },
+              {
+                "control_value": 0.68,
+                "seed": 1701,
+                "status": "defined",
+                "treatment_value": 0.71,
+                "value": 0.029999999999999916
+              }
+            ],
+            "sample_sd": 0.056568542494923775
+          }
+        }
+      },
+      "operation": "512_minus_128",
+      "treatment_config": "ce_t050_n512"
+    }
+  ],
+  "definitions": {
+    "parentheses": "After removing bracket atoms and %(integer) ring labels, flag negative running parenthesis depth or nonzero final depth.",
+    "quality": "Distinct valid molecules with QED>=0.6 and SA<=4 divided by requests; uniqueness is evaluated within each seed, not globally across configurations. QED is drug-likeness; lower SA means easier synthetic accessibility.",
+    "repaired": "Saved exact-rescored SAFE fix=True decode with released largest-component selection by SMILES string length.",
+    "ring_parity": "Remove complete bracket-atom substrings; recognize %(integer), %NN and single-digit ring labels; normalize label integers and flag any odd count. Even counts permit label reuse and do not establish chemical validity.",
+    "strict": "Saved exact-rescored SAFE fix=False decode plus RDKit validation, with no repair or largest-component selection."
+  },
+  "limitations": [
+    "This design follows V5/V6 and complete V9 results; temperature 0.5 was selected using those outcomes and is not independent confirmation.",
+    "The 512-step treatment costs four times the predictor NFEs of 128, so any gain is not an equal-compute win; wall-clock scaling is measured.",
+    "The finite-state oracle uses exact untempered conditionals; it does not prove an improvement for learned temperature-0.5 molecular models or identify the cause of their quality gap.",
+    "The original V8 CT controller and campaign remain failed. This panel reuses its separately audited checkpoint plus the completed V8b CE checkpoint; neither is retrained or substituted.",
+    "Training source revisions differ through controller/reporting changes; model/training implementation and resolved common training settings match by recorded hashes.",
+    "128000 training exposures are configured accounting, not distinct molecules or an independent live row trace. Finite final tensors do not establish finiteness of every intermediate update.",
+    "Two seeds of 100 requests per setting are small; pairing is by seed/run, not molecule-level trajectories or independence. Withhold each contrast summary until both pairs define its metric.",
+    "Report validity, uniqueness, quality and diversity under strict SAFE decoding and released repair/largest-component selection, plus every per-seed 512-minus128 contrast. Quality counts unique QED>=0.6 and SA<=4 molecules divided by requests.",
+    "MDLM and paper means remain contextual comparisons with different sample/training budgets. Final UDLM seeds 0/1/2 remain reserved; no superiority, promotion or additional experiment is authorized by the results alone."
+  ],
+  "protocol_sha256": "cc6e3ced657f6ec66f611398e65b8b0e79598b3e76acbef77c72cfc4a7d0c4fd",
+  "runs": [
+    {
+      "checkpoint": {
+        "byte_identity_verified_before_and_after_load": true,
+        "diffusion_type": "udlm",
+        "epoch": 0,
+        "global_step": 1000,
+        "mtime_utc": "2026-09-07T10:41:32.319155+00:00",
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+        "sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+        "size_bytes": 1636492424,
+        "udlm_exclude_special_tokens": false,
+        "udlm_inference_eps": 1e-05,
+        "udlm_prior_metadata": {
+          "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+          "active_vocab_size": 1880,
+          "antithetic_sampling": true,
+          "comparison_role": "empirical_prior_treatment",
+          "excluded_token_ids": [],
+          "frequency_active_token_count": 517090,
+          "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+          "frequency_artifact_schema_version": 1,
+          "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+          "frequency_content_token_count": 517090,
+          "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+          "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+          "frequency_dataset_selection": "first 10000 streaming rows",
+          "frequency_dataset_split": "train",
+          "frequency_example_count": 10000,
+          "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+          "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+          "full_vocab_size": 1880,
+          "noise_eps": 0.001,
+          "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+          "prior_source": "pinned_frequency_artifact_uniform_mixture",
+          "process_family": "rank_one_continuous_categorical",
+          "sampling_eps": 0.001,
+          "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+          "schema_version": 1,
+          "stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+          "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+          "tokenizer_repo_id": "datamol-io/safe-gpt",
+          "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+          "uniform_mixture_weight": 0.0002,
+          "variant": "empirical_frequency"
+        },
+        "udlm_prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+        "udlm_prior_variant": "empirical_frequency"
+      },
+      "config_id": "ct_t050_n128",
+      "counts": {
+        "bad_parentheses": 14,
+        "both_flags": 3,
+        "flagged_strict_valid": 0,
+        "largest_component": 31,
+        "n": 100,
+        "odd_ring": 19,
+        "raw_safe_error": 0,
+        "recovered": 35,
+        "released_both_quality_fail": 4,
+        "released_high_sa_only": 0,
+        "released_low_qed_only": 56,
+        "released_quality": 40,
+        "released_unique": 100,
+        "repaired_valid": 100,
+        "strict_both_quality_fail": 3,
+        "strict_failure": 35,
+        "strict_high_sa_only": 0,
+        "strict_low_qed_only": 35,
+        "strict_quality": 27,
+        "strict_unique": 65,
+        "strict_valid": 65,
+        "syntax_flag": 30,
+        "syntax_strict_failure": 30
+      },
+      "gpu_mapping": {
+        "cuda_visible_devices": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece",
+        "final_probe": {
+          "compute_mode": "Default",
+          "compute_processes": [
+            {
+              "pid": 340770,
+              "process_name": "/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python",
+              "used_memory_mib": 1284
+            }
+          ],
+          "index": 2,
+          "memory_total_mib": 49140,
+          "memory_used_mib": 1307,
+          "name": "NVIDIA RTX A6000",
+          "utilization_percent": 8,
+          "uuid": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece"
+        },
+        "launch_policy": {
+          "active_compute_processes_allowed": true,
+          "inventory_scope": "all_nvidia_gpus",
+          "max_utilization_percent": 10,
+          "min_free_memory_mib": 30000,
+          "requested_gpu_count": 2,
+          "selection_method": "dynamic_idle_discovery",
+          "utilization_comparison": "strictly_less_than"
+        },
+        "logical_device": {
+          "compute_capability": [
+            8,
+            6
+          ],
+          "logical_index": 0,
+          "name": "NVIDIA RTX A6000",
+          "total_memory_bytes": 50897289216
+        },
+        "physical_index": "2"
+      },
+      "method": "CT",
+      "nfe": 128,
+      "runtime_seconds": {
+        "decode_and_metrics": 1.3616464129881933,
+        "generation": 15.143039368034806,
+        "model_load_and_device_move": 13.135785254009534,
+        "model_sampling_and_tokenizer": 14.66537739499472,
+        "released_postprocessing": 0.4776619730400853,
+        "sampled_token_control_audit": 0.008589052013121545,
+        "total_before_summary_write": 50.73815203702543
+      },
+      "seed": 1700,
+      "source": {
+        "branch": "codex/udlm-genmol-scale-retry1",
+        "clean_pushed_source_verified_before_and_after_run": true,
+        "commit": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "dirty": false,
+        "expected_source_revision": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "remote_origin": "https://github.com/aamenov/genmol-udlm.git",
+        "repo_root": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree",
+        "runner_sha256": "88712c085b790b26533c7bc1b9e880c0442bc9a3fe8ba37d3436a828bb4f8519",
+        "status_porcelain": [],
+        "upstream": "c17e848eb46896aff191ecd535d6a3cfa757c37e"
+      }
+    },
+    {
+      "checkpoint": {
+        "byte_identity_verified_before_and_after_load": true,
+        "diffusion_type": "udlm",
+        "epoch": 0,
+        "global_step": 1000,
+        "mtime_utc": "2026-09-07T10:41:32.319155+00:00",
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+        "sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+        "size_bytes": 1636492424,
+        "udlm_exclude_special_tokens": false,
+        "udlm_inference_eps": 1e-05,
+        "udlm_prior_metadata": {
+          "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+          "active_vocab_size": 1880,
+          "antithetic_sampling": true,
+          "comparison_role": "empirical_prior_treatment",
+          "excluded_token_ids": [],
+          "frequency_active_token_count": 517090,
+          "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+          "frequency_artifact_schema_version": 1,
+          "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+          "frequency_content_token_count": 517090,
+          "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+          "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+          "frequency_dataset_selection": "first 10000 streaming rows",
+          "frequency_dataset_split": "train",
+          "frequency_example_count": 10000,
+          "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+          "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+          "full_vocab_size": 1880,
+          "noise_eps": 0.001,
+          "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+          "prior_source": "pinned_frequency_artifact_uniform_mixture",
+          "process_family": "rank_one_continuous_categorical",
+          "sampling_eps": 0.001,
+          "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+          "schema_version": 1,
+          "stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+          "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+          "tokenizer_repo_id": "datamol-io/safe-gpt",
+          "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+          "uniform_mixture_weight": 0.0002,
+          "variant": "empirical_frequency"
+        },
+        "udlm_prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+        "udlm_prior_variant": "empirical_frequency"
+      },
+      "config_id": "ct_t050_n128",
+      "counts": {
+        "bad_parentheses": 12,
+        "both_flags": 2,
+        "flagged_strict_valid": 0,
+        "largest_component": 14,
+        "n": 100,
+        "odd_ring": 8,
+        "raw_safe_error": 0,
+        "recovered": 21,
+        "released_both_quality_fail": 1,
+        "released_high_sa_only": 1,
+        "released_low_qed_only": 47,
+        "released_quality": 51,
+        "released_unique": 100,
+        "repaired_valid": 100,
+        "strict_both_quality_fail": 1,
+        "strict_failure": 21,
+        "strict_high_sa_only": 0,
+        "strict_low_qed_only": 34,
+        "strict_quality": 44,
+        "strict_unique": 79,
+        "strict_valid": 79,
+        "syntax_flag": 18,
+        "syntax_strict_failure": 18
+      },
+      "gpu_mapping": {
+        "cuda_visible_devices": "GPU-134e9a1b-cf80-5c0e-b0c4-048fff8e6d3c",
+        "final_probe": {
+          "compute_mode": "Default",
+          "compute_processes": [
+            {
+              "pid": 275418,
+              "process_name": "/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python",
+              "used_memory_mib": 1286
+            }
+          ],
+          "index": 5,
+          "memory_total_mib": 49140,
+          "memory_used_mib": 1309,
+          "name": "NVIDIA RTX A6000",
+          "utilization_percent": 8,
+          "uuid": "GPU-134e9a1b-cf80-5c0e-b0c4-048fff8e6d3c"
+        },
+        "launch_policy": {
+          "active_compute_processes_allowed": true,
+          "inventory_scope": "all_nvidia_gpus",
+          "max_utilization_percent": 10,
+          "min_free_memory_mib": 30000,
+          "requested_gpu_count": 2,
+          "selection_method": "dynamic_idle_discovery",
+          "utilization_comparison": "strictly_less_than"
+        },
+        "logical_device": {
+          "compute_capability": [
+            8,
+            6
+          ],
+          "logical_index": 0,
+          "name": "NVIDIA RTX A6000",
+          "total_memory_bytes": 50897289216
+        },
+        "physical_index": "5"
+      },
+      "method": "CT",
+      "nfe": 128,
+      "runtime_seconds": {
+        "decode_and_metrics": 1.355183818959631,
+        "generation": 13.747878049965948,
+        "model_load_and_device_move": 12.913719100994058,
+        "model_sampling_and_tokenizer": 13.370508852996863,
+        "released_postprocessing": 0.37736919696908444,
+        "sampled_token_control_audit": 0.008173615962732583,
+        "total_before_summary_write": 49.31490407005185
+      },
+      "seed": 1701,
+      "source": {
+        "branch": "codex/udlm-genmol-scale-retry1",
+        "clean_pushed_source_verified_before_and_after_run": true,
+        "commit": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "dirty": false,
+        "expected_source_revision": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "remote_origin": "https://github.com/aamenov/genmol-udlm.git",
+        "repo_root": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree",
+        "runner_sha256": "88712c085b790b26533c7bc1b9e880c0442bc9a3fe8ba37d3436a828bb4f8519",
+        "status_porcelain": [],
+        "upstream": "c17e848eb46896aff191ecd535d6a3cfa757c37e"
+      }
+    },
+    {
+      "checkpoint": {
+        "byte_identity_verified_before_and_after_load": true,
+        "diffusion_type": "udlm",
+        "epoch": 0,
+        "global_step": 1000,
+        "mtime_utc": "2026-09-07T10:41:32.319155+00:00",
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+        "sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+        "size_bytes": 1636492424,
+        "udlm_exclude_special_tokens": false,
+        "udlm_inference_eps": 1e-05,
+        "udlm_prior_metadata": {
+          "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+          "active_vocab_size": 1880,
+          "antithetic_sampling": true,
+          "comparison_role": "empirical_prior_treatment",
+          "excluded_token_ids": [],
+          "frequency_active_token_count": 517090,
+          "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+          "frequency_artifact_schema_version": 1,
+          "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+          "frequency_content_token_count": 517090,
+          "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+          "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+          "frequency_dataset_selection": "first 10000 streaming rows",
+          "frequency_dataset_split": "train",
+          "frequency_example_count": 10000,
+          "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+          "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+          "full_vocab_size": 1880,
+          "noise_eps": 0.001,
+          "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+          "prior_source": "pinned_frequency_artifact_uniform_mixture",
+          "process_family": "rank_one_continuous_categorical",
+          "sampling_eps": 0.001,
+          "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+          "schema_version": 1,
+          "stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+          "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+          "tokenizer_repo_id": "datamol-io/safe-gpt",
+          "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+          "uniform_mixture_weight": 0.0002,
+          "variant": "empirical_frequency"
+        },
+        "udlm_prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+        "udlm_prior_variant": "empirical_frequency"
+      },
+      "config_id": "ct_t050_n512",
+      "counts": {
+        "bad_parentheses": 14,
+        "both_flags": 1,
+        "flagged_strict_valid": 0,
+        "largest_component": 19,
+        "n": 100,
+        "odd_ring": 7,
+        "raw_safe_error": 0,
+        "recovered": 25,
+        "released_both_quality_fail": 4,
+        "released_high_sa_only": 3,
+        "released_low_qed_only": 50,
+        "released_quality": 43,
+        "released_unique": 100,
+        "repaired_valid": 100,
+        "strict_both_quality_fail": 4,
+        "strict_failure": 25,
+        "strict_high_sa_only": 3,
+        "strict_low_qed_only": 38,
+        "strict_quality": 30,
+        "strict_unique": 75,
+        "strict_valid": 75,
+        "syntax_flag": 20,
+        "syntax_strict_failure": 20
+      },
+      "gpu_mapping": {
+        "cuda_visible_devices": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece",
+        "final_probe": {
+          "compute_mode": "Default",
+          "compute_processes": [
+            {
+              "pid": 340770,
+              "process_name": "/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python",
+              "used_memory_mib": 1284
+            }
+          ],
+          "index": 2,
+          "memory_total_mib": 49140,
+          "memory_used_mib": 1307,
+          "name": "NVIDIA RTX A6000",
+          "utilization_percent": 8,
+          "uuid": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece"
+        },
+        "launch_policy": {
+          "active_compute_processes_allowed": true,
+          "inventory_scope": "all_nvidia_gpus",
+          "max_utilization_percent": 10,
+          "min_free_memory_mib": 30000,
+          "requested_gpu_count": 2,
+          "selection_method": "dynamic_idle_discovery",
+          "utilization_comparison": "strictly_less_than"
+        },
+        "logical_device": {
+          "compute_capability": [
+            8,
+            6
+          ],
+          "logical_index": 0,
+          "name": "NVIDIA RTX A6000",
+          "total_memory_bytes": 50897289216
+        },
+        "physical_index": "2"
+      },
+      "method": "CT",
+      "nfe": 512,
+      "runtime_seconds": {
+        "decode_and_metrics": 1.4268084290088154,
+        "generation": 57.41494463797426,
+        "model_load_and_device_move": 13.039398659951985,
+        "model_sampling_and_tokenizer": 56.99134259298444,
+        "released_postprocessing": 0.42360204498982057,
+        "sampled_token_control_audit": 0.008849490957800299,
+        "total_before_summary_write": 94.19574910000665
+      },
+      "seed": 1700,
+      "source": {
+        "branch": "codex/udlm-genmol-scale-retry1",
+        "clean_pushed_source_verified_before_and_after_run": true,
+        "commit": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "dirty": false,
+        "expected_source_revision": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "remote_origin": "https://github.com/aamenov/genmol-udlm.git",
+        "repo_root": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree",
+        "runner_sha256": "88712c085b790b26533c7bc1b9e880c0442bc9a3fe8ba37d3436a828bb4f8519",
+        "status_porcelain": [],
+        "upstream": "c17e848eb46896aff191ecd535d6a3cfa757c37e"
+      }
+    },
+    {
+      "checkpoint": {
+        "byte_identity_verified_before_and_after_load": true,
+        "diffusion_type": "udlm",
+        "epoch": 0,
+        "global_step": 1000,
+        "mtime_utc": "2026-09-07T10:41:32.319155+00:00",
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+        "sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+        "size_bytes": 1636492424,
+        "udlm_exclude_special_tokens": false,
+        "udlm_inference_eps": 1e-05,
+        "udlm_prior_metadata": {
+          "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+          "active_vocab_size": 1880,
+          "antithetic_sampling": true,
+          "comparison_role": "empirical_prior_treatment",
+          "excluded_token_ids": [],
+          "frequency_active_token_count": 517090,
+          "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+          "frequency_artifact_schema_version": 1,
+          "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+          "frequency_content_token_count": 517090,
+          "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+          "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+          "frequency_dataset_selection": "first 10000 streaming rows",
+          "frequency_dataset_split": "train",
+          "frequency_example_count": 10000,
+          "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+          "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+          "full_vocab_size": 1880,
+          "noise_eps": 0.001,
+          "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+          "prior_source": "pinned_frequency_artifact_uniform_mixture",
+          "process_family": "rank_one_continuous_categorical",
+          "sampling_eps": 0.001,
+          "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+          "schema_version": 1,
+          "stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+          "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+          "tokenizer_repo_id": "datamol-io/safe-gpt",
+          "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+          "uniform_mixture_weight": 0.0002,
+          "variant": "empirical_frequency"
+        },
+        "udlm_prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+        "udlm_prior_variant": "empirical_frequency"
+      },
+      "config_id": "ct_t050_n512",
+      "counts": {
+        "bad_parentheses": 11,
+        "both_flags": 1,
+        "flagged_strict_valid": 0,
+        "largest_component": 21,
+        "n": 100,
+        "odd_ring": 11,
+        "raw_safe_error": 0,
+        "recovered": 27,
+        "released_both_quality_fail": 4,
+        "released_high_sa_only": 0,
+        "released_low_qed_only": 48,
+        "released_quality": 47,
+        "released_unique": 99,
+        "repaired_valid": 99,
+        "strict_both_quality_fail": 3,
+        "strict_failure": 28,
+        "strict_high_sa_only": 0,
+        "strict_low_qed_only": 34,
+        "strict_quality": 35,
+        "strict_unique": 72,
+        "strict_valid": 72,
+        "syntax_flag": 21,
+        "syntax_strict_failure": 21
+      },
+      "gpu_mapping": {
+        "cuda_visible_devices": "GPU-134e9a1b-cf80-5c0e-b0c4-048fff8e6d3c",
+        "final_probe": {
+          "compute_mode": "Default",
+          "compute_processes": [
+            {
+              "pid": 275418,
+              "process_name": "/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python",
+              "used_memory_mib": 1286
+            }
+          ],
+          "index": 5,
+          "memory_total_mib": 49140,
+          "memory_used_mib": 1309,
+          "name": "NVIDIA RTX A6000",
+          "utilization_percent": 7,
+          "uuid": "GPU-134e9a1b-cf80-5c0e-b0c4-048fff8e6d3c"
+        },
+        "launch_policy": {
+          "active_compute_processes_allowed": true,
+          "inventory_scope": "all_nvidia_gpus",
+          "max_utilization_percent": 10,
+          "min_free_memory_mib": 30000,
+          "requested_gpu_count": 2,
+          "selection_method": "dynamic_idle_discovery",
+          "utilization_comparison": "strictly_less_than"
+        },
+        "logical_device": {
+          "compute_capability": [
+            8,
+            6
+          ],
+          "logical_index": 0,
+          "name": "NVIDIA RTX A6000",
+          "total_memory_bytes": 50897289216
+        },
+        "physical_index": "5"
+      },
+      "method": "CT",
+      "nfe": 512,
+      "runtime_seconds": {
+        "decode_and_metrics": 1.2065539839677513,
+        "generation": 52.1844365199795,
+        "model_load_and_device_move": 12.862330197996926,
+        "model_sampling_and_tokenizer": 51.79887645697454,
+        "released_postprocessing": 0.3855600630049594,
+        "sampled_token_control_audit": 0.0086545689846389,
+        "total_before_summary_write": 87.70185685297474
+      },
+      "seed": 1701,
+      "source": {
+        "branch": "codex/udlm-genmol-scale-retry1",
+        "clean_pushed_source_verified_before_and_after_run": true,
+        "commit": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "dirty": false,
+        "expected_source_revision": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "remote_origin": "https://github.com/aamenov/genmol-udlm.git",
+        "repo_root": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree",
+        "runner_sha256": "88712c085b790b26533c7bc1b9e880c0442bc9a3fe8ba37d3436a828bb4f8519",
+        "status_porcelain": [],
+        "upstream": "c17e848eb46896aff191ecd535d6a3cfa757c37e"
+      }
+    },
+    {
+      "checkpoint": {
+        "byte_identity_verified_before_and_after_load": true,
+        "diffusion_type": "udlm",
+        "epoch": 0,
+        "global_step": 1000,
+        "mtime_utc": "2026-09-07T11:08:00.192122+00:00",
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+        "sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+        "size_bytes": 1636492999,
+        "udlm_denoiser_metadata": {
+          "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
+          "objective": "clean_token_cross_entropy",
+          "parameterization": "x0_denoiser",
+          "schema_version": 1
+        },
+        "udlm_exclude_special_tokens": false,
+        "udlm_inference_eps": 1e-05,
+        "udlm_prior_metadata": {
+          "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+          "active_vocab_size": 1880,
+          "antithetic_sampling": true,
+          "comparison_role": "empirical_prior_treatment",
+          "excluded_token_ids": [],
+          "frequency_active_token_count": 517090,
+          "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+          "frequency_artifact_schema_version": 1,
+          "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+          "frequency_content_token_count": 517090,
+          "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+          "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+          "frequency_dataset_selection": "first 10000 streaming rows",
+          "frequency_dataset_split": "train",
+          "frequency_example_count": 10000,
+          "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+          "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+          "full_vocab_size": 1880,
+          "noise_eps": 0.001,
+          "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+          "prior_source": "pinned_frequency_artifact_uniform_mixture",
+          "process_family": "rank_one_continuous_categorical",
+          "sampling_eps": 0.001,
+          "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+          "schema_version": 1,
+          "stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+          "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+          "tokenizer_repo_id": "datamol-io/safe-gpt",
+          "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+          "uniform_mixture_weight": 0.0002,
+          "variant": "empirical_frequency"
+        },
+        "udlm_prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+        "udlm_prior_variant": "empirical_frequency"
+      },
+      "config_id": "ce_t050_n128",
+      "counts": {
+        "bad_parentheses": 8,
+        "both_flags": 3,
+        "flagged_strict_valid": 0,
+        "largest_component": 18,
+        "n": 100,
+        "odd_ring": 12,
+        "raw_safe_error": 0,
+        "recovered": 23,
+        "released_both_quality_fail": 5,
+        "released_high_sa_only": 1,
+        "released_low_qed_only": 47,
+        "released_quality": 47,
+        "released_unique": 100,
+        "repaired_valid": 100,
+        "strict_both_quality_fail": 3,
+        "strict_failure": 23,
+        "strict_high_sa_only": 1,
+        "strict_low_qed_only": 37,
+        "strict_quality": 36,
+        "strict_unique": 77,
+        "strict_valid": 77,
+        "syntax_flag": 17,
+        "syntax_strict_failure": 17
+      },
+      "gpu_mapping": {
+        "cuda_visible_devices": "GPU-134e9a1b-cf80-5c0e-b0c4-048fff8e6d3c",
+        "final_probe": {
+          "compute_mode": "Default",
+          "compute_processes": [
+            {
+              "pid": 275418,
+              "process_name": "/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python",
+              "used_memory_mib": 1286
+            },
+            {
+              "pid": 508363,
+              "process_name": "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+              "used_memory_mib": 2434
+            }
+          ],
+          "index": 5,
+          "memory_total_mib": 49140,
+          "memory_used_mib": 3749,
+          "name": "NVIDIA RTX A6000",
+          "utilization_percent": 7,
+          "uuid": "GPU-134e9a1b-cf80-5c0e-b0c4-048fff8e6d3c"
+        },
+        "launch_policy": {
+          "active_compute_processes_allowed": true,
+          "inventory_scope": "all_nvidia_gpus",
+          "max_utilization_percent": 10,
+          "min_free_memory_mib": 30000,
+          "requested_gpu_count": 2,
+          "selection_method": "dynamic_idle_discovery",
+          "utilization_comparison": "strictly_less_than"
+        },
+        "logical_device": {
+          "compute_capability": [
+            8,
+            6
+          ],
+          "logical_index": 0,
+          "name": "NVIDIA RTX A6000",
+          "total_memory_bytes": 50897289216
+        },
+        "physical_index": "5"
+      },
+      "method": "CE",
+      "nfe": 128,
+      "runtime_seconds": {
+        "decode_and_metrics": 1.580957625003066,
+        "generation": 14.948143490008079,
+        "model_load_and_device_move": 11.899990537960548,
+        "model_sampling_and_tokenizer": 14.384202129032928,
+        "released_postprocessing": 0.56394136097515,
+        "sampled_token_control_audit": 0.009308888984378427,
+        "total_before_summary_write": 49.9586159500177
+      },
+      "seed": 1700,
+      "source": {
+        "branch": "codex/udlm-genmol-scale-retry1",
+        "clean_pushed_source_verified_before_and_after_run": true,
+        "commit": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "dirty": false,
+        "expected_source_revision": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "remote_origin": "https://github.com/aamenov/genmol-udlm.git",
+        "repo_root": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree",
+        "runner_sha256": "88712c085b790b26533c7bc1b9e880c0442bc9a3fe8ba37d3436a828bb4f8519",
+        "status_porcelain": [],
+        "upstream": "c17e848eb46896aff191ecd535d6a3cfa757c37e"
+      }
+    },
+    {
+      "checkpoint": {
+        "byte_identity_verified_before_and_after_load": true,
+        "diffusion_type": "udlm",
+        "epoch": 0,
+        "global_step": 1000,
+        "mtime_utc": "2026-09-07T11:08:00.192122+00:00",
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+        "sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+        "size_bytes": 1636492999,
+        "udlm_denoiser_metadata": {
+          "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
+          "objective": "clean_token_cross_entropy",
+          "parameterization": "x0_denoiser",
+          "schema_version": 1
+        },
+        "udlm_exclude_special_tokens": false,
+        "udlm_inference_eps": 1e-05,
+        "udlm_prior_metadata": {
+          "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+          "active_vocab_size": 1880,
+          "antithetic_sampling": true,
+          "comparison_role": "empirical_prior_treatment",
+          "excluded_token_ids": [],
+          "frequency_active_token_count": 517090,
+          "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+          "frequency_artifact_schema_version": 1,
+          "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+          "frequency_content_token_count": 517090,
+          "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+          "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+          "frequency_dataset_selection": "first 10000 streaming rows",
+          "frequency_dataset_split": "train",
+          "frequency_example_count": 10000,
+          "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+          "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+          "full_vocab_size": 1880,
+          "noise_eps": 0.001,
+          "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+          "prior_source": "pinned_frequency_artifact_uniform_mixture",
+          "process_family": "rank_one_continuous_categorical",
+          "sampling_eps": 0.001,
+          "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+          "schema_version": 1,
+          "stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+          "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+          "tokenizer_repo_id": "datamol-io/safe-gpt",
+          "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+          "uniform_mixture_weight": 0.0002,
+          "variant": "empirical_frequency"
+        },
+        "udlm_prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+        "udlm_prior_variant": "empirical_frequency"
+      },
+      "config_id": "ce_t050_n128",
+      "counts": {
+        "bad_parentheses": 14,
+        "both_flags": 4,
+        "flagged_strict_valid": 0,
+        "largest_component": 21,
+        "n": 100,
+        "odd_ring": 12,
+        "raw_safe_error": 0,
+        "recovered": 30,
+        "released_both_quality_fail": 1,
+        "released_high_sa_only": 4,
+        "released_low_qed_only": 46,
+        "released_quality": 46,
+        "released_unique": 97,
+        "repaired_valid": 98,
+        "strict_both_quality_fail": 1,
+        "strict_failure": 32,
+        "strict_high_sa_only": 2,
+        "strict_low_qed_only": 29,
+        "strict_quality": 36,
+        "strict_unique": 68,
+        "strict_valid": 68,
+        "syntax_flag": 22,
+        "syntax_strict_failure": 22
+      },
+      "gpu_mapping": {
+        "cuda_visible_devices": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece",
+        "final_probe": {
+          "compute_mode": "Default",
+          "compute_processes": [
+            {
+              "pid": 340770,
+              "process_name": "/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python",
+              "used_memory_mib": 1284
+            }
+          ],
+          "index": 2,
+          "memory_total_mib": 49140,
+          "memory_used_mib": 1307,
+          "name": "NVIDIA RTX A6000",
+          "utilization_percent": 9,
+          "uuid": "GPU-997e881a-bd08-aa54-45f3-9b3c6fdf6ece"
+        },
+        "launch_policy": {
+          "active_compute_processes_allowed": true,
+          "inventory_scope": "all_nvidia_gpus",
+          "max_utilization_percent": 10,
+          "min_free_memory_mib": 30000,
+          "requested_gpu_count": 2,
+          "selection_method": "dynamic_idle_discovery",
+          "utilization_comparison": "strictly_less_than"
+        },
+        "logical_device": {
+          "compute_capability": [
+            8,
+            6
+          ],
+          "logical_index": 0,
+          "name": "NVIDIA RTX A6000",
+          "total_memory_bytes": 50897289216
+        },
+        "physical_index": "2"
+      },
+      "method": "CE",
+      "nfe": 128,
+      "runtime_seconds": {
+        "decode_and_metrics": 1.267068374028895,
+        "generation": 14.051982834003866,
+        "model_load_and_device_move": 13.06762303202413,
+        "model_sampling_and_tokenizer": 13.644488677964546,
+        "released_postprocessing": 0.40749415603931993,
+        "sampled_token_control_audit": 0.00902708899229765,
+        "total_before_summary_write": 49.72858251299476
+      },
+      "seed": 1701,
+      "source": {
+        "branch": "codex/udlm-genmol-scale-retry1",
+        "clean_pushed_source_verified_before_and_after_run": true,
+        "commit": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "dirty": false,
+        "expected_source_revision": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "remote_origin": "https://github.com/aamenov/genmol-udlm.git",
+        "repo_root": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree",
+        "runner_sha256": "88712c085b790b26533c7bc1b9e880c0442bc9a3fe8ba37d3436a828bb4f8519",
+        "status_porcelain": [],
+        "upstream": "c17e848eb46896aff191ecd535d6a3cfa757c37e"
+      }
+    },
+    {
+      "checkpoint": {
+        "byte_identity_verified_before_and_after_load": true,
+        "diffusion_type": "udlm",
+        "epoch": 0,
+        "global_step": 1000,
+        "mtime_utc": "2026-09-07T11:08:00.192122+00:00",
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+        "sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+        "size_bytes": 1636492999,
+        "udlm_denoiser_metadata": {
+          "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
+          "objective": "clean_token_cross_entropy",
+          "parameterization": "x0_denoiser",
+          "schema_version": 1
+        },
+        "udlm_exclude_special_tokens": false,
+        "udlm_inference_eps": 1e-05,
+        "udlm_prior_metadata": {
+          "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+          "active_vocab_size": 1880,
+          "antithetic_sampling": true,
+          "comparison_role": "empirical_prior_treatment",
+          "excluded_token_ids": [],
+          "frequency_active_token_count": 517090,
+          "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+          "frequency_artifact_schema_version": 1,
+          "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+          "frequency_content_token_count": 517090,
+          "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+          "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+          "frequency_dataset_selection": "first 10000 streaming rows",
+          "frequency_dataset_split": "train",
+          "frequency_example_count": 10000,
+          "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+          "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+          "full_vocab_size": 1880,
+          "noise_eps": 0.001,
+          "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+          "prior_source": "pinned_frequency_artifact_uniform_mixture",
+          "process_family": "rank_one_continuous_categorical",
+          "sampling_eps": 0.001,
+          "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+          "schema_version": 1,
+          "stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+          "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+          "tokenizer_repo_id": "datamol-io/safe-gpt",
+          "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+          "uniform_mixture_weight": 0.0002,
+          "variant": "empirical_frequency"
+        },
+        "udlm_prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+        "udlm_prior_variant": "empirical_frequency"
+      },
+      "config_id": "ce_t050_n512",
+      "counts": {
+        "bad_parentheses": 12,
+        "both_flags": 2,
+        "flagged_strict_valid": 0,
+        "largest_component": 18,
+        "n": 100,
+        "odd_ring": 12,
+        "raw_safe_error": 0,
+        "recovered": 27,
+        "released_both_quality_fail": 0,
+        "released_high_sa_only": 1,
+        "released_low_qed_only": 47,
+        "released_quality": 51,
+        "released_unique": 99,
+        "repaired_valid": 99,
+        "strict_both_quality_fail": 0,
+        "strict_failure": 28,
+        "strict_high_sa_only": 0,
+        "strict_low_qed_only": 31,
+        "strict_quality": 41,
+        "strict_unique": 72,
+        "strict_valid": 72,
+        "syntax_flag": 22,
+        "syntax_strict_failure": 22
+      },
+      "gpu_mapping": {
+        "cuda_visible_devices": "GPU-134e9a1b-cf80-5c0e-b0c4-048fff8e6d3c",
+        "final_probe": {
+          "compute_mode": "Default",
+          "compute_processes": [
+            {
+              "pid": 275418,
+              "process_name": "/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python",
+              "used_memory_mib": 1286
+            }
+          ],
+          "index": 5,
+          "memory_total_mib": 49140,
+          "memory_used_mib": 1309,
+          "name": "NVIDIA RTX A6000",
+          "utilization_percent": 7,
+          "uuid": "GPU-134e9a1b-cf80-5c0e-b0c4-048fff8e6d3c"
+        },
+        "launch_policy": {
+          "active_compute_processes_allowed": true,
+          "inventory_scope": "all_nvidia_gpus",
+          "max_utilization_percent": 10,
+          "min_free_memory_mib": 30000,
+          "requested_gpu_count": 2,
+          "selection_method": "dynamic_idle_discovery",
+          "utilization_comparison": "strictly_less_than"
+        },
+        "logical_device": {
+          "compute_capability": [
+            8,
+            6
+          ],
+          "logical_index": 0,
+          "name": "NVIDIA RTX A6000",
+          "total_memory_bytes": 50897289216
+        },
+        "physical_index": "5"
+      },
+      "method": "CE",
+      "nfe": 512,
+      "runtime_seconds": {
+        "decode_and_metrics": 1.4450543620041572,
+        "generation": 63.67121792800026,
+        "model_load_and_device_move": 12.745602478971705,
+        "model_sampling_and_tokenizer": 63.19311002298491,
+        "released_postprocessing": 0.4781079050153494,
+        "sampled_token_control_audit": 0.010911802994087338,
+        "total_before_summary_write": 100.02355149702635
+      },
+      "seed": 1700,
+      "source": {
+        "branch": "codex/udlm-genmol-scale-retry1",
+        "clean_pushed_source_verified_before_and_after_run": true,
+        "commit": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "dirty": false,
+        "expected_source_revision": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "remote_origin": "https://github.com/aamenov/genmol-udlm.git",
+        "repo_root": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree",
+        "runner_sha256": "88712c085b790b26533c7bc1b9e880c0442bc9a3fe8ba37d3436a828bb4f8519",
+        "status_porcelain": [],
+        "upstream": "c17e848eb46896aff191ecd535d6a3cfa757c37e"
+      }
+    },
+    {
+      "checkpoint": {
+        "byte_identity_verified_before_and_after_load": true,
+        "diffusion_type": "udlm",
+        "epoch": 0,
+        "global_step": 1000,
+        "mtime_utc": "2026-09-07T11:08:00.192122+00:00",
+        "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+        "sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+        "size_bytes": 1636492999,
+        "udlm_denoiser_metadata": {
+          "inference_conversion": "subtract_local_forward_log_likelihood_before_controls",
+          "objective": "clean_token_cross_entropy",
+          "parameterization": "x0_denoiser",
+          "schema_version": 1
+        },
+        "udlm_exclude_special_tokens": false,
+        "udlm_inference_eps": 1e-05,
+        "udlm_prior_metadata": {
+          "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+          "active_vocab_size": 1880,
+          "antithetic_sampling": true,
+          "comparison_role": "empirical_prior_treatment",
+          "excluded_token_ids": [],
+          "frequency_active_token_count": 517090,
+          "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+          "frequency_artifact_schema_version": 1,
+          "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+          "frequency_content_token_count": 517090,
+          "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+          "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+          "frequency_dataset_selection": "first 10000 streaming rows",
+          "frequency_dataset_split": "train",
+          "frequency_example_count": 10000,
+          "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+          "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+          "full_vocab_size": 1880,
+          "noise_eps": 0.001,
+          "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+          "prior_source": "pinned_frequency_artifact_uniform_mixture",
+          "process_family": "rank_one_continuous_categorical",
+          "sampling_eps": 0.001,
+          "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+          "schema_version": 1,
+          "stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+          "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+          "tokenizer_repo_id": "datamol-io/safe-gpt",
+          "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+          "uniform_mixture_weight": 0.0002,
+          "variant": "empirical_frequency"
+        },
+        "udlm_prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+        "udlm_prior_variant": "empirical_frequency"
+      },
+      "config_id": "ce_t050_n512",
+      "counts": {
+        "bad_parentheses": 11,
+        "both_flags": 2,
+        "flagged_strict_valid": 0,
+        "largest_component": 24,
+        "n": 100,
+        "odd_ring": 11,
+        "raw_safe_error": 0,
+        "recovered": 27,
+        "released_both_quality_fail": 6,
+        "released_high_sa_only": 3,
+        "released_low_qed_only": 44,
+        "released_quality": 45,
+        "released_unique": 98,
+        "repaired_valid": 98,
+        "strict_both_quality_fail": 6,
+        "strict_failure": 29,
+        "strict_high_sa_only": 3,
+        "strict_low_qed_only": 26,
+        "strict_quality": 36,
+        "strict_unique": 71,
+        "strict_valid": 71,
+        "syntax_flag": 20,
+        "syntax_strict_failure": 20
+      },
+      "gpu_mapping": {
+        "cuda_visible_devices": "GPU-7ae42da2-3c8d-efa0-99ec-845b7f85399a",
+        "final_probe": {
+          "compute_mode": "Default",
+          "compute_processes": [
+            {
+              "pid": 395138,
+              "process_name": "/home/meir.roketlishvili/miniconda3/envs/SGPO_repro/bin/python",
+              "used_memory_mib": 1236
+            }
+          ],
+          "index": 7,
+          "memory_total_mib": 49140,
+          "memory_used_mib": 1259,
+          "name": "NVIDIA RTX A6000",
+          "utilization_percent": 0,
+          "uuid": "GPU-7ae42da2-3c8d-efa0-99ec-845b7f85399a"
+        },
+        "launch_policy": {
+          "active_compute_processes_allowed": true,
+          "inventory_scope": "all_nvidia_gpus",
+          "max_utilization_percent": 10,
+          "min_free_memory_mib": 30000,
+          "requested_gpu_count": 2,
+          "selection_method": "dynamic_idle_discovery",
+          "utilization_comparison": "strictly_less_than"
+        },
+        "logical_device": {
+          "compute_capability": [
+            8,
+            6
+          ],
+          "logical_index": 0,
+          "name": "NVIDIA RTX A6000",
+          "total_memory_bytes": 50897289216
+        },
+        "physical_index": "7"
+      },
+      "method": "CE",
+      "nfe": 512,
+      "runtime_seconds": {
+        "decode_and_metrics": 1.2223422820097767,
+        "generation": 53.25517455703812,
+        "model_load_and_device_move": 13.51888157997746,
+        "model_sampling_and_tokenizer": 52.87952590099303,
+        "released_postprocessing": 0.3756486560450867,
+        "sampled_token_control_audit": 0.008403318002820015,
+        "total_before_summary_write": 89.06797141995048
+      },
+      "seed": 1701,
+      "source": {
+        "branch": "codex/udlm-genmol-scale-retry1",
+        "clean_pushed_source_verified_before_and_after_run": true,
+        "commit": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "dirty": false,
+        "expected_source_revision": "c17e848eb46896aff191ecd535d6a3cfa757c37e",
+        "remote_origin": "https://github.com/aamenov/genmol-udlm.git",
+        "repo_root": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree",
+        "runner_sha256": "88712c085b790b26533c7bc1b9e880c0442bc9a3fe8ba37d3436a828bb4f8519",
+        "status_porcelain": [],
+        "upstream": "c17e848eb46896aff191ecd535d6a3cfa757c37e"
+      }
+    }
+  ],
+  "schema_version": 1,
+  "source_report_sha256": "8d9b7df5797338b6a768cfd3489af6abdadabe0cf48a8cec212086cfc7714d16",
+  "status": "complete",
+  "study_id": "engineering-v10-predictor-resolution",
+  "superiority_established": false
+}

@@ -1,0 +1,328 @@
+{
+  "generator_sha256": "c7e8e7305febad71bc37a68f585ac5cd9ea806ee02cdb335c168fad269a63ff1",
+  "inputs": [
+    {
+      "roles": [
+        "V10 appendix generator"
+      ],
+      "sha256": "c7e8e7305febad71bc37a68f585ac5cd9ea806ee02cdb335c168fad269a63ff1",
+      "size_bytes": 29485,
+      "workspace_relative_path": "run_sources/udlm_corrector_worktree/scripts/udlm/analyze_v10_resolution.py"
+    },
+    {
+      "roles": [
+        "Tested lexical diagnostics implementation"
+      ],
+      "sha256": "4c1e8fcd69af5bd2afefaae6b6dd2217e7b372372373a408df16b5e2a5cbf874",
+      "size_bytes": 19578,
+      "workspace_relative_path": "run_sources/udlm_corrector_worktree/scripts/udlm/audit_molecular_failures.py"
+    },
+    {
+      "roles": [
+        "Hash and identity helper implementation"
+      ],
+      "sha256": "0571850da6f0280460ff555790909ed1e28978bb1957a29e972647a5a51d7e90",
+      "size_bytes": 43698,
+      "workspace_relative_path": "run_sources/udlm_corrector_worktree/scripts/udlm/generate_study_overview_v9.py"
+    },
+    {
+      "roles": [
+        "Prospective design/prior evidence"
+      ],
+      "sha256": "06ea761fafe19aea3328684fe1b0927c2ed4fbda90df841a42f39a4754e1d6ab",
+      "size_bytes": 8832,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/docs/udlm_molecular_failure_audit_20260907.md"
+    },
+    {
+      "roles": [
+        "Prospective design/prior evidence"
+      ],
+      "sha256": "06d61398d3f0789cee9e1a3d45d10803c89c468d52b182bfa589cbbfcddb315f",
+      "size_bytes": 4604,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/docs/udlm_predictor_resolution_audit.md"
+    },
+    {
+      "roles": [
+        "Prospective design/prior evidence"
+      ],
+      "sha256": "a57ea8fd91f88acae5ef8fca4d81e7df283e0182eb203fb2c2e121a062bb7572",
+      "size_bytes": 6769,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/designs/engineering_v10_resolution.md"
+    },
+    {
+      "roles": [
+        "Prospective design/prior evidence"
+      ],
+      "sha256": "b8ff5e816abff745e38b427f0b03d7fe00e9ace50b69e5c67adfb182c779c295",
+      "size_bytes": 8191,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/diagnostics/predictor_resolution_oracle_20260907.json"
+    },
+    {
+      "roles": [
+        "Prospective design/prior evidence"
+      ],
+      "sha256": "4e99dd1c91491c92305c99444a37e687c1866c187c5bb642ab3c240b75db10b8",
+      "size_bytes": 79408,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/diagnostics/v5_v6_failure_modes_20260907/audit.json"
+    },
+    {
+      "roles": [
+        "Pinned inference configuration"
+      ],
+      "sha256": "e5fda2a3c4e70cc08cf9e57644d431c5b21d0c3e3ed0223c5b09d01a94ec7b53",
+      "size_bytes": 480,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v10_configs/ce_t050_n128.yaml"
+    },
+    {
+      "roles": [
+        "Pinned inference configuration"
+      ],
+      "sha256": "de7c85d799e80c8af82f3ea9c35ca134438d76b6038929632bb69b94a38eef18",
+      "size_bytes": 480,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v10_configs/ce_t050_n512.yaml"
+    },
+    {
+      "roles": [
+        "Pinned inference configuration"
+      ],
+      "sha256": "69cf9272e577258a32bde4183f2abb4b0f92f16d3f7321bd959bb586b8381988",
+      "size_bytes": 455,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v10_configs/ct_t050_n128.yaml"
+    },
+    {
+      "roles": [
+        "Pinned inference configuration"
+      ],
+      "sha256": "c69de19294fdc57267755fd694cbe64bfb328cefbea95d921d6681f391d2562e",
+      "size_bytes": 455,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v10_configs/ct_t050_n512.yaml"
+    },
+    {
+      "roles": [
+        "Prospective V10 protocol"
+      ],
+      "sha256": "cc6e3ced657f6ec66f611398e65b8b0e79598b3e76acbef77c72cfc4a7d0c4fd",
+      "size_bytes": 12936,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v10_resolution.json"
+    },
+    {
+      "roles": [
+        "Prospective design/prior evidence"
+      ],
+      "sha256": "718893198b0e08a2405e33177c64989499914207ff39b6880edbc5eff2b35c7d",
+      "size_bytes": 10299,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/experiments/udlm/protocols/engineering_v9_objectives.json"
+    },
+    {
+      "roles": [
+        "Original controller receipt"
+      ],
+      "sha256": "6f052efe593a19331425d875e4ab7dab7d9fea0dfda5d28bb15a178a5062b64c",
+      "size_bytes": 2826,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/controller_receipts/v10-ce-t050-n128.json"
+    },
+    {
+      "roles": [
+        "Original controller receipt"
+      ],
+      "sha256": "8d58cb1f50dca68aad6c514ce4daaf6c294f5d6da5ee2599b9a00ffb558c74aa",
+      "size_bytes": 2826,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/controller_receipts/v10-ce-t050-n512.json"
+    },
+    {
+      "roles": [
+        "Original controller receipt"
+      ],
+      "sha256": "59511931b407baa14c0a32ea83467bb758ecb702b2c9785965e4576288d49543",
+      "size_bytes": 2830,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/controller_receipts/v10-ct-t050-n128.json"
+    },
+    {
+      "roles": [
+        "Original controller receipt"
+      ],
+      "sha256": "50010b8155360bf0251d2fecda2c06f587f4caaf103e857241bcb7e81b9f91bf",
+      "size_bytes": 2830,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/controller_receipts/v10-ct-t050-n512.json"
+    },
+    {
+      "roles": [
+        "Original raw molecular rows"
+      ],
+      "sha256": "ab79badb11f5f808bc52c8ba6051d827e64ddc8bfd81d51ab71cca98d6baa938",
+      "size_bytes": 34641,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ce-t050-n128/seed_1700/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original per-seed summary"
+      ],
+      "sha256": "44340e9563b703d230c02a64fcfecc452d0ffbea36e79baf16944fb55e08f424",
+      "size_bytes": 78567,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ce-t050-n128/seed_1700/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw molecular rows"
+      ],
+      "sha256": "aaafbe612da92ecefb46a04460ab18a4f53828e5ffd8f2f25a48037ce9aa0973",
+      "size_bytes": 32214,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ce-t050-n128/seed_1701/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original per-seed summary"
+      ],
+      "sha256": "33a17ca48def3afd4c18be88ed8cc54de6639dc09ab0097ba4a49097e7174bbf",
+      "size_bytes": 75625,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ce-t050-n128/seed_1701/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw molecular rows"
+      ],
+      "sha256": "84ea6a2ffcc9644055669221cfa1c69a58cd5a81d68d1e74d5e3d7fca67d6c88",
+      "size_bytes": 33955,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ce-t050-n512/seed_1700/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original per-seed summary"
+      ],
+      "sha256": "44c2445feb2f31ca9131f076c9058f4f5f2bba7af68ab95c346c9a65993e6e03",
+      "size_bytes": 78292,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ce-t050-n512/seed_1700/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw molecular rows"
+      ],
+      "sha256": "2035f6cb04278cf8d3c7950d3396be103a4d38cadeac21baa2ff44335a0cf7a8",
+      "size_bytes": 32638,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ce-t050-n512/seed_1701/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original per-seed summary"
+      ],
+      "sha256": "2360654688606766e30fd46a8d5f648549276ac7a7d5767fc03f85ffadd81e47",
+      "size_bytes": 75425,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ce-t050-n512/seed_1701/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw molecular rows"
+      ],
+      "sha256": "c6abc1958624063f0bd300358d32d7a4d2ede63d90a989c95a17591577b18f5a",
+      "size_bytes": 33423,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ct-t050-n128/seed_1700/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original per-seed summary"
+      ],
+      "sha256": "2142cc7435f035e1bf0de3c862770fea553d82079f07bfc069c2924db0f3b8c9",
+      "size_bytes": 77625,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ct-t050-n128/seed_1700/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw molecular rows"
+      ],
+      "sha256": "f4c29b56c1603787ff0d24435090db94b3b43f45b69d2da8bd97da381b19b20a",
+      "size_bytes": 33293,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ct-t050-n128/seed_1701/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original per-seed summary"
+      ],
+      "sha256": "9fb2d8143aa6907ff57540db1cd9971874cd6d487bf4cb3415ef90b21d8faff3",
+      "size_bytes": 74917,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ct-t050-n128/seed_1701/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw molecular rows"
+      ],
+      "sha256": "2cecd4957084f9510054f48a72ce65ec46520625a205b28c690424f3c7215e4a",
+      "size_bytes": 34079,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ct-t050-n512/seed_1700/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original per-seed summary"
+      ],
+      "sha256": "c451300b44c9dc0a3eb9f433d87e7c121e27dbf769d302209f5de0f6c2b7771b",
+      "size_bytes": 77626,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ct-t050-n512/seed_1700/summary.json"
+    },
+    {
+      "roles": [
+        "Original raw molecular rows"
+      ],
+      "sha256": "e0482deaa9678cb658d05679c4d0688c5ceb7aa3dd1edcbc4460cb9e49ace906",
+      "size_bytes": 32825,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ct-t050-n512/seed_1701/raw_samples.csv"
+    },
+    {
+      "roles": [
+        "Original per-seed summary"
+      ],
+      "sha256": "9b021146e33873bdec815b46e8b5abc3b929277e3536e96c236ec409be1586af",
+      "size_bytes": 74909,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10/v10-ct-t050-n512/seed_1701/summary.json"
+    },
+    {
+      "roles": [
+        "Unmodified V10 original report"
+      ],
+      "sha256": "188c12f2ce3c4ac14d04b0d6a664c7d00f041008886f392c3a5fbb529a8f6554",
+      "size_bytes": 68729,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10_reports/complete/report.csv"
+    },
+    {
+      "roles": [
+        "Completed independent V10 report"
+      ],
+      "sha256": "8d9b7df5797338b6a768cfd3489af6abdadabe0cf48a8cec212086cfc7714d16",
+      "size_bytes": 290700,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10_reports/complete/report.json"
+    },
+    {
+      "roles": [
+        "Unmodified V10 original report"
+      ],
+      "sha256": "dcd56bcba9e4acc106af355b3e0dc792491eb5a70c31ee06e28866ab91ebab50",
+      "size_bytes": 25874,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v10_reports/complete/report.pdf"
+    },
+    {
+      "roles": [
+        "Prospective design/prior evidence"
+      ],
+      "sha256": "b880c8bbad2e5e1d5f3639ba8f6848da934c87c2ec44d7e9c466f46a941c7fb6",
+      "size_bytes": 286159,
+      "workspace_relative_path": "run_sources/udlm_genmol_worktree/output/udlm/engineering_v9_reports/complete/report.json"
+    }
+  ],
+  "outputs": {
+    "analysis.csv": {
+      "sha256": "7eab0ccb4e88a553da6cad15e3d965ec871b998e15c5b757f82fc28a6409b1e2",
+      "size_bytes": 15451
+    },
+    "analysis.json": {
+      "sha256": "1a99d7546b04f70ead48c433c1d125fdcaf6194304328604d47208bd8e19b65c",
+      "size_bytes": 79757
+    },
+    "analysis.pdf": {
+      "sha256": "6204c58405e5b3a4e710a0407cdb20574dede06f9f77fdd74f758b70cec0230c",
+      "size_bytes": 8577
+    },
+    "analyze_v10_resolution.py": {
+      "sha256": "c7e8e7305febad71bc37a68f585ac5cd9ea806ee02cdb335c168fad269a63ff1",
+      "size_bytes": 29485
+    }
+  },
+  "schema_version": 1
+}
