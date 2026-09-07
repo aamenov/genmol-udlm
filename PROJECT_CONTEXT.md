@@ -7,7 +7,21 @@ The selected pilot quality leader is S at temperature 0.85: 50.78125% quality,
 far below the local MDLM mean 85.8%. See `experiments/udlm/results/engineering_v5.md`
 and the full PDF at `output/udlm/engineering_v5_reports/complete/report.pdf`.
 The V5 tmux session ended cleanly. The prospective fixed-NFE Gibbs V6 study is
-prepared on `codex/udlm-gibbs-corrector`; verify live state before launching it.
+merged here. It compares 128 predictors with 64 predictors plus 64 fresh-state
+random-scan corrections for each of R/S/E, temperature 0.5, seeds 1300/1301,
+64 requests per seed (12 runs, 768 requests). The protocol predates completion
+of V5 and discloses the partial V5 observations used in its design.
+
+The next durable pipeline uses session `genmol-udlm-v6-gibbs`, controller log
+`output/logs/engineering-v6-pipeline.log`, output root
+`output/udlm/engineering_v6`, per-job logs `output/logs/engineering_v6`, and
+CPU report `output/udlm/engineering_v6_reports/complete/report.pdf`. Check
+live tmux, logs and receipts before launch or continuation. Use explicit V6
+output/log flags because the general scripts retain V5 defaults.
+
+Evidence under `output/` is stored without Git line-ending conversion. All
+107 published V5/archived evidence blobs were verified against the original
+live bytes after commit `4eefe73`; their recorded SHA-256 values remain valid.
 
 This section supersedes the stale launch status and three-GPU authorization
 below. The user currently authorizes **at most two GPUs**, selected dynamically
@@ -48,14 +62,15 @@ hashes, runtime, physical/logical device mapping, repaired and strict metrics,
 paper references, and limitations must remain visible.
 
 Run from this worktree using the project `.venv`; commit and push all changes
-before a launch. The new screen command is:
+before a launch. The V6 screen command is:
 
 ```bash
-/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_exploration.py --protocol experiments/udlm/protocols/engineering_v5.json
+/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python scripts/udlm/launch_exploration.py --protocol experiments/udlm/protocols/engineering_v6.json --output-root output/udlm/engineering_v6 --log-root output/logs/engineering_v6
 ```
 
-Use a detached session named `genmol-udlm-v5-temperature` and redirect its
-controller output to `output/logs/engineering-v5-controller.log`. Verify live
+Use the detached V6 session and log paths above. After generation finishes,
+run `scripts/udlm/report_exploration.py` with the same explicit protocol/output
+root and `--report-dir output/udlm/engineering_v6_reports/complete`. Verify live
 tmux/log/receipt state before resuming; the command alone is not evidence that
 a run is active or complete. The root workspace has unrelated uncommitted work
 and must remain untouched. Push to `origin` (`aamenov/genmol-udlm`).
