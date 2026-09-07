@@ -1,0 +1,16 @@
+🚨 `inputs` is part of SAFEDoubleHeadsModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /home/aidar.alimbayev/Documents/genmolv2/.venv/lib/python3.10/site-packages/safe/trainer/model.py.
+{
+  "audit": {
+    "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/post_exit_audit.json",
+    "device": 48,
+    "inode": 2629405659,
+    "mode": 33188,
+    "link_count": 1,
+    "size_bytes": 9166,
+    "mtime_ns": 1788777877517177832,
+    "ctime_ns": 1788777877517177832,
+    "sha256": "959151c37072431be23b1f5696d7215da5291e0bace40d6f307864a7262f93c2"
+  },
+  "checkpoint_sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+  "leases_released": true
+}

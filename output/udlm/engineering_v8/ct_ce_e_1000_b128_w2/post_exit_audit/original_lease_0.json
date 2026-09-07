@@ -1,0 +1,15 @@
+{
+  "acquired_at": "2026-09-07T10:28:31.737346+00:00",
+  "identity": {
+    "attempt_id": "ct_e_1000_b128_w2",
+    "source": {
+      "head": "c8434dda105c5fb2a15bb784d24e0387062c733e",
+      "upstream": "c8434dda105c5fb2a15bb784d24e0387062c733e"
+    }
+  },
+  "owner_token": "0f9823383053a684704f24ca6af280f5cc25c576e6c1200989df2dc73811212b",
+  "pid": 405401,
+  "purpose": "manual_engineering_training_excludes_generation_and_training",
+  "schema_version": 1,
+  "stale_policy": "never_automatically_recover"
+}

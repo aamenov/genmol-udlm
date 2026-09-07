@@ -1,0 +1,183 @@
+{
+  "archived_inputs": {
+    "gpu_processes.csv": {
+      "ctime_ns": 1788777877467178182,
+      "device": 48,
+      "inode": 2629405656,
+      "link_count": 1,
+      "mode": 33188,
+      "mtime_ns": 1788777877467178182,
+      "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/gpu_processes.csv",
+      "sha256": "f694d927bd58db74461ce9510f8c7beb9b31551768b05baf80cfbbf3fc9ad256",
+      "size_bytes": 1511
+    },
+    "original_campaign_terminal.json": {
+      "ctime_ns": 1788777877447178321,
+      "device": 48,
+      "inode": 2629419839,
+      "link_count": 1,
+      "mode": 33188,
+      "mtime_ns": 1788777877437178391,
+      "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/original_campaign_terminal.json",
+      "sha256": "98075a11c7340dafcc855887348201477981bd2a1a8f5d39053da24866cc663b",
+      "size_bytes": 846
+    },
+    "original_lease_0.json": {
+      "ctime_ns": 1788777877477178112,
+      "device": 48,
+      "inode": 2629412138,
+      "link_count": 1,
+      "mode": 33188,
+      "mtime_ns": 1788777877477178112,
+      "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/original_lease_0.json",
+      "sha256": "0dc9bcf5d6102e84228a199afbf2413377e2a64fca90ed911496b1269ff841c5",
+      "size_bytes": 508
+    },
+    "original_lease_1.json": {
+      "ctime_ns": 1788777877487178041,
+      "device": 48,
+      "inode": 2629420324,
+      "link_count": 1,
+      "mode": 33188,
+      "mtime_ns": 1788777877487178041,
+      "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/original_lease_1.json",
+      "sha256": "0dc9bcf5d6102e84228a199afbf2413377e2a64fca90ed911496b1269ff841c5",
+      "size_bytes": 508
+    },
+    "original_terminal.json": {
+      "ctime_ns": 1788777877427178461,
+      "device": 48,
+      "inode": 2629412137,
+      "link_count": 1,
+      "mode": 33188,
+      "mtime_ns": 1788777877427178461,
+      "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/original_terminal.json",
+      "sha256": "1021ba513564a25ca26ea3c2d6c148d271e1cd98d27078056285e848c9c69b5e",
+      "size_bytes": 9822
+    },
+    "process_snapshot.txt": {
+      "ctime_ns": 1788777877457178250,
+      "device": 48,
+      "inode": 2629417396,
+      "link_count": 1,
+      "mode": 33188,
+      "mtime_ns": 1788777877457178250,
+      "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/process_snapshot.txt",
+      "sha256": "712ec8f0e1cac8af6871c890f2dbd686133304e37acb236457353e0cacc15543",
+      "size_bytes": 263275
+    }
+  },
+  "checkpoint": {
+    "ctime_ns": 1788777698428425355,
+    "device": 48,
+    "finite_tensor_count": 1155,
+    "global_step": 1000,
+    "inode": 2629408746,
+    "link_count": 1,
+    "mode": 33152,
+    "mtime_ns": 1788777692319154672,
+    "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+    "sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+    "size_bytes": 1636492424
+  },
+  "checkpoint_metadata": {
+    "byte_identity_verified_before_and_after_load": true,
+    "diffusion_type": "udlm",
+    "epoch": 0,
+    "global_step": 1000,
+    "mtime_utc": "2026-09-07T10:41:32.319155+00:00",
+    "path": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints/1000.ckpt",
+    "sha256": "48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99",
+    "size_bytes": 1636492424,
+    "udlm_exclude_special_tokens": false,
+    "udlm_inference_eps": 1e-05,
+    "udlm_prior_metadata": {
+      "active_token_ids_sha256": "2fd62050919fdf6ee578df881733e47834f662406c219a1f247116e04396a5ae",
+      "active_vocab_size": 1880,
+      "antithetic_sampling": true,
+      "comparison_role": "empirical_prior_treatment",
+      "excluded_token_ids": [],
+      "frequency_active_token_count": 517090,
+      "frequency_artifact_path": "experiments/udlm/token_frequency/train_first_10000.json",
+      "frequency_artifact_schema_version": 1,
+      "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+      "frequency_content_token_count": 517090,
+      "frequency_dataset_repo_id": "datamol-io/safe-gpt",
+      "frequency_dataset_revision": "b83175cd7394e7a4027478a35b2f9d1dda3ac62f",
+      "frequency_dataset_selection": "first 10000 streaming rows",
+      "frequency_dataset_split": "train",
+      "frequency_example_count": 10000,
+      "frequency_implementation_git_sha": "56a96b2cd02f9be648a641c51c3d2d8b1ff3033b",
+      "frequency_ordered_text_sha256": "53aee8e5592fc96159788e86519abbbcc9f1ab7c6348a1cb59a939bd57051d8f",
+      "full_vocab_size": 1880,
+      "noise_eps": 0.001,
+      "objective_scope": "model_dependent_ct_integrand_without_parameter_independent_endpoint_kl",
+      "prior_source": "pinned_frequency_artifact_uniform_mixture",
+      "process_family": "rank_one_continuous_categorical",
+      "sampling_eps": 0.001,
+      "schedule_variant": "schedule_consistent_residual_forward_and_loss",
+      "schema_version": 1,
+      "stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+      "tokenizer_json_sha256": "0db5f4dbdc7e8ff759e98483759611a426e187ee7f3f0a91edc8800abe7bf140",
+      "tokenizer_repo_id": "datamol-io/safe-gpt",
+      "tokenizer_revision": "3d5fa0988383e898d5ac5db7cd52bf715bc37061",
+      "uniform_mixture_weight": 0.0002,
+      "variant": "empirical_frequency"
+    },
+    "udlm_prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+    "udlm_prior_variant": "empirical_frequency"
+  },
+  "checkpoint_status": "separately_validated_after_controller_failure",
+  "configured_example_exposures_supported_by_step_and_batch": 128000,
+  "exposure_caveat": "Configured example exposures, not a distinct-molecule census or independent live row trace; original completion fields remain null.",
+  "finished_at": "2026-09-07T10:44:37.562057+00:00",
+  "interpretation": "Observed transient process-group teardown after successful training, consistent with an immediate-check race. Exact transient members were not captured. This separate audit does not change original failure status or start CE.",
+  "kind": "manual_post_exit_checkpoint_audit_and_owned_stale_lease_release",
+  "leases_released": true,
+  "manual_action": "Release only the two exact retained leases after confirming their controller and training process group are absent; do not signal any process.",
+  "original_campaign_status": "failed",
+  "original_campaign_terminal_sha256": "98075a11c7340dafcc855887348201477981bd2a1a8f5d39053da24866cc663b",
+  "original_terminal_sha256": "1021ba513564a25ca26ea3c2d6c148d271e1cd98d27078056285e848c9c69b5e",
+  "original_training_return_code": 0,
+  "original_training_subprocess_seconds": 785.8220971899573,
+  "probes": [
+    {
+      "at": "2026-09-07T10:44:04.205509+00:00",
+      "lease_owner_pids_absent": [
+        405401
+      ],
+      "training_process_group_absent": 405743
+    },
+    {
+      "at": "2026-09-07T10:44:37.056070+00:00",
+      "lease_owner_pids_absent": [
+        405401
+      ],
+      "training_process_group_absent": 405743
+    }
+  ],
+  "schema_version": 1,
+  "script_sha256": "cda2075181516f8c6db8a9782947200fddf1082d7f6ef90ac727dfcc1cbfee0c",
+  "source": {
+    "head": "c8434dda105c5fb2a15bb784d24e0387062c733e",
+    "upstream": "c8434dda105c5fb2a15bb784d24e0387062c733e"
+  },
+  "training_implementation_sha256": {
+    "scripts/train.py": "58011f1365171a4aae33db336d75f6e6f5bcb97a747ae7a33fbcf5d252b128f0",
+    "src/genmol/__init__.py": "0b41b4aa0fac95e6062b8f171e1533612ed9c049959feef9207adf81935d4321",
+    "src/genmol/backbone.py": "0961363a10717b8d4aa82bdb1ff150853f00fb34087d11f8fff7af6bd209b618",
+    "src/genmol/corrector.py": "d912a0e063e8d2a86170e2b703f428cdcb628fa173f9c129e9359e19824a094f",
+    "src/genmol/denoiser.py": "344bf1801678a5cf9bd3e34894755afe4df0826f7f0475c03bcde6dd6a014f75",
+    "src/genmol/diffusion.py": "07e7cc4f0a65b21224196341a1cd2460f146e3356e3c902f3dbca6cb2fc21a17",
+    "src/genmol/model.py": "fb2b9f95ddedc583dc6cd0b12f476db4e934651a8771b19c4a6ad6afb6be5fd2",
+    "src/genmol/sampler.py": "6b9a89df059ac949771b0a4f25b58f07a2fcf58ced5e35de88801a0a038a5f32",
+    "src/genmol/utils/__init__.py": "0b41b4aa0fac95e6062b8f171e1533612ed9c049959feef9207adf81935d4321",
+    "src/genmol/utils/bracket_safe_converter.py": "d3dca11fc12d7f4f0f439c03fc7d497f4efc6d87091388b7031c9d856279a618",
+    "src/genmol/utils/checkpoint_io.py": "80e22e83d4b6838697d06ab6f08880011f49cdc3f3384f7ed4392400abbf155a",
+    "src/genmol/utils/ema.py": "9b3fda01fe5f68d8e265a33423341d6bef460c480316ca8ee459151958efed49",
+    "src/genmol/utils/utils_chem.py": "0c7de4c7225f80e9a8cbbdb99018e5e8555c114ce6deea7dfcd593fc5e0f3867",
+    "src/genmol/utils/utils_data.py": "981bdc9c3b10b80ab113bcba0bc6709febcb2b9f3d4447a5c5291d6f9daaaee7",
+    "src/genmol/utils/utils_moco.py": "5af0f47805f028463aa44e88e0ed25e8d6f852f727608edd38d5c9353ddd24c1",
+    "src/genmol/utils/utils_save.py": "f092d274a40406feb2df7caabd4ac36a96b15fec08d403547c9c4357a5b3b8f5"
+  }
+}

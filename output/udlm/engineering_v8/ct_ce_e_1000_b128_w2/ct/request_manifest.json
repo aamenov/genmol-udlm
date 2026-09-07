@@ -1,0 +1,181 @@
+{
+  "created_at": "2026-09-07T10:28:31.723881+00:00",
+  "plan": {
+    "argv_sha256": "d05111cd38fef624616f470a81a157bcc17d332d333e2985d8337c5c888b7f71",
+    "arm_id": "ct",
+    "attempt_id": "ct_e_1000_b128_w2",
+    "campaign_relative": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2",
+    "checkpoint_path": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+    "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+    "config": {
+      "callback": {
+        "_target_": "lightning.pytorch.callbacks.ModelCheckpoint",
+        "auto_insert_metric_name": false,
+        "dirpath": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints",
+        "enable_version_counter": false,
+        "every_n_train_steps": 1000,
+        "filename": "{step}",
+        "save_top_k": -1
+      },
+      "data": "safe",
+      "loader": {
+        "batch_size": 16,
+        "global_batch_size": 128,
+        "num_workers": 1,
+        "pin_memory": true
+      },
+      "model": {
+        "attention_probs_dropout_prob": 0.1,
+        "classifier_dropout": null,
+        "hidden_act": "gelu",
+        "hidden_dropout_prob": 0.1,
+        "hidden_size": 768,
+        "initializer_range": 0.02,
+        "intermediate_size": 3072,
+        "layer_norm_eps": 1e-12,
+        "max_position_embeddings": 256,
+        "model_type": "bert",
+        "num_attention_heads": 12,
+        "num_hidden_layers": 12,
+        "pad_token_id": 3,
+        "position_embedding_type": "absolute",
+        "torch_dtype": "float32",
+        "type_vocab_size": 2,
+        "use_cache": true,
+        "vocab_size": 1880
+      },
+      "noise": {
+        "type": "loglinear"
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "eps": 1e-08,
+        "lr": 0.0003,
+        "scheduler": {
+          "decay_floor_lr": 3e-06,
+          "horizon_updates": 1000,
+          "name": "half_cosine_with_linear_warmup_and_floor",
+          "warmup_updates": 50
+        },
+        "weight_decay": 0
+      },
+      "seed": 1500,
+      "trainer": {
+        "_target_": "lightning.Trainer",
+        "accelerator": "cuda",
+        "accumulate_grad_batches": 4,
+        "detect_anomaly": false,
+        "devices": 2,
+        "gradient_clip_val": 1.0,
+        "log_every_n_steps": 10,
+        "max_steps": 1000,
+        "num_nodes": 1,
+        "precision": "bf16"
+      },
+      "training": {
+        "T": 0,
+        "antithetic_sampling": true,
+        "diffusion": "udlm",
+        "ema": 0.9999,
+        "global_mean_loss": true,
+        "init_from_mdlm_checkpoint": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+        "init_from_mdlm_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+        "init_from_mdlm_ema": true,
+        "pilot_fail_on_nonfinite_loss": false,
+        "reseed_after_model_initialization": false,
+        "sampling_eps": 0.001,
+        "udlm": {
+          "conditioning_variant": "film_adaln",
+          "empirical_uniform_mix": 0.0002,
+          "exclude_special_tokens": false,
+          "inference_eps": 1e-05,
+          "mask_all_special_tokens": true,
+          "noise_eps": 0.001,
+          "parameterization": "raw_loo",
+          "prior_variant": "empirical_frequency",
+          "sampling_steps": 128,
+          "time_embedding_size": 256,
+          "zero_init_conditioning": false
+        },
+        "use_bracket_safe": false
+      },
+      "wandb": {
+        "name": null,
+        "project": "genmol"
+      }
+    },
+    "config_sha256": "adbf518da62ea14d0e0b2e11f1ea91e058b25d0d35a59c3e8edfef060b5f0c46",
+    "config_source_sha256": "3f4b5726754db71d734df789d67f956a27bb2afaefd4b344f8b116f2cab77b91",
+    "example_exposures": 128000,
+    "gpu_count": 2,
+    "kind": "manual_engineering_training",
+    "log_relative": "output/logs/engineering_v8/ct_e_1000_b128_w2.training.log",
+    "matched_common_config_sha256": "f373121441fca1aaa2f2657a76d7f7ce66be199cd35637597d0df240e257e89a",
+    "output_relative": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct",
+    "protocol": {
+      "arms": [
+        {
+          "arm_id": "ct",
+          "config": "configs/udlm_e_objective_ct.yaml",
+          "config_sha256": "3f4b5726754db71d734df789d67f956a27bb2afaefd4b344f8b116f2cab77b91",
+          "parameterization": "raw_loo"
+        },
+        {
+          "arm_id": "ce",
+          "config": "configs/udlm_e_objective_ce.yaml",
+          "config_sha256": "f482a774a2d337d1d76f43ca806a7e13176c0f3adc9c5eedbe4ba32360efabf3",
+          "parameterization": "x0_denoiser"
+        }
+      ],
+      "checkpoint": "outputs/paper_v1/checkpoints/50000.ckpt",
+      "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "claim": "matched_objective_engineering_no_superiority_claim",
+      "common_mask_policy": "all_tokenizer_special_ids_immutable; exclude_special_tokens=false in the corruption alphabet",
+      "example_exposures_per_arm": 128000,
+      "execution_policy": "CT then CE, same GPU count, stop after any failure, never automatically retry or resume",
+      "exposure_ratio_to_historical_1000_update_batch16": 8,
+      "final_benchmark_seeds_reserved": [
+        0,
+        1,
+        2
+      ],
+      "follow_up": "Review all training outcomes; no automatic molecular evaluation or longer experiment",
+      "global_batch_size": 128,
+      "gpu_policy": {
+        "active_compute_processes_allowed": true,
+        "max_gpus": 2,
+        "max_utilization_percent": 10,
+        "min_free_memory_mib": 30000
+      },
+      "historical_example_exposures_per_arm": 16000,
+      "initialization_policy": "fresh common MDLM50k EMA; fresh optimizer and EMA; identical model construction and seed; no V7 continuation",
+      "memory_measurement": "External NVIDIA snapshots every 2 seconds; observed aggregate GPU use includes other processes and is not allocator peak memory",
+      "micro_batch_size": 16,
+      "optimizer_updates": 1000,
+      "purpose": "Prospective matched CT-E versus CE-E objective training under a new common all-special-token target mask",
+      "schema_version": 1,
+      "seed": 1500,
+      "study_id": "engineering-v8-ct-ce-e-1000-b128"
+    },
+    "protocol_sha256": "a27875752d25a4a7928401434f9bd90ee6e9d01539586bab70ce3ba75499026e",
+    "schema_version": 1,
+    "training_argv": [
+      "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+      "-u",
+      "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/train.py",
+      "--config-name",
+      "udlm_e_objective_ct",
+      "trainer.devices=2",
+      "trainer.accumulate_grad_batches=4",
+      "training.init_from_mdlm_checkpoint=/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+      "training.init_from_mdlm_checkpoint_sha256=8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "callback.dirpath=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints",
+      "hydra.run.dir=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/hydra"
+    ]
+  },
+  "source": {
+    "head": "c8434dda105c5fb2a15bb784d24e0387062c733e",
+    "upstream": "c8434dda105c5fb2a15bb784d24e0387062c733e"
+  }
+}

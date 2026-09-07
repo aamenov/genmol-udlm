@@ -24,8 +24,10 @@ UDLM authors.
 > implemented and CPU-tested; its molecular benchmark results are pending. The
 > [batch-128 resource pilot](experiments/udlm/results/engineering_v7_throughput.md)
 > passed. The prospective [matched CT/CE study](experiments/udlm/protocols/engineering_v8_objectives.json)
-> trains each arm for 1,000 batch-128 updates from the same MDLM EMA. Current
-> authorization is at most two dynamically selected GPUs below 10% utilization.
+> specifies 1,000 batch-128 updates per arm from the same MDLM EMA. CT reached
+> step 1,000, but a [process-exit incident](experiments/udlm/results/engineering_v8_ct_exit_incident.md)
+> stopped the controller before CE; its checkpoint passed a separate CPU audit.
+> A distinct CE follow-up is being prepared. Current authorization is at most two dynamically selected GPUs below 10% utilization.
 
 The main educational implementation is
 [`genmol_from_scratch.ipynb`](genmol_from_scratch.ipynb); exact experiment

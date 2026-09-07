@@ -1,0 +1,25 @@
+{
+  "arms": [
+    {
+      "arm_id": "ct",
+      "controller_return_code": 1,
+      "status": "failed",
+      "terminal_relative": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/terminal_manifest.json",
+      "terminal_sha256": "1021ba513564a25ca26ea3c2d6c148d271e1cd98d27078056285e848c9c69b5e"
+    },
+    {
+      "arm_id": "ce",
+      "status": "not_completed_after_campaign_stop"
+    }
+  ],
+  "campaign_sha256": "b915ab147714a1db46ca03a31cc6300e345b85ac404491ea3828158cba2567bf",
+  "finished_at": "2026-09-07T10:41:51.672705+00:00",
+  "schema_version": 1,
+  "source": {
+    "head": "c8434dda105c5fb2a15bb784d24e0387062c733e",
+    "upstream": "c8434dda105c5fb2a15bb784d24e0387062c733e"
+  },
+  "started_at": "2026-09-07T10:28:31.621816+00:00",
+  "status": "failed",
+  "stop_reason": "failed arm; later arms not started; no automatic retry"
+}

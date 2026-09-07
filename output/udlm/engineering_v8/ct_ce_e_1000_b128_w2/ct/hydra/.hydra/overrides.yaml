@@ -1,0 +1,5 @@
+- trainer.devices=2
+- trainer.accumulate_grad_batches=4
+- training.init_from_mdlm_checkpoint=/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt
+- training.init_from_mdlm_checkpoint_sha256=8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6
+- callback.dirpath=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints

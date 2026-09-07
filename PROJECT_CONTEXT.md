@@ -1,47 +1,37 @@
 # GenMol-UDLM project context
 
-## Active continuation: matched CT/CE training, 2026-09-07
+## Active continuation: V8 CT post-exit audit and separate CE follow-up
 
-V8 is integrated and ready for its first launch. Check live tmux, manifests,
-and logs before acting; this text is a prelaunch snapshot. The prospective
-protocol is `experiments/udlm/protocols/engineering_v8_objectives.json`, SHA-256
-`a27875752d25a4a7928401434f9bd90ee6e9d01539586bab70ce3ba75499026e`.
-It trains CT-E then CE-E sequentially, each starting fresh from the same
-verified MDLM50k EMA with seed1500, 1,000 updates, global batch128, microbatch16,
-two GPUs and accumulation4. Each arm sees 128,000 examples (eight times the
-historical R/S/E continuation exposure); both together see 256,000. Both use
-A1 conditioning, the same empirical prior, L1 schedule, active alphabet and
-all-special-token clean-target mask. They differ in CT/raw-LOO versus clean
-cross-entropy parameterization. Stage24 teaches this comparison in the notebook.
+The original V8 campaign failed after CT training reached 1,000 updates and
+returned zero: the controller's immediate process-group check found a remaining
+child and retained both leases. CE never started. Original failed receipts and
+null successful-exposure fields remain unchanged. The group/controller were
+absent at subsequent checks; a separate CPU audit accepted the CT checkpoint
+and released only its exact retained leases at 10:44:37 UTC on 2026-09-07.
 
-Run from this clean, pushed artifact worktree using the project virtual environment:
+Read `experiments/udlm/results/engineering_v8_ct_exit_incident.md` and the
+separate receipt
+`output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/post_exit_audit.json`
+(SHA-256 `959151c37072431be23b1f5696d7215da5291e0bace40d6f307864a7262f93c2`).
+The checkpoint SHA-256 is
+`48986899c401c09cdc1e9e865e773cadc40899b62129420689f89a8e622a9c99`.
+It has the exact launch configuration, 1,155 finite checked tensors and 1,000
+EMA updates. Configured exposure is 128,000 examples. Original source was
+`c8434dda105c5fb2a15bb784d24e0387062c733e`; prior fingerprint is unchanged.
 
-```bash
-/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python -u scripts/udlm/launch_objective_training.py --gpu-count 2
-```
+Do not relaunch V8 or alter its outputs. A bounded process-exit grace repair
+and a distinct CE-only V8b follow-up are being prepared in isolated branches.
+The new CE arm must start fresh from MDLM 50k EMA with exactly the original
+V8 CE settings: seed 1500, 1,000 updates, global batch 128, microbatch 16,
+two GPUs, accumulation 4, A1, L1, common full alphabet and common clean-target
+mask. Bind the accepted post-exit CT audit and preserve training source hashes.
+There are no CE molecular results. Verify live state before launching anything.
 
-Use detached tmux `genmol-udlm-v8-objectives`, with controller output in
-`output/logs/engineering-v8-objectives-controller.log`. The immutable campaign
-and arm manifests will be under
-`output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/`; training logs are under
-`output/logs/engineering_v8/`. Keep tracked source and HEAD frozen while the
-campaign runs. It stops on any failed arm and never automatically retries,
-resumes, generates molecules, or promotes a candidate. CE molecular benchmark
-results are pending. This training comparison does not establish superiority
-or match the full MDLM pretraining budget.
-
-Each arm holds both generation and training leases and dynamically selects at
-most two GPU UUIDs, rechecked strictly below 10% utilization with at least
-30,000 MiB free immediately before launch. Existing processes are recorded and
-allowed under those checks. Checkpoint completion requires finite tensors,
-step1000, the resolved configuration, and correct CT/CE metadata/state semantics.
-
-V7 completed successfully at 10:16:18 UTC. Its one-GPU CT-E20 checkpoint has
-SHA-256 `07ad66498ccaf629fd61e8485c6ddb310c84c4a86770a0be5e3d4911fe341cc0`;
-2,560 exposures, subprocess146.333s including startup/save, observed aggregate
-GPU maximum9,637MiB. Both leases were released. See
-`experiments/udlm/results/engineering_v7_throughput.md`. Do not relaunch this
-immutable attempt or initialize V8 from it; each V8 arm starts from MDLM EMA.
+Every launch must dynamically recheck at most two GPU UUIDs below 10%
+utilization with at least 30,000 MiB free. Existing processes are allowed under
+those checks. Use the project `.venv`, a named tmux session and `output/logs/`.
+The original `genmol-udlm-v8-objectives` session ended. Its logs and all original
+campaign/arm evidence remain under the V8 paths in the incident note.
 
 The complete 27-page V5/V6 plus MDLM study report is
 `output/udlm/study_overview_20260907/study_overview.pdf`, SHA-256

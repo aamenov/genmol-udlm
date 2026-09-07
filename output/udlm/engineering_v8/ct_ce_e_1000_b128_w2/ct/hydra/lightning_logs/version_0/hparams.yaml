@@ -1,0 +1,87 @@
+config:
+  data: safe
+  seed: 1500
+  wandb:
+    project: genmol
+    name: null
+  loader:
+    global_batch_size: 128
+    batch_size: 16
+    num_workers: 1
+    pin_memory: true
+  optim:
+    weight_decay: 0
+    lr: 0.0003
+    beta1: 0.9
+    beta2: 0.999
+    eps: 1.0e-08
+    scheduler:
+      name: half_cosine_with_linear_warmup_and_floor
+      warmup_updates: 50
+      horizon_updates: 1000
+      decay_floor_lr: 3.0e-06
+  trainer:
+    _target_: lightning.Trainer
+    accelerator: cuda
+    detect_anomaly: false
+    num_nodes: 1
+    devices: 2
+    accumulate_grad_batches: 4
+    gradient_clip_val: 1.0
+    precision: bf16
+    max_steps: 1000
+    log_every_n_steps: 10
+  model:
+    attention_probs_dropout_prob: 0.1
+    classifier_dropout: null
+    hidden_act: gelu
+    hidden_dropout_prob: 0.1
+    hidden_size: 768
+    initializer_range: 0.02
+    intermediate_size: 3072
+    layer_norm_eps: 1.0e-12
+    max_position_embeddings: 256
+    model_type: bert
+    num_attention_heads: 12
+    num_hidden_layers: 12
+    pad_token_id: 3
+    position_embedding_type: absolute
+    torch_dtype: float32
+    type_vocab_size: 2
+    use_cache: true
+    vocab_size: 1880
+  noise:
+    type: loglinear
+  training:
+    diffusion: udlm
+    T: 0
+    ema: 0.9999
+    antithetic_sampling: true
+    sampling_eps: 0.001
+    global_mean_loss: true
+    pilot_fail_on_nonfinite_loss: false
+    use_bracket_safe: false
+    init_from_mdlm_checkpoint: /home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt
+    init_from_mdlm_checkpoint_sha256: 8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6
+    init_from_mdlm_ema: true
+    reseed_after_model_initialization: false
+    udlm:
+      exclude_special_tokens: false
+      prior_variant: empirical_frequency
+      empirical_uniform_mix: 0.0002
+      noise_eps: 0.001
+      inference_eps: 1.0e-05
+      sampling_steps: 128
+      time_embedding_size: 256
+      conditioning_variant: film_adaln
+      zero_init_conditioning: false
+      parameterization: raw_loo
+      mask_all_special_tokens: true
+  callback:
+    _target_: lightning.pytorch.callbacks.ModelCheckpoint
+    dirpath: /home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/ct/checkpoints
+    filename: '{step}'
+    save_top_k: -1
+    auto_insert_metric_name: false
+    enable_version_counter: false
+    every_n_train_steps: 1000
