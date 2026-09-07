@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "purpose": "CPU oracle finite-step factorization diagnostic, not molecular evidence",
+  "data_probability_matrix": [
+    [
+      0.3142857142857143,
+      0.02857142857142857,
+      0.05714285714285714
+    ],
+    [
+      0.02857142857142857,
+      0.2571428571428571,
+      0.02857142857142857
+    ],
+    [
+      0.05714285714285714,
+      0.02857142857142857,
+      0.2
+    ]
+  ],
+  "priors": {
+    "uniform": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "skewed": [
+      0.72,
+      0.23,
+      0.05
+    ]
+  },
+  "noise_eps": 0.001,
+  "inference_eps": 1e-05,
+  "temperature": 1.0,
+  "arithmetic": "numpy/torch float64 enumeration; no Monte Carlo",
+  "production_coordinate_bridge": {
+    "nine_state_cases": 6,
+    "max_abs_error": 4.440892098500626e-16,
+    "device": "cpu"
+  },
+  "independent_data_max_factorization_tv": 1.8214596497756474e-15,
+  "rows": [
+    {
+      "prior": "uniform",
+      "nfe": 1,
+      "last_model_time": 1.0,
+      "exact_joint_tv_to_endpoint": 9.367506770274758e-17,
+      "factorized_tv_to_endpoint_exact_start": 0.431010933660408,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.4310109576748832,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.43101971077401835,
+      "endpoint_tv_to_clean_data": 8.753099135182935e-06,
+      "iid_prior_tv_to_exact_start": 8.873015873017004e-05
+    },
+    {
+      "prior": "uniform",
+      "nfe": 8,
+      "last_model_time": 0.12500875,
+      "exact_joint_tv_to_endpoint": 4.336808689942018e-17,
+      "factorized_tv_to_endpoint_exact_start": 0.07656225902919148,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.07656226852398988,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.07657102162312505,
+      "endpoint_tv_to_clean_data": 8.753099135182935e-06,
+      "iid_prior_tv_to_exact_start": 8.873015873017004e-05
+    },
+    {
+      "prior": "uniform",
+      "nfe": 32,
+      "last_model_time": 0.031259687499999966,
+      "exact_joint_tv_to_endpoint": 2.185751579730777e-16,
+      "factorized_tv_to_endpoint_exact_start": 0.018125511026956583,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.01812551817115845,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.01813427127029363,
+      "endpoint_tv_to_clean_data": 8.753099135182935e-06,
+      "iid_prior_tv_to_exact_start": 8.873015873017004e-05
+    },
+    {
+      "prior": "uniform",
+      "nfe": 64,
+      "last_model_time": 0.015634843749999905,
+      "exact_joint_tv_to_endpoint": 4.2327252813834093e-16,
+      "factorized_tv_to_endpoint_exact_start": 0.008935037889521677,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.008935044674598599,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.008943797773733782,
+      "endpoint_tv_to_clean_data": 8.753099135182935e-06,
+      "iid_prior_tv_to_exact_start": 8.873015873017004e-05
+    },
+    {
+      "prior": "uniform",
+      "nfe": 128,
+      "last_model_time": 0.00782242187499993,
+      "exact_joint_tv_to_endpoint": 4.128641872824801e-16,
+      "factorized_tv_to_endpoint_exact_start": 0.004433428120063098,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.00443343473011411,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.004442187829249293,
+      "endpoint_tv_to_clean_data": 8.753099135182935e-06,
+      "iid_prior_tv_to_exact_start": 8.873015873017004e-05
+    },
+    {
+      "prior": "uniform",
+      "nfe": 256,
+      "last_model_time": 0.003916210937499942,
+      "exact_joint_tv_to_endpoint": 1.7381929229287607e-15,
+      "factorized_tv_to_endpoint_exact_start": 0.002207936205827791,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.0022079427295464173,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.0022166958286816,
+      "endpoint_tv_to_clean_data": 8.753099135182935e-06,
+      "iid_prior_tv_to_exact_start": 8.873015873017004e-05
+    },
+    {
+      "prior": "uniform",
+      "nfe": 512,
+      "last_model_time": 0.001963105468750004,
+      "exact_joint_tv_to_endpoint": 1.3964523981613297e-15,
+      "factorized_tv_to_endpoint_exact_start": 0.0011017428740945114,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.0011017493549470014,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.0011105024540821844,
+      "endpoint_tv_to_clean_data": 8.753099135182935e-06,
+      "iid_prior_tv_to_exact_start": 8.873015873017004e-05
+    },
+    {
+      "prior": "skewed",
+      "nfe": 1,
+      "last_model_time": 1.0,
+      "exact_joint_tv_to_endpoint": 1.5612511283791264e-16,
+      "factorized_tv_to_endpoint_exact_start": 0.43100975021801796,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.4310094874748147,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.4310174166210396,
+      "endpoint_tv_to_clean_data": 7.929146224881431e-06,
+      "iid_prior_tv_to_exact_start": 0.0004866201142858229
+    },
+    {
+      "prior": "skewed",
+      "nfe": 8,
+      "last_model_time": 0.12500875,
+      "exact_joint_tv_to_endpoint": 8.326672684688674e-17,
+      "factorized_tv_to_endpoint_exact_start": 0.06451363252933953,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.06451351820065798,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.06452144734688287,
+      "endpoint_tv_to_clean_data": 7.929146224881431e-06,
+      "iid_prior_tv_to_exact_start": 0.0004866201142858229
+    },
+    {
+      "prior": "skewed",
+      "nfe": 32,
+      "last_model_time": 0.031259687499999966,
+      "exact_joint_tv_to_endpoint": 2.706168622523819e-16,
+      "factorized_tv_to_endpoint_exact_start": 0.015252159340977355,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.01525198961737317,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.015259918763598052,
+      "endpoint_tv_to_clean_data": 7.929146224881431e-06,
+      "iid_prior_tv_to_exact_start": 0.0004866201142858229
+    },
+    {
+      "prior": "skewed",
+      "nfe": 64,
+      "last_model_time": 0.015634843749999905,
+      "exact_joint_tv_to_endpoint": 8.933825901280557e-16,
+      "factorized_tv_to_endpoint_exact_start": 0.007518968372491079,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.007518790334419994,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.007526719480644876,
+      "endpoint_tv_to_clean_data": 7.929146224881431e-06,
+      "iid_prior_tv_to_exact_start": 0.0004866201142858229
+    },
+    {
+      "prior": "skewed",
+      "nfe": 128,
+      "last_model_time": 0.00782242187499993,
+      "exact_joint_tv_to_endpoint": 8.569533971325427e-16,
+      "factorized_tv_to_endpoint_exact_start": 0.0037308068089025835,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.00373062480298343,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.0037385539492083113,
+      "endpoint_tv_to_clean_data": 7.929146224881431e-06,
+      "iid_prior_tv_to_exact_start": 0.0004866201142858229
+    },
+    {
+      "prior": "skewed",
+      "nfe": 256,
+      "last_model_time": 0.003916210937499942,
+      "exact_joint_tv_to_endpoint": 1.4779844015322396e-15,
+      "factorized_tv_to_endpoint_exact_start": 0.0018580079827649303,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.001857824046132753,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.0018657531923576345,
+      "endpoint_tv_to_clean_data": 7.929146224881431e-06,
+      "iid_prior_tv_to_exact_start": 0.0004866201142858229
+    },
+    {
+      "prior": "skewed",
+      "nfe": 512,
+      "last_model_time": 0.001963105468750004,
+      "exact_joint_tv_to_endpoint": 2.4303475898435067e-15,
+      "factorized_tv_to_endpoint_exact_start": 0.0009271279143486209,
+      "factorized_tv_to_endpoint_iid_prior_start": 0.0009269430263660963,
+      "factorized_tv_to_clean_data_iid_prior_start": 0.0009348721725909778,
+      "endpoint_tv_to_clean_data": 7.929146224881431e-06,
+      "iid_prior_tv_to_exact_start": 0.0004866201142858229
+    }
+  ],
+  "limitations": [
+    "Two positions and three categories with oracle conditionals are not learned molecular sequences.",
+    "Finer steps need not improve a learned or temperature-controlled model.",
+    "512 predictor evaluations cost four times the 128-evaluation budget.",
+    "An iid stationary start differs from the residual-clean terminal forward distribution."
+  ]
+}
