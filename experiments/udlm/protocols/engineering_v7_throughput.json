@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "study_id": "engineering-v7-ct-e-throughput20",
+  "purpose": "Prospective manual engineering throughput pilot; no registered-stage replay or automatic longer training",
+  "claim": "resource_measurement_only_no_superiority_claim",
+  "config": "configs/udlm_e_throughput20.yaml",
+  "config_sha256": "50d2d45e647d9aa0f1be094f11835e427847a8536cc7203a4ddb03b7e72e1994",
+  "checkpoint": "outputs/paper_v1/checkpoints/50000.ckpt",
+  "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+  "objective": "existing_categorical_ct_raw_loo",
+  "seed": 1400,
+  "optimizer_updates": 20,
+  "global_batch_size": 128,
+  "micro_batch_size": 16,
+  "gpu_policy": {
+    "max_gpus": 2,
+    "max_utilization_percent": 10,
+    "min_free_memory_mib": 30000,
+    "active_compute_processes_allowed": true
+  },
+  "memory_measurement": "External NVIDIA snapshots every 2 seconds; observed aggregate GPU use includes other processes and is not allocator peak memory",
+  "follow_up": "Review throughput, memory and finite checkpoint first; start any CT/CE 1000-update batch128 comparison fresh from the common MDLM EMA",
+  "final_benchmark_seeds_reserved": [
+    0,
+    1,
+    2
+  ]
+}
