@@ -42,8 +42,8 @@ UDLM authors.
 > [frozen MDLM diagnostic](experiments/udlm/results/frozen_mdlm_transfer_20260907.md)
 > found easier reconstruction under the MASK-rich corruption, which changes task
 > difficulty and is not molecular evidence. [V11 stopped before training](experiments/udlm/results/engineering_v11_prelaunch_incident.md)
-> after GPU capacity changed. The separate V11b arm preserves its training
-> settings and waits for eligible capacity before its single launch. The
+> after GPU capacity changed. The separate [V11b arm completed](experiments/udlm/results/engineering_v11b_mask_training.md)
+> all 1,000 updates and passed CE, EMA, prior and finiteness validation. The
 > [prospective V12 comparison](experiments/udlm/designs/engineering_v12_mask_prior_evaluation.md)
 > fixes 800 fresh requests and both signed prior contrasts; it requires the
 > validated new checkpoint. No MASK-trained molecular result exists. Current

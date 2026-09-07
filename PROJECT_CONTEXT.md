@@ -2,6 +2,20 @@
 
 ## Active continuation: MASK-rich CE follow-up and fixed prior comparison
 
+V11b completed successfully at 12:36:31 UTC on 2026-09-07. The final checkpoint
+SHA-256 is `62299de99d8c003e3776215efce9643cca196091a6284f351de2b404a22c2e8d` (1,000 updates,
+128,000 configured exposures, 1,157 finite checked tensors, exact CE/EMA and
+MASK-prior identity). Terminal SHA-256 is `891f5d6d609146a02ebb18caa7176bf555e3f67fe2493795c8a3e1fccb264779`.
+The training group exited during the cleanup grace and both leases are absent.
+Read `experiments/udlm/results/engineering_v11b_mask_training.md`. Do not rerun
+V11b. Its source was `be18a3244a717978e027d6e43ba0ac20b8137e4a`.
+
+V12 checkpoint/protocol acceptance is now the next action, using the reviewed
+materializer and the actual completed terminal digest above. Its fixed design
+and inference YAMLs are published; no molecular generation has started at this
+snapshot. Verify live state before acting. No superiority is established.
+The V11/V11b launch instructions below are retained historical context.
+
 V10 ended at 11:40:49 UTC on 2026-09-07; generation and independent CPU
 rescoring accepted all eight runs and 800 requests. The 128-to-512 predictor
 change gave repaired-quality differences of -0.5pp CT and +1.5pp CE, with

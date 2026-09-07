@@ -1,0 +1,263 @@
+{
+  "created_at": "2026-09-07T12:14:43.622316+00:00",
+  "plan": {
+    "argv_sha256": "e3f1eb7f90545e10ffd470654d98abd1dfbe59fcb7975f287855c3e0319a9b0e",
+    "arm_id": "mask_ce",
+    "attempt_id": "mask_ce_1000_b128_w2_followup",
+    "checkpoint_path": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+    "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+    "config": {
+      "callback": {
+        "_target_": "lightning.pytorch.callbacks.ModelCheckpoint",
+        "auto_insert_metric_name": false,
+        "dirpath": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v11b/mask_ce_1000_b128_w2/checkpoints",
+        "enable_version_counter": false,
+        "every_n_train_steps": 1000,
+        "filename": "{step}",
+        "save_top_k": -1
+      },
+      "data": "safe",
+      "loader": {
+        "batch_size": 16,
+        "global_batch_size": 128,
+        "num_workers": 1,
+        "pin_memory": true
+      },
+      "model": {
+        "attention_probs_dropout_prob": 0.1,
+        "classifier_dropout": null,
+        "hidden_act": "gelu",
+        "hidden_dropout_prob": 0.1,
+        "hidden_size": 768,
+        "initializer_range": 0.02,
+        "intermediate_size": 3072,
+        "layer_norm_eps": 1e-12,
+        "max_position_embeddings": 256,
+        "model_type": "bert",
+        "num_attention_heads": 12,
+        "num_hidden_layers": 12,
+        "pad_token_id": 3,
+        "position_embedding_type": "absolute",
+        "torch_dtype": "float32",
+        "type_vocab_size": 2,
+        "use_cache": true,
+        "vocab_size": 1880
+      },
+      "noise": {
+        "type": "loglinear"
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "eps": 1e-08,
+        "lr": 0.0003,
+        "scheduler": {
+          "decay_floor_lr": 3e-06,
+          "horizon_updates": 1000,
+          "name": "half_cosine_with_linear_warmup_and_floor",
+          "warmup_updates": 50
+        },
+        "weight_decay": 0
+      },
+      "seed": 1500,
+      "trainer": {
+        "_target_": "lightning.Trainer",
+        "accelerator": "cuda",
+        "accumulate_grad_batches": 4,
+        "detect_anomaly": false,
+        "devices": 2,
+        "gradient_clip_val": 1.0,
+        "log_every_n_steps": 10,
+        "max_steps": 1000,
+        "num_nodes": 1,
+        "precision": "bf16"
+      },
+      "training": {
+        "T": 0,
+        "antithetic_sampling": true,
+        "diffusion": "udlm",
+        "ema": 0.9999,
+        "global_mean_loss": true,
+        "init_from_mdlm_checkpoint": "/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+        "init_from_mdlm_checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+        "init_from_mdlm_ema": true,
+        "pilot_fail_on_nonfinite_loss": false,
+        "reseed_after_model_initialization": false,
+        "sampling_eps": 0.001,
+        "udlm": {
+          "conditioning_variant": "film_adaln",
+          "empirical_uniform_mix": 0.0002,
+          "exclude_special_tokens": false,
+          "inference_eps": 1e-05,
+          "mask_all_special_tokens": true,
+          "mask_mixture_weight": 0.9,
+          "noise_eps": 0.001,
+          "parameterization": "x0_denoiser",
+          "prior_variant": "mask_rich_empirical",
+          "sampling_steps": 128,
+          "time_embedding_size": 256,
+          "zero_init_conditioning": false
+        },
+        "use_bracket_safe": false
+      },
+      "wandb": {
+        "name": null,
+        "project": "genmol"
+      }
+    },
+    "config_sha256": "5d73af507e81b643cf8f35225ab5d796357024d1665d039fdf40b5f37df15698",
+    "config_source_sha256": "3c008823bd4c7e3f3e3a7d89f007af836945d0e39b55804809213f990d0466a0",
+    "example_exposures": 128000,
+    "expected_prior_metadata_sha256": "4e1febe2684beebdbf3d4c86aa01bc24ed1d3941af67b63473979e2ae810ee45",
+    "gpu_availability_poll_seconds": 30,
+    "gpu_availability_wait_seconds": 21600,
+    "gpu_count": 2,
+    "kind": "manual_engineering_training",
+    "log_relative": "output/logs/engineering_v11b/mask_ce_1000_b128_w2.training.log",
+    "matched_common_config_sha256": "f373121441fca1aaa2f2657a76d7f7ce66be199cd35637597d0df240e257e89a",
+    "output_relative": "output/udlm/engineering_v11b/mask_ce_1000_b128_w2",
+    "protocol": {
+      "accumulate_grad_batches": 4,
+      "checkpoint": "outputs/paper_v1/checkpoints/50000.ckpt",
+      "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "claim": "separate_followup_after_capacity_only_prelaunch_failure",
+      "comparison_contract": "Resolved training configuration equals completed V8b CE after replacing prior_variant, adding mask_mixture_weight and changing only the output namespace. The recorded common-config hash is the V8 comparison hash after restoring the empirical prior and removing the new MASK weight.",
+      "conditioning_variant": "film_adaln",
+      "config": "configs/udlm_mask_objective_ce_followup.yaml",
+      "config_sha256": "3c008823bd4c7e3f3e3a7d89f007af836945d0e39b55804809213f990d0466a0",
+      "evidence": {
+        "ct_post_exit_audit": {
+          "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/post_exit_audit/post_exit_audit.json",
+          "sha256": "959151c37072431be23b1f5696d7215da5291e0bace40d6f307864a7262f93c2"
+        },
+        "original_failed_campaign": {
+          "relative_path": "output/udlm/engineering_v8/ct_ce_e_1000_b128_w2/campaign_terminal.json",
+          "sha256": "98075a11c7340dafcc855887348201477981bd2a1a8f5d39053da24866cc663b"
+        },
+        "v8b_ce_terminal": {
+          "relative_path": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/terminal_manifest.json",
+          "sha256": "2dd0423257e8908548b69a28b8aa24b3cc956507944c343e24ef615253af2205"
+        },
+        "v8b_protocol": {
+          "relative_path": "experiments/udlm/protocols/engineering_v8b_ce_followup.json",
+          "sha256": "acb286ac4b938aa049327740affd2dea5beb0ded745cd51dca627f5e8fd9de8b"
+        }
+      },
+      "example_exposures_per_arm": 128000,
+      "exclude_special_tokens": false,
+      "execution_policy": "One attempt in output/udlm/engineering_v11b/mask_ce_1000_b128_w2. Require unchanged V11 failure/request/source hashes and absent or null training PID, launch identity, return code, checkpoint and exposures, with leases released. Revalidate source, plan and the fresh MDLM checkpoint before the capacity loop; wait at most six hours with 30-second polls for two GPUs strictly below 10 percent utilization and at least 30000 MiB free each, including final UUID probes. Capacity rejection alone may wait; source, lease or probe errors fail. Preserve exclusive leases and 15-second cleanup grace. After any child launch, never retry or resume.",
+      "final_benchmark_seeds_reserved": [
+        0,
+        1,
+        2
+      ],
+      "follow_up": "No molecular generation, promotion or longer training in this controller. Any V12 generation must use its separately amended prospective V11b checkpoint path and only an accepted final checkpoint with the expected immutable prior identity. Final seeds 0,1,2 stay reserved.",
+      "global_batch_size": 128,
+      "gpu_availability_poll_seconds": 30,
+      "gpu_availability_wait_seconds": 21600,
+      "gpu_count": 2,
+      "gpu_policy": {
+        "active_compute_processes_allowed": true,
+        "max_gpus": 2,
+        "max_utilization_percent": 10,
+        "min_free_memory_mib": 30000
+      },
+      "historical_control": {
+        "checkpoint": {
+          "relative_path": "output/udlm/engineering_v8b/ce_e_1000_b128_w2/checkpoints/1000.ckpt",
+          "sha256": "b7d674ed5bddb1f597cb35b36cc6b64c0298eb28539d9cd01e720e7e46f6acc1",
+          "size_bytes": 1636492999
+        },
+        "example_exposures": 128000,
+        "optimizer_updates": 1000,
+        "prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+        "prior_variant": "empirical_frequency",
+        "source_revision": "b84f21ba1f30ceb62d2626daf2caad8adb6534cf",
+        "status": "completed",
+        "study_id": "engineering-v8b-ce-e-1000-b128-w2"
+      },
+      "implementation_policy": "Source differs from V8b to add the optional prior and its identity validation; pre-existing R/S/E prior buffers and metadata were independently verified byte-equal. Record the actual clean pushed runtime revision separately. Configuration matching does not imply equal stochastic corruption, equal optimization difficulty or equal wall time.",
+      "initialization_policy": "Fresh original MDLM50k EMA with fresh optimizer and EMA; never extend, resume or initialize from V8b CE or V8 CT weights.",
+      "mask_all_special_tokens": true,
+      "matched_common_config_sha256": "f373121441fca1aaa2f2657a76d7f7ce66be199cd35637597d0df240e257e89a",
+      "memory_measurement": "External NVIDIA snapshots every 2 seconds; observed aggregate GPU use includes other processes and is not allocator peak memory",
+      "micro_batch_size": 16,
+      "optimizer_updates": 1000,
+      "original_protocol": "experiments/udlm/protocols/engineering_v11_mask_prior.json",
+      "original_protocol_sha256": "29f46ec0f925eca992c3b9b2ed27386dcfacd6789076efe1840b14319d9d9198",
+      "original_source_revision": "46ec3b0bc0c54208fd546af4b71108a3f1e31015",
+      "parameterization": "x0_denoiser",
+      "peak_learning_rate": 0.0003,
+      "prelaunch_failure_evidence": {
+        "request": {
+          "relative_path": "output/udlm/engineering_v11/mask_ce_1000_b128_w2/request_manifest.json",
+          "sha256": "1cf5a1c0b25a63ee6189aa77b94aad3e14ec25a666acd7eab358ef117f6b5110"
+        },
+        "terminal": {
+          "relative_path": "output/udlm/engineering_v11/mask_ce_1000_b128_w2/terminal_manifest.json",
+          "sha256": "6a4aa47e1f7b76ad5efc3ce03cd3e4a55c0db4d95778b0cf60cc55cab7207408"
+        }
+      },
+      "prior": {
+        "active_vocab_size": 1880,
+        "base_prior_metadata_sha256": "f738b8b17de5c4704058018bbddacd7fed779c85248e33d199b68a648151e612",
+        "base_stationary_probs_sha256": "3b6ce79449e0abc083bc860b3543be554667435ce9f7f1b92c0f960ff27400c3",
+        "frequency_artifact": "experiments/udlm/token_frequency/train_first_10000.json",
+        "frequency_artifact_sha256": "088c78e75611f3cc42c4011e1da6f65a377e673b9cba07a28b126b0fc62f06ed",
+        "mask_mixture_weight": 0.9,
+        "mask_token_id": 4,
+        "metadata_sha256": "4e1febe2684beebdbf3d4c86aa01bc24ed1d3941af67b63473979e2ae810ee45",
+        "stationary_probs_sha256": "07d011c07bdac8fdbe096f514ded6e2d1b6850268c48bec8dd0e3f3853d013eb",
+        "uniform_mixture_weight": 0.0002,
+        "variant": "mask_rich_empirical"
+      },
+      "prototype_revision": "f7cc78838275ff8137b6a749f0f56035324ebd86",
+      "purpose": "Separate V11b training attempt after V11 failed solely on prelaunch GPU capacity at 2026-09-07 11:59:29 UTC. No training child, model update, checkpoint or molecular sample existed in V11. Preserve the exact fresh MDLM EMA initialization, seed, prior and training configuration.",
+      "reporting_policy": "Original V11 remains failed before training; V11b is a separate controller outcome with unchanged training settings and its own source, namespace, wait telemetry and checkpoint receipt. V8b CE remains the completed historical context control; original V8 CT campaign remains failed and its checkpoint separately audited. Configured exposures are not distinct-molecule counts, and final finiteness does not prove all intermediate updates finite.",
+      "scheduler": {
+        "decay_floor_lr": 3e-06,
+        "horizon_updates": 1000,
+        "name": "half_cosine_with_linear_warmup_and_floor",
+        "warmup_updates": 50
+      },
+      "schema_version": 1,
+      "seed": 1500,
+      "selection_context": {
+        "completed_runs": 8,
+        "hypothesis_selection": "MASK weight .9 is an engineering prior hypothesis motivated by MDLM initialization and earlier syntax diagnostics; it is not a tuned optimum or a paper-faithful UDLM control.",
+        "independently_rescored_requests": 800,
+        "interpretation": "The fourfold predictor budget did not close the gap to local MDLM quality .858. Two seeds of 100 requests per setting do not show that numerical resolution is irrelevant or establish a structural improvement.",
+        "repaired_quality_means": {
+          "ce_n128": 0.465,
+          "ce_n512": 0.48,
+          "ct_n128": 0.455,
+          "ct_n512": 0.45
+        },
+        "v10_report": {
+          "relative_path": "output/udlm/engineering_v10_reports/complete/report.json",
+          "sha256": "8d9b7df5797338b6a768cfd3489af6abdadabe0cf48a8cec212086cfc7714d16"
+        }
+      },
+      "study_id": "engineering-v11b-mask-ce-1000-b128-w2"
+    },
+    "protocol_sha256": "5ecf638fa8fc7a3707a0497c8a358697610f52c8af7f2d6468458890e26368eb",
+    "schema_version": 1,
+    "training_argv": [
+      "/home/aidar.alimbayev/Documents/genmolv2/.venv/bin/python",
+      "-u",
+      "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/scripts/train.py",
+      "--config-name",
+      "udlm_mask_objective_ce_followup",
+      "trainer.devices=2",
+      "trainer.accumulate_grad_batches=4",
+      "training.init_from_mdlm_checkpoint=/home/aidar.alimbayev/Documents/genmolv2/outputs/paper_v1/checkpoints/50000.ckpt",
+      "training.init_from_mdlm_checkpoint_sha256=8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+      "callback.dirpath=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v11b/mask_ce_1000_b128_w2/checkpoints",
+      "hydra.run.dir=/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v11b/mask_ce_1000_b128_w2/hydra"
+    ]
+  },
+  "source": {
+    "head": "be18a3244a717978e027d6e43ba0ac20b8137e4a",
+    "upstream": "be18a3244a717978e027d6e43ba0ac20b8137e4a"
+  }
+}
