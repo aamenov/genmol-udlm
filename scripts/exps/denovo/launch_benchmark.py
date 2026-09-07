@@ -2219,6 +2219,15 @@ def _completed(
         errors.append("run.generation_protocol.nfe must be a positive integer")
     elif sampling["diffusion_type"] == "udlm" and nfe != sampling["num_steps"]:
         errors.append("run.generation_protocol.nfe must equal UDLM num_steps")
+    if sampling.get("temperature_space", "raw_loo") == "x0_denoiser":
+        for key, wanted in benchmark_runner.DENOISER_TEMPERATURE_PROTOCOL.items():
+            expect(f"run.generation_protocol.{key}", protocol.get(key), wanted)
+            if type(protocol.get(key)) is not type(wanted):
+                errors.append(f"run.generation_protocol.{key} has an invalid type")
+    elif any(key in protocol for key in benchmark_runner.DENOISER_TEMPERATURE_PROTOCOL):
+        errors.append(
+            "run.generation_protocol declares an unconfigured denoiser temperature"
+        )
     if sampling.get("gibbs_corrector", False):
         expect("schema_version for Gibbs correction", summary_schema_version, 8)
         for key, wanted in {
