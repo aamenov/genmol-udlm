@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from scripts import artifact_io
 from scripts.udlm import launch_engineering_training as engine
 
-PROTOCOL = "experiments/udlm/protocols/followthrough_learning_r1.json"
+PROTOCOL = "experiments/udlm/protocols/followthrough_learning_r2.json"
 
 
 def build_plan(arm, gpu_count, *, root=ROOT):
@@ -35,7 +35,7 @@ def build_plan(arm, gpu_count, *, root=ROOT):
     accumulation = engine.audited.exact_accumulation_steps(128, 16, gpu_count)
     name = f"followthrough_learning_{arm}"
     config_claim, _ = artifact_io.snapshot_file(root, f"configs/{name}.yaml")
-    output = f"output/udlm/followthrough_learning_r1/{arm}_4000_b128_w{gpu_count}"
+    output = f"output/udlm/followthrough_learning_r2/{arm}_4000_b128_w{gpu_count}"
     checkpoint = engine.PROJECT_ROOT / protocol["checkpoint"]
     overrides = [f"trainer.devices={gpu_count}",
                  f"trainer.accumulate_grad_batches={accumulation}",
@@ -60,8 +60,8 @@ def build_plan(arm, gpu_count, *, root=ROOT):
             or training["diffusion"] != ("mdlm" if arm == "mdlm" else "udlm")
             or training["udlm"]["parameterization"] != ("x0_denoiser" if arm == "ce" else "raw_loo")
             or training["init_from_mdlm_ema"] is not True
-            or training["reseed_after_model_initialization"] is not True
-            or training["pilot_fail_on_nonfinite_loss"] is not True):
+            or training["reseed_after_model_initialization"] is not False
+            or training["pilot_fail_on_nonfinite_loss"] is not False):
         raise ValueError("Resolved training configuration violates the learning-curve design")
     command = [str(engine.PROJECT_ROOT / ".venv/bin/python"), "-u",
                str(root / "scripts/train.py"), "--config-name", name, *overrides]
@@ -71,7 +71,7 @@ def build_plan(arm, gpu_count, *, root=ROOT):
             "config": config, "config_sha256": engine.canonical_digest(config),
             "training_argv": command, "argv_sha256": engine.canonical_digest(command),
             "gpu_count": gpu_count, "output_relative": output,
-            "log_relative": f"output/logs/followthrough_learning_r1/{arm}_4000_b128_w{gpu_count}.training.log",
+            "log_relative": f"output/logs/followthrough_learning_r2/{arm}_4000_b128_w{gpu_count}.training.log",
             "checkpoint_path": str(checkpoint), "checkpoint_sha256": protocol["checkpoint_sha256"],
             "example_exposures": 512000}
 

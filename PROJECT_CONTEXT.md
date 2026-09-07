@@ -1,3 +1,15 @@
+# Startup repair — active learning attempt r2
+
+Attempt r1 launched but failed at the unsupported post-initialization reseeding
+guard before dataloader/trainer construction or any optimizer update. Both leases
+were released and its failed receipt is retained. The r2 protocol restores the
+tested V8 manual startup settings: post-initialization reseeding false and the
+launch-bound pilot nonfinite flag false. The startup seed remains17400.
+Optimizer/EMA resets,4k learning-rate horizon, batch128, and the matched MDLM
+control are unchanged. An actual-entrypoint regression covers this guard.
+The active outputs/logs/session now have the r2 suffix.
+Historical claims below about post-initialization reseeding are superseded.
+
 # Prelaunch availability amendment
 
 The initial4k CT request ended before creating any training process because

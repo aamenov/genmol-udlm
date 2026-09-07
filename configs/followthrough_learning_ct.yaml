@@ -10,7 +10,7 @@ optim:
   scheduler:
     horizon_updates: 4000
 training:
-  reseed_after_model_initialization: true
-  pilot_fail_on_nonfinite_loss: true
+  reseed_after_model_initialization: false
+  pilot_fail_on_nonfinite_loss: false
 callback:
   every_n_train_steps: 1000

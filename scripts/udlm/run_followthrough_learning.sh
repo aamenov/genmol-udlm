@@ -9,17 +9,17 @@ if [[ "${2:-}" != --inside ]]; then
     for arm in "$study_arm" mdlm; do
         "$study_python" scripts/udlm/launch_followthrough_learning.py --arm "$arm" --gpu-count 2 --dry-run > /dev/null
     done
-    if tmux has-session -t genmol-udlm-followthrough-learning-r1 2>/dev/null; then
+    if tmux has-session -t genmol-udlm-followthrough-learning-r2 2>/dev/null; then
         echo 'Existing learning-curve session retained; refusing duplicate launch.' >&2
         exit 1
     fi
-    exec tmux new-session -d -s genmol-udlm-followthrough-learning-r1 -c "$study_root" \
+    exec tmux new-session -d -s genmol-udlm-followthrough-learning-r2 -c "$study_root" \
         "bash scripts/udlm/run_followthrough_learning.sh $study_arm --inside"
 fi
 [[ -n "${TMUX:-}" ]] || { echo 'Execution requires tmux.' >&2; exit 1; }
 mkdir -p output/logs
 set -o noclobber
-exec > output/logs/followthrough-learning-r1-pipeline.log 2>&1
+exec > output/logs/followthrough-learning-r2-pipeline.log 2>&1
 unset CUDA_VISIBLE_DEVICES
 export PYTHONDONTWRITEBYTECODE=1
 for arm in "$study_arm" mdlm; do

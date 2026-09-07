@@ -22,3 +22,22 @@ def test_learning_arms_match_exposure_and_fresh_schedule(gpus):
 def test_unsupported_arm_or_gpu_count_rejected(arm, gpus):
     with pytest.raises(ValueError):
         build_plan(arm, gpus)
+
+
+def test_configs_pass_the_actual_manual_startup_guard():
+    import subprocess
+    import sys
+    # A fresh interpreter reproduces the entrypoint's resolver-registration order.
+    code = '''
+from scripts import train as entrypoint
+from scripts.udlm.launch_followthrough_learning import build_plan
+from omegaconf import OmegaConf
+assert entrypoint._PILOT_CONTRACT is None
+for arm in ("ct", "ce", "mdlm"):
+    config = OmegaConf.create(build_plan(arm, 2)["config"])
+    assert entrypoint._reseed_training_rng_after_model_initialization(config, "warm_start") is None
+    assert entrypoint._validate_and_record_pilot_config(config) is None
+    assert config.training.pilot_fail_on_nonfinite_loss is False
+'''
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr

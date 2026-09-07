@@ -1,0 +1,45 @@
+{
+  "checkpoint": "outputs/paper_v1/checkpoints/50000.ckpt",
+  "checkpoint_sha256": "8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+  "deviations": [
+    "MDLM destination is newly permitted by the existing verified backbone-only EMA initialization helper.",
+    "Equal extra examples and updates are not equal FLOPs; UDLM has additional FiLM parameters.",
+    "No improvement or final benchmark claim follows from a completed training run.",
+    "Normal Lightning startup seeding and manual V8 runtime behavior are retained. Final tensor finiteness is audited; intermediate-update finiteness is not independently established."
+  ],
+  "evaluation_checkpoints": [
+    1000,
+    2000,
+    4000
+  ],
+  "example_exposures_per_arm": 512000,
+  "execution": "One UDLM objective selected after the completed resolution diagnostic, then one MDLM exposure control; fresh starts and independent optimizers.",
+  "global_batch_size": 128,
+  "gpu_policy": {
+    "active_compute_processes_allowed": true,
+    "max_gpus": 2,
+    "max_utilization_percent": 10,
+    "min_free_memory_mib": 30000
+  },
+  "infrastructure_amendment": {
+    "namespace": "output/udlm/followthrough_learning_r1",
+    "original_protocol_sha256": "ec9a3cb98e637dc10372a4249668fd860101e9c1cc0bde7c4fcc730a4950906a",
+    "original_source": "0062945",
+    "original_terminal_sha256": "71a4cf91229242e139701ec48e6286ffc9df27d771611aa4143491ae6c17140d",
+    "reason": "Final GPU utilization changed from8% to11%, so the original CT request stopped before creating any child. Keep that receipt. A new request waits/reselects on valid availability changes before launch; identity/query errors and any started training failure still stop.",
+    "scientific_changes": []
+  },
+  "memory_measurement": "Two-second nvidia-smi aggregate memory samples, including existing processes; not allocator peaks.",
+  "micro_batch_size": 16,
+  "optimizer_updates": 4000,
+  "schema_version": 1,
+  "seed": 17400,
+  "startup_amendment": {
+    "output_namespace": "output/udlm/followthrough_learning_r2",
+    "previous_protocol_sha256": "c8b6229683c53eb528e771b66f3e8a5687bb6bfa2fca670fbf60c5430ed62fe8",
+    "previous_terminal_sha256": "2d9d8f97d88e5ecf15dca71045f7948929e429f90c13ffab731c8ceaab6546ae",
+    "reason": "The manual launcher has no launch-bound pilot reseeding contract. The child failed at the reseeding guard before dataloader/trainer construction or any optimizer update. Restore V8 reseeding/nonfinite-flag defaults for both new arms. Preserve the failed child receipt and use a fresh namespace.",
+    "training_seed_retained": 17400
+  },
+  "study_id": "followthrough-learning-4000-b128-r2"
+}
