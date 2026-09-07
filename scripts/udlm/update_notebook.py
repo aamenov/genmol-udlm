@@ -5477,6 +5477,751 @@ print("Synthetic reverse-step B probabilities (old, new):", float(stage27_old_st
     ]
 
 
+def _pmo_optimization_cells():
+    """Teach the prospective PMO comparison without models or oracle calls."""
+    return [
+        _cell("markdown", r"""
+# Stage 28 — Property optimization with fragment remasking
+
+## 28.1 A fixed token context inside a changing search population
+
+**Paper correspondence.** GenMol's fragment attaching/remasking method in
+Sections 4.2 and 5.3 searches for high-scoring molecules by combining fragments,
+regenerating part of a candidate and updating a fragment population. See the
+[GenMol paper](https://arxiv.org/html/2501.06158v3). Our V14 engineering question
+is whether an existing UDLM sampler helps this conditional search, even though
+earlier de novo studies did not establish superiority. No PMO outcome is used
+or reported in this stage.
+
+**Intuition and motivation.** Keep most of a proposed SAFE token sequence as
+context, replace one fragment span by MASK tokens, and generate only that span.
+The neural generator proposes a molecule; a separate property oracle scores
+the decoded molecule. The population policy can then reuse useful fragments.
+Gamma zero disables molecular-context guidance, not the surrounding fixed
+tokens or bidirectional attention to them. Property scores do not become a
+gradient through this generator in the released population search.
+
+**Mathematics, with every symbol defined.** Let $x\in\{0,\ldots,K-1\}^{B\times L}$
+be input token IDs, with batch size $B$, padded length $L$ and vocabulary size
+$K$. Let $e_{b\ell}\in\{0,1\}$ mark an editable MASK position in row $b$ and
+column $\ell$. If $z^{(r)}$ is the token array after update $r$, every update
+must satisfy $z^{(r)}_{b\ell}=x_{b\ell}$ wherever $e_{b\ell}=0$.
+UDLM initialization draws only editable positions from the checkpoint's stationary
+prior $\pi$, where $\pi_j>0$ and $\sum_{j=0}^{K-1}\pi_j=1$. UDLM reverse
+updates can revise a token that was already filled; editability is the original
+mask, not a fresh test for whether the current value equals MASK.
+
+**Small concrete example.** The invented sequence below has two editable
+positions between separators. We supply two updates by hand, including a final
+MASK token. Context preservation still holds. This demonstrates an invariant;
+the supplied updates are not draws from a diffusion model or molecular samples.
+
+**Code below, shapes, and invariants.** Nested tuples represent `[B,L]=[1,9]`
+IDs and Boolean masks. Each replacement row has two entries, one per editable
+position. The assertion checks every immutable position after both updates,
+including BOS/EOS/PAD framing. The final count is over editable positions only.
+No model, tokenizer, chemistry package, dataset, file, or device is accessed.
+
+**Differences from released implementations.** The long-input path retains
+GenMol's random fragment choice and insertion of 5..15 MASK tokens, subject to
+capacity. Short inputs retain completion with effective added length 18;
+`mask_len` does not override that released completion path. UDLM changes the
+sampling law inside the editable span. Immutable token context does **not**
+guarantee graph-level fragment preservation after SAFE decoding, repair or
+largest-component selection. PMO searches property-scored valid molecules;
+it does not use the separate fragment-constraint success metric. Residual
+control tokens also require token-level evidence, not decoded text inspection.
+
+**Comprehension checkpoint.** Can an already-filled editable token change
+again? Expected reasoning: yes; editability is frozen from the input mask.
+Does gamma zero remove the context? Expected reasoning: no, the unchanged
+tokens remain visible to attention. Does the invariant prove molecular
+substructure preservation? Expected reasoning: no, it is a token-array fact
+before the decoding/repair map. Does a final MASK violate context preservation?
+Expected reasoning: only if it changed an immutable position; completion and
+chemistry require additional checks.
+""", "stage-28-pmo-context"),
+        _cell("code", """
+stage28_ids = ((1, 6, 5, 4, 4, 5, 7, 2, 3),)
+stage28_editable = tuple(tuple(token == 4 for token in row) for row in stage28_ids)
+stage28_states = []
+for replacement in ((6, 7), (4, 8)):
+    values = iter(replacement)
+    state = tuple(tuple(next(values) if editable else original
+        for original, editable in zip(row, mask))
+        for row, mask in zip(stage28_ids, stage28_editable))
+    assert all(state[b][position] == stage28_ids[b][position]
+        for b, mask in enumerate(stage28_editable)
+        for position, editable in enumerate(mask) if not editable)
+    stage28_states.append(state)
+stage28_editable_count = sum(sum(row) for row in stage28_editable)
+stage28_final_mask_count = sum(token == 4 for row, mask in zip(stage28_states[-1], stage28_editable)
+    for token, editable in zip(row, mask) if editable)
+assert (stage28_final_mask_count, stage28_editable_count) == (1, 2)
+print("Invented final editable MASK count / positions:", stage28_final_mask_count, "/", stage28_editable_count)
+""", "stage-28-pmo-context-code"),
+        _cell("markdown", r"""
+## 28.2 What does the Fexofenadine MPO score reward?
+
+**Paper correspondence.** Goal-directed hit generation requires an explicit
+property objective. V14 uses the existing `fexofenadine_mpo` task and released
+gamma-zero setting. Its exact implementation is pinned in
+`experiments/udlm/diagnostics/pmo_oracle_inputs_20260907/manifest.json`, including
+PyTDC 0.4.1 and the RDKit source/native libraries. The formulas below were read
+from the pinned `tdc/chem_utils/oracle/oracle.py`, not inferred from the task name.
+
+**Intuition and motivation.** This synthetic benchmark objective rewards
+similarity to a reference molecule together with a polarity/lipophilicity
+profile. Its geometric mean penalizes a weak component. It is not a clinical
+efficacy, toxicity or synthesizability assay. The provisional GSK3B task was
+deferred after an oracle pickle/library incompatibility was found before any
+optimization; no PMO output selected this replacement task.
+
+**Mathematics, with every symbol defined.** For a valid molecule $m$, let
+$s(m)\in[0,1]$ be RDKit's Tanimoto similarity of atom-pair count fingerprints
+to the fixed Fexofenadine reference (maximum atom-pair path length 10).
+Let $p(m)$ be topological polar surface area (TPSA, in square ångströms), and
+$l(m)$ be RDKit's dimensionless MolLogP estimate. Define
+
+$$C(s)=\min(1,\max(0,s/0.8)),\quad
+H(p)=\exp\!\left[-\tfrac12\left(\tfrac{\max(90-p,0)}{10}\right)^2\right],$$
+$$J(l)=\exp\!\left[-\tfrac12\left(\tfrac{\max(l-4,0)}{1}\right)^2\right],\quad
+F(m)=[C(s(m))H(p(m))J(l(m))]^{1/3}.$$
+
+Here $C,H,J$ are unitless component scores, $F$ is the unitless property score,
+and $\exp$ is the exponential function. TPSA at least 90 and logP at most 4
+receive no respective penalty; similarity saturates at 0.8. The reference
+structure itself is fixed in the pinned TDC implementation. A legitimate zero
+component yields zero score and still consumes a valid new oracle call.
+
+**Small concrete example.** Supply invented descriptor values, not a molecule:
+$s=0.1,p=90,l=4$ gives $C=1/8,H=J=1$, hence $F=1/2$.
+With $s=0.8,p=80,l=5$, both Gaussian components equal $e^{-1/2}$, so
+$F=e^{-1/3}\approx0.716531$. Raising TPSA above 90 or lowering logP below 4
+cannot further improve its saturated component.
+
+**Code below, shapes, and invariants.** The cell takes three finite scalar
+descriptors and returns three scalar components plus a scalar score. It imports
+only `math`; no fingerprint, molecule, or oracle is computed. The hand-derived
+cases and saturation directions guard against accidentally reversing a modifier.
+
+**Differences from released implementations.** We retain the actual TDC
+evaluator and normalization. The opt-in adapter calls its singleton-list API
+and requires exactly one finite real result, rejecting booleans. The installed
+scalar API can silently replace evaluator exceptions by zero; that failure
+must stop this study rather than masquerade as poor chemistry. The untouched
+legacy runner retains its scalar path. Fail-fast scoring changes error handling,
+not this objective's formula or a successful valid molecule's score.
+
+**Comprehension checkpoint.** Why is the first score 0.5 rather than the
+arithmetic mean 0.7083? Expected reasoning: the task uses a cube root of the
+product. Which direction of TPSA is rewarded up to the target? Expected
+reasoning: increasing it toward 90 removes a lower-side penalty. Is a zero
+score always an error? Expected reasoning: no; distinguish a legitimate zero
+from an exception that a library silently converted to zero. Does a high score
+establish therapeutic benefit? Expected reasoning: no; this is a specified
+computational benchmark objective.
+""", "stage-28-pmo-objective"),
+        _cell("code", """
+from math import exp as stage28_exp, isfinite as stage28_isfinite, isclose as stage28_isclose
+
+def stage28_descriptor_score(similarity, tpsa, logp):
+    assert all(stage28_isfinite(value) for value in (similarity, tpsa, logp))
+    assert 0 <= similarity <= 1 and tpsa >= 0
+    components = (min(1.0, similarity / 0.8),
+        stage28_exp(-0.5 * (max(90 - tpsa, 0) / 10) ** 2),
+        stage28_exp(-0.5 * max(logp - 4, 0) ** 2))
+    score = (components[0] * components[1] * components[2]) ** (1 / 3)
+    assert 0 <= score <= 1
+    return components, score
+
+stage28_half_components, stage28_half_score = stage28_descriptor_score(0.1, 90, 4)
+assert stage28_half_components == (0.125, 1.0, 1.0)
+assert stage28_isclose(stage28_half_score, 0.5, abs_tol=1e-15)
+assert stage28_isclose(stage28_descriptor_score(0.8, 80, 5)[1], stage28_exp(-1 / 3), abs_tol=1e-15)
+assert stage28_descriptor_score(0.8, 100, 3)[1] == 1
+assert stage28_descriptor_score(0, 90, 4)[1] == 0
+print("Invented descriptor-only score:", stage28_half_score)
+""", "stage-28-pmo-objective-code"),
+        _cell("markdown", r"""
+## 28.3 A proposal is not an oracle call, and a final score is not AUC
+
+**Paper correspondence.** PMO evaluates efficient goal-directed search under
+a limited oracle-call budget. Our saved curves use the released top-10 AUC
+convention. The production definitions are in
+`scripts/exps/pmo/main/genmol/experiment_io.py`; V14 freezes its grid and budget.
+
+**Intuition and motivation.** Count new canonical molecules whose property
+score was actually obtained. Invalid proposals and cache hits do not consume
+another oracle call; offline scores in the starting fragment vocabulary are
+separate. A repeated cached child can still update the released fragment
+population. AUC rewards finding good molecules earlier, even when two searches
+end with the same collection. Rejected proposals may consume neural compute.
+
+**Mathematics, with every symbol defined.** Let $q_1,\ldots,q_B$ be successful
+new canonical molecule scores in charging order, with budget $B$. For $c>0$
+charged calls, let $k_c=\min(10,c)$ and $m(c)$ be the sum of the $k_c$ highest
+scores among $q_1,\ldots,q_c$, divided by $k_c$; define $m(0)=0$.
+For increasing reporting counts $0=c_0<c_1<\cdots<c_n=B$, the normalized
+trapezoidal score is
+
+$$\mathrm{AUC}_{10}=\frac1B\sum_{i=1}^{n}
+(c_i-c_{i-1})\frac{m(c_{i-1})+m(c_i)}2.$$
+
+Here $i$ indexes grid intervals and $n$ is their count. V14 uses $B=2000$
+and grid spacing 100. For an incomplete run, an optionally padded runner AUC
+is not evidence of completing $B$ calls; retain the observed endpoint and status.
+Separately, iteration $r$ is zero-based and warmup length parameter $W=1000$
+uses the released condition $r>W$: remasking first occurs at $r=1001$.
+Thus iterations 0 through 1000 are attaching-only, at most 1001 new calls;
+duplicates can make the actual number smaller. Warmup requires zero generation
+NFE (backbone forward evaluations), even though the checkpoint is loaded.
+
+**Small concrete example.** Fictional already-canonical IDs `A,A,None,B,C,D,E`
+produce four charged scores $1/5,4/5,1/2,9/10$ under a toy budget 4. The
+second A is cached, None is invalid, and E is beyond budget. With spacing 2,
+the curve is $(0,0),(2,1/2),(4,3/5)$ and AUC is exactly $2/5$.
+Reordering the same scores to find $9/10,4/5$ first gives $23/40$ while the
+terminal top-10 mean remains $3/5$. These are chosen scores, not oracle outputs.
+
+**Code below, shapes, and invariants.** `Fraction` supplies exact arithmetic.
+The cache maps invented canonical identifiers to scalar scores; the charging
+axis is a length-four list, separate from the length-seven proposal list.
+The toy does not canonicalize SMILES or fragment molecules. The generic top-10
+function uses only available scores when fewer than ten exist and keeps the
+zero origin. Warmup boundary assertions prevent an unnoticed off-by-one change.
+
+**Differences from released implementations.** The adapter leaves canonical
+caching, released duplicate updates and the `r>1000` warmup boundary intact.
+It adds checkpoint/source bindings, observed NFE, strict failures and disabled
+resume. Same-seed attaching-only warmup must be audited across arms: selected
+fragments, molecules, scores and population evolution should agree. An accepted,
+charged post-warmup remasking event with positive observed NFE is needed before
+calling the run a diffusion comparison; compute spent only on rejected
+proposals is insufficient. The toy omits the real population mechanics on purpose.
+
+**Comprehension checkpoint.** Why does the second A not advance the call axis?
+Expected reasoning: its canonical score is already cached. Can it still affect
+the released population? Expected reasoning: yes, released duplicate updates
+remain enabled. Why do identical final scores give different AUCs? Expected
+reasoning: intermediate best-score means depend on discovery order. Does
+`warmup=1000` mean exactly 1000 oracle calls? Expected reasoning: no, the
+condition is an iteration boundary with 1001 attaching-only iterations and
+possible duplicates. Does a completed warmup-only run test the diffusion law?
+Expected reasoning: no, there must be accepted charged neural mutations.
+""", "stage-28-pmo-budget"),
+        _cell("code", """
+from fractions import Fraction as Stage28Fraction
+
+stage28_lookup = dict(A=Stage28Fraction(1, 5), B=Stage28Fraction(4, 5),
+    C=Stage28Fraction(1, 2), D=Stage28Fraction(9, 10), E=Stage28Fraction(1))
+stage28_cache, stage28_charged, stage28_reasons = {}, [], []
+for canonical in ("A", "A", None, "B", "C", "D", "E"):
+    if canonical is None:
+        reason = "invalid"
+    elif canonical in stage28_cache:
+        reason = "cache_hit"
+    elif len(stage28_charged) == 4:
+        reason = "budget_exhausted"
+    else:
+        stage28_cache[canonical] = stage28_lookup[canonical]
+        stage28_charged.append(stage28_cache[canonical])
+        reason = "charged"
+    stage28_reasons.append(reason)
+assert stage28_reasons == ["charged", "cache_hit", "invalid", "charged", "charged", "charged", "budget_exhausted"]
+
+def stage28_top10(values):
+    assert values
+    selected = sorted(values, reverse=True)[:10]
+    return sum(selected, Stage28Fraction(0)) / len(selected)
+
+def stage28_exact_auc(scores, spacing):
+    budget = len(scores)
+    assert budget and type(spacing) is int and spacing > 0
+    calls = sorted(set([0, *range(spacing, budget + 1, spacing), budget]))
+    curve = [(c, stage28_top10(scores[:c]) if c else Stage28Fraction(0)) for c in calls]
+    area = sum((right[0] - left[0]) * (left[1] + right[1]) / 2
+        for left, right in zip(curve, curve[1:]))
+    return curve, area / budget
+
+stage28_curve, stage28_auc = stage28_exact_auc(stage28_charged, 2)
+assert stage28_curve == [(0, Stage28Fraction(0)), (2, Stage28Fraction(1, 2)), (4, Stage28Fraction(3, 5))]
+assert stage28_auc == Stage28Fraction(2, 5)
+stage28_early = [stage28_charged[i] for i in (3, 1, 2, 0)]
+assert stage28_exact_auc(stage28_early, 2)[1] == Stage28Fraction(23, 40)
+assert stage28_top10(stage28_early) == stage28_top10(stage28_charged) == Stage28Fraction(3, 5)
+stage28_remask_enabled = [iteration > 1000 for iteration in (999, 1000, 1001)]
+assert stage28_remask_enabled == [False, False, True]
+print("Invented exact AUC and terminal mean:", stage28_auc, stage28_top10(stage28_charged))
+""", "stage-28-pmo-budget-code"),
+        _cell("markdown", r"""
+## 28.4 The prospective comparison and the evidence needed to interpret it
+
+**Paper correspondence.** The paper's full PMO benchmark covers 23 tasks,
+10,000 calls per run and three runs. V14 is a one-task, two-seed, 2,000-call
+engineering pilot; it cannot reproduce a full-paper sum or establish that UDLM
+beats GenMol. Its committed design is
+`experiments/udlm/designs/engineering_v14_pmo_pilot.md` and executable panel is
+`experiments/udlm/protocols/engineering_v14_pmo.json`.
+
+**Intuition and motivation.** Fix the online oracle budget, initial scored
+fragment vocabulary and released population policy, then compare three actual
+checkpoint/sampler combinations. The selected candidates use earlier de novo
+observations; these are prospective PMO evaluations, not independent selection
+confirmation. No outcome table is embedded or read by this stage.
+
+**Mathematics, with every symbol defined.** With arm index $a$, seed index $s$,
+and measured full-budget AUC $A_{a,s}$, a paired treatment difference is
+$d_s=A_{\mathrm{treatment},s}-A_{\mathrm{MDLM},s}$. The two-seed mean is
+$\bar d=(d_{2300}+d_{2301})/2$ and sample SD is
+$\sqrt{\sum_s(d_s-\bar d)^2/(2-1)}$. Neither statistic is a superiority test
+with two adaptive engineering seeds. Primary treatment is MASK CE; secondary
+is S CT. Each comparison requires both declared complete pairs and successful
+integrity/warmup/charged-mutation checks, with failures and unlaunched runs shown.
+
+**Small concrete example.** Three arms times two seeds gives six planned runs;
+six budgets of 2000 permit at most 12,000 online oracle calls. This count is a
+ceiling, not an observed exposure. A failure can leave fewer calls and stop
+later waves. A hypothetical pair of differences $+0.02,-0.01$ has mean $+0.005$
+but disagrees in sign; it fails V14's declared both-seeds-positive gate.
+
+**Code below, shapes, and invariants.** The cell contains only the three frozen
+checkpoint identifiers and small dictionaries. The two-element seed tuple and
+three-element arm list describe plans, not results. It asserts complete hashes,
+fixed controls and requested budgets, and computes the invented contrast with
+`Fraction`. It performs no file reads, checkpoint loads, oracle calls or launches.
+
+**Differences from released implementations.** MDLM uses EMA from 50k training,
+temperature 1.2 and confidence randomness 2, with adaptive observed NFE. S CT
+uses 1000 additional batch-16 updates, a schedule-consistent uniform prior and
+128 predictor NFE. MASK CE uses 1000 batch-128 updates, clean-token CE and its
+verified 0.9 MASK / 0.1 empirical mixture prior. CE first converts clean
+probabilities by the local likelihood, then V14 applies temperature in raw-LOO
+space. Both UDLM arms use temperature 0.5, top-p one, endpoint 1e-5, no Gibbs,
+full active support and ignored randomness zero. The trained prior is never
+swapped at inference. All arms preserve gamma zero, effective completion
+length 18, population size 100, seeds 2300/2301 and the fixed scored vocabulary.
+These training amounts, prior/loss choices and neural compute differ; the
+experiment compares complete sampler configurations, not one isolated cause.
+
+The controller enforces at most two freshly qualified GPU UUIDs, frozen source,
+bounded child time, explicit process mapping and preserved terminal failures.
+`PYTHONHASHSEED=0` and CPU thread limits one are common across arms. Scoring
+errors propagate; actual generation calls, NFE, cache charges and runtime must
+be saved. Shared-GPU timing does not establish a controlled speed advantage.
+Independent score replay and a PDF with all arms, both signed contrasts and
+paper-comparison caveats are required before interpretation. Final de novo
+seeds 0/1/2 remain reserved. Nothing here changes the active campaign.
+
+**Comprehension checkpoint.** Does equal oracle budget imply equal NFE or equal
+training? Expected reasoning: no; those are separately recorded budgets.
+Can one retain the better seed and omit the other? Expected reasoning: no,
+both predeclared pairs and all failures remain visible. Does a positive mean
+for the invented contrast pass the gate? Expected reasoning: no, one seed is
+negative. Would passing the engineering gate complete the overall project
+goal? Expected reasoning: no; a later independent, broader benchmark is needed.
+""", "stage-28-pmo-panel"),
+        _cell("code", """
+from fractions import Fraction as Stage28PanelFraction
+
+stage28_planned_seeds = (2300, 2301)
+stage28_planned_arms = (
+    dict(name="MDLM", checkpoint_sha256="8d00aa47b02f64bf39ff6b0b2e786f213587366fc2c3d29712a00f3f84108dd6",
+         temperature=1.2, randomness=2.0, prior="absorbing MASK", nfe=None),
+    dict(name="S CT", checkpoint_sha256="100f467b94766f2c87cc734398c8590bd14a1c8e0722ce31dbca7b446d986e72",
+         temperature=0.5, randomness=0.0, prior="schedule_uniform", nfe=128),
+    dict(name="MASK CE", checkpoint_sha256="62299de99d8c003e3776215efce9643cca196091a6284f351de2b404a22c2e8d",
+         temperature=0.5, randomness=0.0, prior="mask_rich_empirical", nfe=128),
+)
+assert all(len(arm["checkpoint_sha256"]) == 64 for arm in stage28_planned_arms)
+stage28_requested_runs = len(stage28_planned_arms) * len(stage28_planned_seeds)
+stage28_requested_call_ceiling = stage28_requested_runs * 2000
+assert (stage28_requested_runs, stage28_requested_call_ceiling) == (6, 12000)
+stage28_invented_differences = (Stage28PanelFraction(2, 100), Stage28PanelFraction(-1, 100))
+stage28_invented_mean = sum(stage28_invented_differences) / 2
+assert stage28_invented_mean == Stage28PanelFraction(1, 200)
+assert not all(value > 0 for value in stage28_invented_differences)
+print("Planned runs / online-call ceiling, not outcomes:", stage28_requested_runs, stage28_requested_call_ceiling)
+""", "stage-28-pmo-panel-code"),
+    ]
+
+
+def _posterior_context_guidance_cells():
+    """Teach a proposed guidance law with independent rational/tuple examples."""
+    return [
+        _cell("markdown", r"""
+# Stage 29 — A proposed context guidance rule in reverse-probability space
+
+## 29.1 Which tokens count as context?
+
+**Paper correspondence.** [GenMol Section 4.3](https://arxiv.org/html/2501.06158v3#S4.SS3)
+uses molecular context guidance: compare predictions with more and less visible
+context. [Discrete classifier-free guidance, Section 3.1](https://arxiv.org/html/2412.10193v3#S3.SS1)
+instead motivates combining reverse probabilities. This chapter teaches the
+[reviewed adaptation memo](https://github.com/aamenov/genmol-udlm/blob/a5026e91a1a8febe95e70f1de66f35b817a4cda5/docs/udlm_context_guidance_hypothesis.md),
+using invented arrays and exact arithmetic. It invokes no production guidance
+API and makes no molecular efficacy claim or change to the fixed V14 panel.
+
+**Intuition and motivation.** Hide some original context from a second view of
+the same noisy sequence. Keep the editable noisy observation identical in both
+views, so their difference reflects visible context. A token filled during
+denoising remains editable; it must not silently become fixed context.
+
+**Mathematics, with every symbol defined.** Let $x_{\rm init}$ and $x_t$ be
+original and current token arrays of shape $[B,L]$, with $B$ rows and $L$
+positions. Indices $b$ and $\ell$ select a row and position. The fixed Boolean
+mask $e_{b\ell}$ marks original editable positions. Let $S$ be all tokenizer
+control IDs, including BOS/EOS/PAD/MASK/UNK. Define
+$C_b=\{\ell:e_{b\ell}=0,\ x_{{\rm init},b\ell}\notin S\}$.
+For masking fraction $\gamma\in[0,1]$, select a subset
+$H_b\subseteq C_b$ of size $\lfloor\gamma|C_b|\rfloor$ and replace only those
+positions by MASK in $x_t^{\rm poor}$. Thus
+$x_t^{\rm poor}[e]=x_t[e]$. The original attention mask remains fixed.
+After any proposed update, clamp $x_s[\neg e]=x_{\rm init}[\neg e]$,
+including context hidden from the poor predictor. Here $s<t$ is the next time.
+
+**Small concrete example.** The two rows below have editable positions 2 and 1,
+respectively. Both have two eligible context positions, so $\gamma=1/2$ hides
+one per row. We choose those subsets by hand; no random draw or model is used.
+The current value 8 at row-zero position 2 is still editable.
+
+**Code below, shapes, and invariants.** Nested tuples represent `[B,L]=[2,6]`.
+We construct the per-row eligible positions and degraded view, check that
+editable observations are unchanged, then clamp a hand-supplied update. The
+printed arrays are artificial token IDs, not generated molecules.
+
+**Differences from released implementations.** The
+[released GenMol sampler](https://github.com/NVIDIA-BioNeMo/genmol/blob/add09fc83b7255bd09c797e527c0f4b51f5fb7c1/src/genmol/sampler.py#L64)
+recomputes eligibility from current row-zero tokens, excluding BOS/EOS/MASK/PAD,
+and shares chosen positions across rows. Our proposed eligibility is original,
+per-row and excludes every declared control. Excluding controls from context
+selection does not remove them from the checkpoint's corruption alphabet.
+An immutable token invariant does not prove graph-level fragment preservation
+after SAFE decoding or repair.
+
+**Comprehension checkpoint.** Why must position 2 in row zero stay out of
+$C_0$ after receiving token 8? Expected reasoning: editability is an original
+coordinate property, not the current token value. Why restore hidden context
+after sampling? Expected reasoning: hiding changes a predictor's view, not the
+permitted output positions. Are the two rows allowed different $H_b$?
+Expected reasoning: yes; each uses its own original eligible coordinates.
+""", "stage-29-context-boundary"),
+        _cell("code", """
+stage29_initial = ((1, 5, 4, 7, 2, 3), (1, 4, 6, 8, 2, 3))
+stage29_current = ((1, 5, 8, 7, 2, 3), (1, 5, 6, 8, 2, 3))
+stage29_controls = {0, 1, 2, 3, 4}
+stage29_editable = tuple(tuple(token == 4 for token in row) for row in stage29_initial)
+stage29_eligible = tuple(tuple(i for i, (token, edit) in enumerate(zip(row, mask))
+    if not edit and token not in stage29_controls)
+    for row, mask in zip(stage29_initial, stage29_editable))
+stage29_hidden = tuple(positions[:len(positions) // 2] for positions in stage29_eligible)
+stage29_poor = tuple(tuple(4 if i in hidden else token for i, token in enumerate(row))
+    for row, hidden in zip(stage29_current, stage29_hidden))
+assert stage29_eligible == ((1, 3), (2, 3))
+assert stage29_hidden == ((1,), (2,))
+assert all(stage29_poor[b][i] == stage29_current[b][i]
+    for b, row in enumerate(stage29_editable) for i, edit in enumerate(row) if edit)
+stage29_release_row0_eligible = tuple(i for i, token in enumerate(stage29_current[0])
+    if token not in {1, 2, 3, 4})
+assert 2 in stage29_release_row0_eligible and 2 not in stage29_eligible[0]
+stage29_proposed_ids = ((9, 9, 6, 9, 9, 9), (9, 8, 9, 9, 9, 9))
+stage29_clamped = tuple(tuple(proposed if edit else original
+    for proposed, edit, original in zip(proposal, mask, row))
+    for proposal, mask, row in zip(stage29_proposed_ids, stage29_editable, stage29_initial))
+assert all(stage29_clamped[b][i] == stage29_initial[b][i]
+    for b, row in enumerate(stage29_editable) for i, edit in enumerate(row) if not edit)
+print("Artificial context-degraded views:", stage29_poor)
+print("Artificial update after original-context clamp:", stage29_clamped)
+""", "stage-29-context-boundary-code"),
+        _cell("markdown", r"""
+## 29.2 Convert each branch using the same noisy observation
+
+**Paper correspondence.** The rank-one reverse conditional in the
+[discrete-guidance paper, Section 2.1](https://arxiv.org/html/2412.10193v3#S2.SS1)
+provides the bridge. Our CE-to-LOO conversion uses that bridge for the fixed
+stationary prior. The two context views are a proposed molecular adaptation;
+they are not the paper's learned class-label/null-label pair.
+
+**Intuition and motivation.** A clean-token prediction answers which original
+token is plausible. A reverse transition answers which token is plausible at
+an earlier noise time. These are different distributions. Convert each
+branch first, keeping its original editable observation and process fixed.
+
+**Mathematics, with every symbol defined.** At one editable coordinate, let
+$k$ be its current ID, $j$ a possible clean ID, $i$ an earlier ID, and $K$ the
+active alphabet size. Indices $h$ below sum over that alphabet. The stationary
+prior satisfies $\pi_i>0$ and $\sum_i\pi_i=1$. Retained-signal probabilities
+satisfy $0<\alpha_t<\alpha_s<1$ for distinct interior times $s<t$.
+Set $r=\alpha_t/\alpha_s$,
+$L_j=\alpha_t\mathbf1[j=k]+(1-\alpha_t)\pi_k$, and
+$A_i=r\mathbf1[i=k]+(1-r)\pi_k$; $\mathbf1$ is the indicator function.
+For branch $v\in\{c,u\}$, $D_v(j)$ is a normalized clean CE prediction;
+$c$ means full context and $u$ means degraded context. Define
+
+$$R_v(j)=\frac{D_v(j)/L_j}{\sum_h D_v(h)/L_h},\qquad
+P_v(i)=\frac{A_i[\alpha_s R_v(i)+(1-\alpha_s)\pi_i]}
+{\sum_h A_h[\alpha_s R_v(h)+(1-\alpha_s)\pi_h]}.$$
+
+A raw-LOO checkpoint already supplies $R_v$ after normalization; do not divide
+it by $L_j$ again. Both branches use the same original $k$, times and prior.
+For CE predictions the equivalent direct mixture is
+
+$$P_v(i)=\sum_j D_v(j)\,
+\frac{A_i[\alpha_s\mathbf1[i=j]+(1-\alpha_s)\pi_i]}{L_j}.$$
+
+This coordinate-wise identity does not make independent token draws an exact
+correlated sequence posterior.
+
+**Small concrete example.** Use $K=3$, $\pi=(1/5,1/2,3/10)$,
+$\alpha_s=2/3$, $\alpha_t=1/3$, $k=0$, and synthetic clean distributions
+$D_c=(3/5,3/10,1/10)$, $D_u=(1/5,1/5,3/5)$. The resulting reverse laws are
+$P_c=(24/35,31/140,13/140)$ and $P_u=(3/7,29/140,51/140)$.
+
+**Code below, shapes, and invariants.** Each tuple has shape `[K]=[3]`;
+the conceptual model output would have shape `[B,L,K]`. Two independent
+expressions compute the same reverse vector using exact `Fraction` arithmetic.
+Each vector is positive and sums exactly to one. No model logits are loaded.
+
+**Differences from released implementations.** GenMol's MDLM guidance mixes
+clean logits before its decoding step. Official UDLM guidance computes two
+reverse laws from the same noisy input/time before combination. Here only the
+original immutable context differs between inputs; a degraded input is not
+demonstrated to be a true unconditional predictor.
+
+**Comprehension checkpoint.** Which observation belongs in the poor branch's
+$L_j$? Expected reasoning: the original editable $k$, which context degradation
+must not change. Can a raw-LOO checkpoint reuse the CE division? Expected
+reasoning: no, that would apply the likelihood correction twice. Why keep
+$\pi$ and the time grid shared? Expected reasoning: changing either would
+confound guidance with a different reverse process.
+""", "stage-29-context-reverse"),
+        _cell("code", """
+from fractions import Fraction as Stage29ReverseFraction
+
+def stage29_reverse(denoiser, prior, observed, alpha_s, alpha_t):
+    ratio = alpha_t / alpha_s
+    likelihood = tuple(alpha_t * (j == observed) + (1 - alpha_t) * prior[observed]
+        for j in range(len(prior)))
+    weights = tuple(d / likelihood[j] for j, d in enumerate(denoiser))
+    loo = tuple(value / sum(weights) for value in weights)
+    a = tuple(ratio * (i == observed) + (1 - ratio) * prior[observed]
+        for i in range(len(prior)))
+    bridge = tuple(a[i] * (alpha_s * loo[i] + (1 - alpha_s) * prior[i])
+        for i in range(len(prior)))
+    bridge = tuple(value / sum(bridge) for value in bridge)
+    direct = tuple(sum(denoiser[j] * a[i]
+        * (alpha_s * (i == j) + (1 - alpha_s) * prior[i]) / likelihood[j]
+        for j in range(len(prior))) for i in range(len(prior)))
+    assert bridge == direct and sum(bridge) == 1 and min(bridge) > 0
+    return loo, bridge
+
+stage29_pi = tuple(Stage29ReverseFraction(v) for v in ("1/5", "1/2", "3/10"))
+stage29_dc = tuple(Stage29ReverseFraction(v) for v in ("3/5", "3/10", "1/10"))
+stage29_du = tuple(Stage29ReverseFraction(v) for v in ("1/5", "1/5", "3/5"))
+stage29_rc, stage29_pc = stage29_reverse(stage29_dc, stage29_pi, 0,
+    Stage29ReverseFraction(2, 3), Stage29ReverseFraction(1, 3))
+stage29_ru, stage29_pu = stage29_reverse(stage29_du, stage29_pi, 0,
+    Stage29ReverseFraction(2, 3), Stage29ReverseFraction(1, 3))
+assert stage29_pc == tuple(Stage29ReverseFraction(v) for v in ("24/35", "31/140", "13/140"))
+assert stage29_pu == tuple(Stage29ReverseFraction(v) for v in ("3/7", "29/140", "51/140"))
+print("Exact synthetic reverse laws:", stage29_pc, stage29_pu)
+""", "stage-29-context-reverse-code"),
+        _cell("markdown", r"""
+## 29.3 Combine reverse probabilities, then sample
+
+**Paper correspondence.** Discrete classifier-free guidance motivates a
+geometric combination of conditional and unconditional reverse laws. Our
+adaptation replaces the latter with a context-degraded law. It borrows the
+combination order; it does not reproduce the official null-label training.
+
+**Intuition and motivation.** Prefer tokens that become more plausible with
+the available context. A large probability alone is not enough: the relative
+change between full and degraded context matters. No property oracle or
+property gradient enters this proposed rule.
+
+**Mathematics, with every symbol defined.** For positive normalized reverse
+laws $P_c$ and $P_u$ over tokens $i$, use guidance scale $w\ge1$ and define
+
+$$P_g(i)=\frac{P_c(i)^w P_u(i)^{1-w}}
+{\sum_h P_c(h)^w P_u(h)^{1-w}}
+=\operatorname{softmax}_i[w\log P_c(i)+(1-w)\log P_u(i)].$$
+
+$P_g$ is the guided proposal, $h$ is a token summation index, and softmax
+normalizes exponentiated log weights. For two tokens $i,j$, the guided odds
+equal $P_c(i)/P_c(j)$ times
+$[(P_c(i)/P_c(j))/(P_u(i)/P_u(j))]^{w-1}$.
+Scale $w=1$ returns $P_c$. Equal branches also return $P_c$ for any admissible
+$w$. Algebraically $w=0$ returns $P_u$, but zero is outside this proposed
+extrapolation range and does not redefine the released CLI's zero-scale bypass.
+The symbol $\gamma$ here is the context-masking fraction, not $w$; official
+UDLM code uses its `guidance.gamma` name for the extrapolation coefficient.
+
+**Small concrete example.** Reuse the preceding three-category tables at
+$w=2$. Posterior combination yields
+$(141984/175679,245055/1405432,24505/1405432)$.
+Combining clean weights as $D_c^2/D_u$ and only then applying the bridge gives
+$(1929/2380,73/476,43/1190)$ instead. Squaring $P_c$ alone also differs.
+The nonlinear bridge and guidance operation therefore do not commute.
+
+**Code below, shapes, and invariants.** This independent cell uses rational
+three-entry tables, computes both operation orders, and checks exact fractions,
+normalization and the identity laws. Its small bridge sums over all three
+possible clean IDs. These tables are invented probabilities, not experimental
+outcomes or predictions along an actual molecular trajectory.
+
+**Differences from released implementations.** Clean-logit extrapolation,
+reverse-law extrapolation and ordinary temperature are distinct controls.
+The official UDLM conditional/unconditional pair is trained with label dropout;
+masking molecular context supplies no such guarantee. A future benchmark must
+explicitly declare this new law and include the appropriate unguided controls.
+
+**Comprehension checkpoint.** Why does the negative exponent at $w>1$ matter?
+Expected reasoning: it divides by the poor law, so mismatched zeros are unsafe.
+Does $w=2$ mean temperature $1/2$? Expected reasoning: no, temperature lacks
+the poor-branch denominator. Does this exact counterexample prove better
+molecules? Expected reasoning: no; it establishes different categorical laws.
+""", "stage-29-context-blend"),
+        _cell("code", """
+from fractions import Fraction as Stage29BlendFraction
+
+def stage29_normalize(values):
+    values = tuple(values)
+    return tuple(value / sum(values) for value in values)
+
+def stage29_guide(conditional, poor, weight):
+    assert min(conditional + poor) > 0
+    return stage29_normalize(c ** weight * u ** (1 - weight)
+        for c, u in zip(conditional, poor))
+
+def stage29_example_bridge(denoiser):
+    f = Stage29BlendFraction
+    pi, a_s, a_t, k = (f(1, 5), f(1, 2), f(3, 10)), f(2, 3), f(1, 3), 0
+    return tuple(sum(denoiser[j]
+        * (a_t / a_s * (i == k) + (1 - a_t / a_s) * pi[k])
+        * (a_s * (i == j) + (1 - a_s) * pi[i])
+        / (a_t * (j == k) + (1 - a_t) * pi[k])
+        for j in range(3)) for i in range(3))
+
+stage29_c = tuple(Stage29BlendFraction(v) for v in ("3/5", "3/10", "1/10"))
+stage29_u = tuple(Stage29BlendFraction(v) for v in ("1/5", "1/5", "3/5"))
+stage29_conditional, stage29_degraded = stage29_example_bridge(stage29_c), stage29_example_bridge(stage29_u)
+stage29_guided = stage29_guide(stage29_conditional, stage29_degraded, 2)
+stage29_clean_first = stage29_example_bridge(stage29_guide(stage29_c, stage29_u, 2))
+stage29_temperature_only = stage29_normalize(value ** 2 for value in stage29_conditional)
+assert stage29_guided == tuple(Stage29BlendFraction(v)
+    for v in ("141984/175679", "245055/1405432", "24505/1405432"))
+assert stage29_clean_first == tuple(Stage29BlendFraction(v)
+    for v in ("1929/2380", "73/476", "43/1190"))
+assert stage29_guided != stage29_clean_first and stage29_guided != stage29_temperature_only
+assert stage29_guide(stage29_conditional, stage29_degraded, 1) == stage29_conditional
+assert stage29_guide(stage29_conditional, stage29_conditional, 3) == stage29_conditional
+assert sum(stage29_guided) == sum(stage29_clean_first) == 1
+print("Posterior guidance / clean-first guidance:", stage29_guided, stage29_clean_first)
+""", "stage-29-context-blend-code"),
+        _cell("markdown", r"""
+## 29.4 Identity paths, actual work and finite precision
+
+**Paper correspondence.** Turning a guidance equation into a sampler requires
+explicit numerical and compute conventions. These are proposed engineering
+requirements around the reviewed reverse-law rule, not new molecular results
+from either paper. The existing studies and final-seed reservations remain
+unchanged; this chapter authorizes no training or generation.
+
+**Intuition and motivation.** An identity setting should reproduce the old
+sampler without consuming extra randomness. Batching two predictor views may
+reduce invocation overhead but still evaluates both views. Finally, a proof of
+positive probabilities does not guarantee their floating-point representation.
+
+**Mathematics, with every symbol defined.** Let $N$ be predictor transitions,
+$B$ candidates, $J$ actual backbone invocations and $m_j$ the batch size of
+invocation $j$. Candidate-equivalent evaluations are $E=\sum_{j=1}^J m_j$.
+Active serial guidance has $J=2N$, $m_j=B$; packed guidance has $J=N$,
+$m_j=2B$. Both cost $E=2BN$, or $2N$ evaluations per candidate. An identity
+path costs $BN$. With $B=4,N=128$, active guidance costs 1,024 candidate
+evaluations and the identity path 512. Invocation count alone is insufficient.
+
+If $\gamma=0$, $w=1$, or every selected subset is empty, an implementation must
+bypass the poor prediction **and context RNG draws**. It must preserve the old
+sample IDs and caller RNG state for the same sampling seed. Identical laws found
+after two predictions do not erase the work already performed. Active context
+subsets should have a dedicated recorded generator, independent of categorical
+sampling, with per-row/per-step subset policy explicitly declared.
+
+On the interior grid, $A_i>0$ and $(1-\alpha_s)\pi_i>0$, so both reverse laws
+are mathematically positive, even when some clean weights vanish. For finite
+log weights $z_i$, log normalization computes
+$\log P_i=z_i-m-\log\sum_h\exp(z_h-m)$ with $m=\max_i z_i$.
+An exponential can still underflow to zero. A prospective implementation must
+declare precision and reject nonfinite arithmetic or lost support; silently
+flooring or clipping would define another law. Zero-support priors, truncation,
+identical times and the exact clean endpoint are outside this positivity proof.
+
+**Small concrete example.** The code compares serial, packed and identity work
+for four candidates and 128 steps. A separate two-category example has finite
+normalized logs but a zero represented exponential. It illustrates arithmetic,
+without constructing a sampler, drawing randomness or calling a device.
+
+**Code below, shapes, and invariants.** A list of hypothetical batch sizes has
+length $J$; its sum is $E$. The two log-weight tuples have shape `[K]=[2]`.
+`Fraction` checks the exact masking fraction, while `math` shows finite-precision
+underflow. These are planned-work counts, not measured runtime or NFE receipts.
+
+**Differences from released implementations.** A counter that records only
+forward invocations undercounts packed guidance. Serial and packed neural
+execution also need not yield bitwise-identical logits or sample IDs. Poor
+context may be outside the checkpoint's useful training distribution, especially
+when MASK had very low prior mass. Large $w$ can amplify calibration error.
+Neither full support nor this coordinate-wise heuristic proves a globally
+tilted molecular distribution, chemical constraint success or better quality.
+Using the separate, independently reviewed experimental prototype requires its
+explicit state and support checks; molecular efficacy still needs a prospective
+benchmark. This chapter invokes no production API.
+
+**Comprehension checkpoint.** Does packing halve the candidate evaluations?
+Expected reasoning: no; batch size doubles. May an identity path draw an unused
+context subset? Expected reasoning: no, that changes the RNG trajectory. Does a
+finite log probability guarantee a positive materialized float? Expected
+reasoning: no; exponentiation can underflow. Can the toy select a guidance scale
+for molecules? Expected reasoning: no; it contains no molecular evidence.
+""", "stage-29-context-compute"),
+        _cell("code", """
+from fractions import Fraction as Stage29ComputeFraction
+from math import exp as stage29_exp, isfinite as stage29_isfinite, log as stage29_log
+
+def stage29_work(batch, steps, execution, *, gamma, weight, eligible_per_row):
+    subset = tuple(int(gamma * count) for count in eligible_per_row)
+    identity = gamma == 0 or weight == 1 or not any(subset)
+    sizes = [batch] * steps if identity else ([batch] * (2 * steps)
+        if execution == "serial" else [2 * batch] * steps)
+    return {"forward_invocations": len(sizes), "batch_sizes": sizes,
+        "candidate_evaluations": sum(sizes),
+        "context_subset_draws": 0 if identity else steps * sum(count > 0 for count in subset)}
+
+stage29_half = Stage29ComputeFraction(1, 2)
+stage29_serial = stage29_work(4, 128, "serial", gamma=stage29_half, weight=2, eligible_per_row=(4,) * 4)
+stage29_packed = stage29_work(4, 128, "packed", gamma=stage29_half, weight=2, eligible_per_row=(4,) * 4)
+assert (stage29_serial["forward_invocations"], stage29_packed["forward_invocations"]) == (256, 128)
+assert stage29_serial["candidate_evaluations"] == stage29_packed["candidate_evaluations"] == 1024
+stage29_identity_ledgers = [stage29_work(4, 128, "serial", gamma=gamma, weight=weight,
+    eligible_per_row=eligible) for gamma, weight, eligible in
+    ((0, 2, (4,) * 4), (stage29_half, 1, (4,) * 4), (stage29_half, 2, (1,) * 4))]
+assert all(row["candidate_evaluations"] == 512 and row["context_subset_draws"] == 0
+    for row in stage29_identity_ledgers)
+stage29_log_c, stage29_log_u = (0.0, -1000.0), (0.0, 0.0)
+stage29_log_scores = tuple(2 * c - u for c, u in zip(stage29_log_c, stage29_log_u))
+stage29_maximum = max(stage29_log_scores)
+stage29_centered = tuple(value - stage29_maximum for value in stage29_log_scores)
+stage29_log_total = stage29_log(sum(stage29_exp(value) for value in stage29_centered))
+stage29_log_probabilities = tuple(value - stage29_log_total for value in stage29_centered)
+assert all(stage29_isfinite(value) for value in stage29_log_probabilities)
+stage29_float_probabilities = tuple(stage29_exp(value) for value in stage29_log_probabilities)
+assert stage29_float_probabilities[1] == 0.0
+print("Planned serial / packed candidate work:", stage29_serial["candidate_evaluations"], stage29_packed["candidate_evaluations"])
+print("Finite log weights can underflow on exponentiation:", stage29_log_probabilities, stage29_float_probabilities)
+""", "stage-29-context-compute-code"),
+    ]
+
+
 def _replace_required(text: str, old: str, new: str, *, label: str) -> str:
     """Apply one migration exactly once while remaining idempotent."""
     if new in text:
@@ -6683,6 +7428,8 @@ def update_notebook(source: Path, destination: Path):
         *_objective_evaluation_cells(),
         *_mask_rich_prior_cells(),
         *_denoiser_temperature_cells(),
+        *_pmo_optimization_cells(),
+        *_posterior_context_guidance_cells(),
     ]
     engineering_ids = {cell["id"] for cell in engineering_cells}
     notebook["cells"] = [
