@@ -1,0 +1,12 @@
+{"event": "entry_start", "attempt": "v13-e-ce-raw-t050", "time": "2026-09-07T13:07:13.882685+00:00"}
+{"event": "entry_terminal", "attempt": "v13-e-ce-raw-t050", "return_code": 0}
+{"event": "entry_start", "attempt": "v13-e-ce-clean-t050", "time": "2026-09-07T13:08:51.449182+00:00"}
+{"event": "entry_terminal", "attempt": "v13-e-ce-clean-t050", "return_code": 0}
+{"event": "entry_start", "attempt": "v13-mask-ce-raw-t050", "time": "2026-09-07T13:10:17.984826+00:00"}
+{"event": "entry_terminal", "attempt": "v13-mask-ce-raw-t050", "return_code": 0}
+{"event": "entry_start", "attempt": "v13-mask-ce-clean-t050", "time": "2026-09-07T13:12:06.336005+00:00"}
+{"event": "entry_terminal", "attempt": "v13-mask-ce-clean-t050", "return_code": 0}
+{"event": "screen_terminal", "any_failed": false, "time": "2026-09-07T13:14:13.310451+00:00"}
+{"event": "generation_terminal", "returncode": 0}
+{"accounting": {"independently_rescored_requests": 800, "scheduled_requests": 800, "scheduled_runs": 8, "status_counts": {"completed": 8}}, "artifacts": {"csv": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v13_reports/complete/report.csv", "json": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v13_reports/complete/report.json", "paired_contrasts_csv": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v13_reports/complete/paired_contrasts.csv", "pdf": "/home/aidar.alimbayev/Documents/genmolv2/run_sources/udlm_genmol_worktree/output/udlm/engineering_v13_reports/complete/report.pdf"}, "status": "complete"}
+{"started_at_utc": "2026-09-07T13:06:59.343798+00:00", "finished_at_utc": "2026-09-07T13:15:46.912253+00:00", "generation_returncode": 0, "report_returncode": 0}

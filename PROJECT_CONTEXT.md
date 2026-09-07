@@ -1,6 +1,40 @@
 # GenMol-UDLM project context
 
-## Active continuation: V12 complete; temperature-space hypothesis next
+## Active continuation: V13 complete; matched PMO pilot preparation
+
+V13 generation and independent reporting completed at 13:15:46.912253 UTC on
+2026-09-07, accepting all eight runs and 800 requests. Frozen execution source
+was `0fdc54d91baade2f84b48de9223ceb19696fadb7`; the original report JSON SHA-256
+is `7942486344669088179536dd12dc69d0aab91bede8920a68763a00522e23bb52`.
+Read `experiments/udlm/results/engineering_v13.md`; do not rerun V13.
+Clean-temperature-minus-raw-LOO quality differences were +5.5pp empirical CE
+and -2.0pp MASK-rich CE; strict differences were 0.0pp and -9.5pp. MASK strict
+validity fell 14.0pp. No final editable controls occurred over 39,280 positions.
+The new temperature option is not established as a general improvement.
+
+The cumulative PDF is `output/udlm/study_overview_v13_20260907/study_overview.pdf`,
+93 pages, SHA-256
+`350d365017b5a87291d772389b8767d44094e40dd6cb1e99d30b37951b206fdf`.
+It covers 34 configurations, 68 runs and 5,504 independently accepted requests;
+all earlier appendices and failed incidents remain intact. Its manifest SHA-256
+is `db76e519891a1891b0587653d9f0c49602f814c739611c430ba800dc72108b20`,
+with 291 required input records. All eight bundle files independently reproduce
+byte-for-byte, including explicit preserved copies of two historical V12 sources.
+The separate V13 audit (`98ce9df`) reproduces all contrasts and token arrays.
+
+There is no active root-owned GPU experiment at this snapshot; verify tmux and
+live logs before acting. The opt-in PMO sampling adapter is merged from
+`8efc44f`, with 65 focused CPU tests and independent review. It preserves the
+released fragment policy, requires explicit checkpoint/EMA/prior identity,
+records actual NFE, and rejects nonzero UDLM gamma before any oracle call.
+A separate prospective task/checkpoint/seed/budget panel and dynamic GPU
+controller are being prepared. No PMO oracle calls or optimization outcomes
+exist for this new study. Final de novo seeds 0/1/2 remain reserved. Best earlier
+selected UDLM pilot quality remains 57.03% versus local MDLM 85.8%; no broader
+superiority has been established. The research goal remains active. Use at most
+two dynamically selected GPUs strictly below 10% utilization at launch.
+
+### Historical V13 prelaunch and V12 completion record
 
 V13 implementation, paired reporting, Stage 27 and all four concrete configs
 are merged. The executable protocol is
